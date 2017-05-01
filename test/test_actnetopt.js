@@ -2,7 +2,7 @@
 var assert = require('assert');
 
 var ano = require('../actnetopt.js');
-var g = require('algorithms').DataStructures;
+var algols = require('algorithms').DataStructures;
 var THREE = require('../javascripts/three.js');
 
 Math.distance3 = function(p0,p1) {
@@ -14,7 +14,7 @@ Math.distance3 = function(p0,p1) {
 
 function simple_triangle_problem() {
     var dim = ano.dim2;
-    var m = { g: new g.Graph(false),
+    var m = { g: new algols.Graph(false),
 	      lbs: {},
 	      ubs: {}
 	    };
@@ -58,27 +58,28 @@ function simple_triangle_problem() {
 }
 
 describe('actoptnet_math', function() {
-    describe('first_test', function() {
+/*    describe('first_test', function() {
 	it('has a variable that is true', function() {
 	    assert.equal(ano.dim2,2);
 	});
     });
     describe('main_algorithm', function() {
 	it('function exists and returns something', function() {
+	    var stm = simple_triangle_problem();
 
-	    var dim = ano.dim2;
-	    var model = true;
-	    var goals = true;
-	    var lb = true;
-	    var ub = true;
-	    var result = ano.opt(dim,model,goals,lb,ub);
-	    assert.equal(result,true);
+	    var result = ano.opt(stm.dim2,
+				 stm.model,
+				 stm.coords,
+				 stm.goals,
+				 stm.fixed);
+
+	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);	    
 	});
     });
     describe('main_algorithm', function() {
 	it('we can do something with a 2d triangle', function() {
 	    var dim = ano.dim2;
-	    var model = new g.Graph();
+	    var model = new algols.Graph();
 	    model.addVertex(1);
 	    model.addVertex(2);
 	    model.addVertex(3);
@@ -88,6 +89,24 @@ describe('actoptnet_math', function() {
 	    assert.equal(model.vertices.size,3);
 	});
     });
+    describe('limits', function() {
+	it('limits returns a useful answer', function() {
+	    var stm = simple_triangle_problem();
+	    var limits = ano.limits(stm.model,stm.coords,stm.goals[0]);
+	    assert.equal(limits[0][0],'b');
+	    assert.equal(limits[1][0],'c');
+	    assert(limits[0][1]);
+	    assert(limits[1][1]);	    
+	});
+    });
+    describe('score', function() {
+	it('we can compute a score', function() {
+	    var stm = simple_triangle_problem();
+	    var sc = ano.score(stm.coords, stm.goals);
+	    assert.equal(sc,54);
+	});
+    });
+*/
     describe('main_algorithm', function() {
 	it('we can invoke it', function() {
 
@@ -95,20 +114,11 @@ describe('actoptnet_math', function() {
 
 	    var result = ano.opt(stm.dim2,
 				 stm.model,
+				 stm.coords,
 				 stm.goals,
 				 stm.fixed);
 
-	    
-	    assert.equal(result, true);
-	});
-    });
-    describe('score', function() {
-	it('we can compute a score', function() {
-
-	    var stm = simple_triangle_problem();
-	    var sc = ano.score(stm.coords, stm.goals);
-	    
-	    assert.equal(sc,54);
+	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
 	});
     });
 });
