@@ -24,12 +24,11 @@
 "use strict";
 
 var algols = require('algorithms').DataStructures;
+var heap = require('algorithms').DataStructures.Heap;
+
 
 var THREE = require('./javascripts/three.js');
 var assert = require('assert');
-
-module.exports.dim2 = 2;
-
 
 // Let's see if we can just do a good job computing
 // a score from a model
@@ -46,6 +45,55 @@ module.exports.score = function(coords,goals) {
 	},0);
     return sum;
 }
+
+// var MinHeap = require('./heap').MinHeap;
+
+/**
+ * Extends the MinHeap with the only difference that
+ * the heap operations are performed based on the priority of the element
+ * and not on the element itself
+ */
+function PriorityQueue(comp,initialItems) {
+  var self = this;
+  heap.MinHeap.call(this, function(a, b) {
+      return comp(self.priority(a),self.priority(b)) < 0 ? -1 : 1;
+  });
+
+  this._priority = {};
+
+  initialItems = initialItems || {};
+  Object.keys(initialItems).forEach(function(item) {
+    self.insert(item, initialItems[item]);
+  });
+}
+
+PriorityQueue.prototype = new heap.MinHeap();
+
+PriorityQueue.prototype.insert = function(item, priority) {
+  if (this._priority[item] !== undefined) {
+    return this.changePriority(item, priority);
+  }
+  this._priority[item] = priority;
+  heap.MinHeap.prototype.insert.call(this, item);
+};
+
+PriorityQueue.prototype.extract = function(withPriority) {
+  var min = heap.MinHeap.prototype.extract.call(this);
+  return withPriority ?
+    min && {item: min, priority: this._priority[min]} :
+    min;
+};
+
+PriorityQueue.prototype.priority = function(item) {
+  return this._priority[item];
+};
+
+PriorityQueue.prototype.changePriority = function(item, priority) {
+  this._priority[item] = priority;
+  this.heapify();
+};
+
+//module.exports = PriorityQueue;
 
 // compute the nodes that limit our ability to reach
 // the goal point and return those that limit and
@@ -157,6 +205,23 @@ module.exports.legal_configp = function(model,config) {
     return (string == "") ? true : string;
 }
 
+
+// I believe I need an array comparison to implement my own heap.
+// basically I want to just to lexicographic sorting of an array in
+// order of the elements, which should be a one-liner(ish).
+// The main order that matters to me for the priority queue is:
+// Distance from a goal,
+// Weight of the goal
+function compare_arr(arra,arrb) {
+    for(var i = 0; i < arra.length; i++) {
+	if (arra[i] < arrb[i])
+	    return -1;
+	if (arra[i] > arrb[i])
+	    return 1;
+    }
+    return 0;
+}
+
 module.exports.opt = function(dim,model,coords,goals,fixed) {
     // create my own set of goals in a priority queue...
     // The priority queue from algorithms.js is minimizing queue,
@@ -168,14 +233,14 @@ module.exports.opt = function(dim,model,coords,goals,fixed) {
 	    {
 		cur[c] =  this.copy_vector(coords[c]);
 	    });
-    var pq = new algols.PriorityQueue();
+    var pq = new algols.PriorityQueue(compare_arr);
 
     // now it is possible that this can add a
     // zero goal...we will have to be careful of that.
     // Really I need to have my own comparator here that
     // orders by greated weighted distance first, then
     // by shortest move.
-    goals.forEach(g => pq.insert(g, -this.score1(coords,g)));
+    goals.forEach(g => pq.insert(g, [-this.score1(coords,g)]));
     var cnt = 0; 
 
     // now begin the interative processing...
@@ -215,7 +280,7 @@ module.exports.opt = function(dim,model,coords,goals,fixed) {
 		// rebuild the pq...
 		pq = new algols.PriorityQueue();
 
-		goals.forEach(g => pq.insert(g, -this.score1(cur,g)));	    
+		goals.forEach(g => pq.insert(g, [-this.score1(cur,g)]));	    
 		// if we moved, then basically we start all over with all
 		// computations...
 	    }
@@ -229,4 +294,5 @@ module.exports.opt = function(dim,model,coords,goals,fixed) {
     }
     return cur;
 }
+
 
