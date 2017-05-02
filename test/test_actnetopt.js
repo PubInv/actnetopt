@@ -116,7 +116,6 @@ function medium_triangle_problem() {
 }
 
 describe('actoptnet_math', function() {
-    /*
     describe('first_test', function() {
 	it('has a variable that is true', function() {
 	    assert.equal(ano.dim2,2);
@@ -153,7 +152,7 @@ describe('actoptnet_math', function() {
 	    var stm = simple_triangle_problem();
 	    var limits = ano.limits(stm.model,stm.coords,stm.goals[0]);
 	    assert.equal(limits[0][0],'b');
-	    assert.equal(limits[1][0],'c');
+	    assert.equal(limits[1][0],'a');
 	    assert(limits[0][1]);
 	    assert(limits[1][1]);	    
 	});
@@ -189,37 +188,14 @@ describe('actoptnet_math', function() {
 				 stm.goals,
 				 stm.fixed);
 	    var score = ano.score(result,stm.goals);
-	    console.log(result,score);
 
-	    console.log(stm.model);
 	    assert.equal(ano.legal_configp(stm.model,result),true);
 
 	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
-	    console.log(score);
+
 	    assert.ok(score < 40.2);
 	});
     });
-    describe('main_algorithm', function() {
-	it('We can deal with a more complex function', function() {
-	    var stm = medium_triangle_problem();
-	    assert.equal(ano.legal_configp(stm.model,stm.coords),true);
-	    
-	    var result = ano.opt(stm.dim2,
-				 stm.model,
-				 stm.coords,
-				 stm.goals,
-				 stm.fixed);
-	    var score = ano.score(result,stm.goals);
-	    console.log(result,score);
-
-	    console.log(stm.model);
-	    assert.equal(ano.legal_configp(stm.model,result),true);
-
-	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
-	    assert(score < 20);
-	});
-    });
-    */
     describe('main_algorithm', function() {
 	it('We can optimize two goals if simple', function() {
 
@@ -238,9 +214,7 @@ describe('actoptnet_math', function() {
 				 stm.goals,
 				 stm.fixed);
 	    var score = ano.score(result,stm.goals);
-	    console.log(result,score);
 
-	    console.log(stm.model);
 	    assert.equal(ano.legal_configp(stm.model,result),true);
 
 	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
@@ -249,8 +223,26 @@ describe('actoptnet_math', function() {
 	    assert.deepEqual(result['a'],stm.coords['a']);	    
 	    assert.notDeepEqual(result['b'],stm.coords['b']);
 	    assert.notDeepEqual(result['c'],stm.coords['c']);	    
-	    console.log(score);
 	    assert.ok(score < 40.6);
+	});
+    });
+    describe('main_algorithm', function() {
+	it('We can deal with a more complex function', function() {
+	    var stm = medium_triangle_problem();
+	    assert.equal(ano.legal_configp(stm.model,stm.coords),true);
+	    
+	    var result = ano.opt(stm.dim2,
+				 stm.model,
+				 stm.coords,
+				 stm.goals,
+				 stm.fixed);
+	    var score = ano.score(result,stm.goals);
+	    console.log(result,score);
+
+	    assert.equal(ano.legal_configp(stm.model,result),true);
+
+	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
+	    assert(score < 20);
 	});
     });
 });

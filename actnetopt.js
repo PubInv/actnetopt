@@ -33,6 +33,8 @@ var assert = require('assert');
 // Let's see if we can just do a good job computing
 // a score from a model
 
+module.exports.dim2 = 2;
+
 module.exports.score1 = function(coords,g) {
     var c = coords[g.nd];
     var q = g.pos.distanceToSquared(c);
