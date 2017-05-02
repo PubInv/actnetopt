@@ -165,7 +165,6 @@ describe('actoptnet_math', function() {
 	    assert.equal(sc,54);
 	});
     });
-    */
     describe('main_algorithm', function() {
 	it('we can invoke it', function() {
 
@@ -218,6 +217,40 @@ describe('actoptnet_math', function() {
 
 	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
 	    assert(score < 20);
+	});
+    });
+    */
+    describe('main_algorithm', function() {
+	it('We can optimize two goals if simple', function() {
+
+	    
+	    var stm = simple_triangle_problem();
+
+	    // remove the 'b' note from fixed
+	    stm.fixed.slice(0,2);
+	    stm.goals[1] = { nd: 'b',
+		 pos: new THREE.Vector2(0.3,1.7),
+		 wt: 3 };
+
+	    var result = ano.opt(stm.dim2,
+				 stm.model,
+				 stm.coords,
+				 stm.goals,
+				 stm.fixed);
+	    var score = ano.score(result,stm.goals);
+	    console.log(result,score);
+
+	    console.log(stm.model);
+	    assert.equal(ano.legal_configp(stm.model,result),true);
+
+	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
+
+	    // assert that b and c both moved
+	    assert.deepEqual(result['a'],stm.coords['a']);	    
+	    assert.notDeepEqual(result['b'],stm.coords['b']);
+	    assert.notDeepEqual(result['c'],stm.coords['c']);	    
+	    console.log(score);
+	    assert.ok(score < 40.6);
 	});
     });
 });

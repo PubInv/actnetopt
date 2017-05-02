@@ -46,6 +46,10 @@ module.exports.score = function(coords,goals) {
     return sum;
 }
 
+// This is from Algorithm.js ...
+// I am forced to include here because it doesn't provide
+// a way for me to use my own comparator in the PrioirtyQueue.
+// I need to turn this into a pull request, and push this code back down into algorithm.js
 // var MinHeap = require('./heap').MinHeap;
 
 /**
@@ -70,7 +74,8 @@ function PriorityQueue(comp,initialItems) {
 PriorityQueue.prototype = new heap.MinHeap();
 
 PriorityQueue.prototype.insert = function(item, priority) {
-  if (this._priority[item] !== undefined) {
+    if (this._priority[item] !== undefined) {
+	console.log("treating as change!");
     return this.changePriority(item, priority);
   }
   this._priority[item] = priority;
@@ -222,6 +227,10 @@ function compare_arr(arra,arrb) {
     return 0;
 }
 
+function find_goals(goals,name) {
+    goals.find(g => g.nd == name);
+}
+
 module.exports.opt = function(dim,model,coords,goals,fixed) {
     // create my own set of goals in a priority queue...
     // The priority queue from algorithms.js is minimizing queue,
@@ -240,12 +249,16 @@ module.exports.opt = function(dim,model,coords,goals,fixed) {
     // Really I need to have my own comparator here that
     // orders by greated weighted distance first, then
     // by shortest move.
-    goals.forEach(g => pq.insert(g, [-this.score1(coords,g)]));
+    goals.forEach(g =>
+		  {
+		      pq.insert(g.nd, [0,-this.score1(coords,g)])
+		  });
     var cnt = 0; 
 
     // now begin the interative processing...
-    var cg = pq.extract();
-    while (cg && cnt < 10) {
+    var cnam = pq.extract();
+    var cg = goals.find(g => g.nd == cnam);
+    while (cg) {
 	// Now cg is the "worst" goal we need to try to move...
 	// compute the direction to move...
 	var nam = cg.nd;
@@ -255,14 +268,11 @@ module.exports.opt = function(dim,model,coords,goals,fixed) {
 	// Now we want to try to move in this direction until
 	// we hit a constaint..
 	var limiting_nodes = this.limits(model,cur,cg,dir);
-	console.log(limiting_nodes);
 
 	if (limiting_nodes.length > 0) {
 	    // Now compute the maximum move the limits allow
 	    // (with 1.0 in case of empty...
 	    var min_move = this.min_move(limiting_nodes,pos);
-
-	    console.log("min_move",min_move);	    
 
 	    // now min_move is a triple  chosen from limits....
 
@@ -280,7 +290,7 @@ module.exports.opt = function(dim,model,coords,goals,fixed) {
 		// rebuild the pq...
 		pq = new algols.PriorityQueue();
 
-		goals.forEach(g => pq.insert(g, [-this.score1(cur,g)]));	    
+		goals.forEach(g => pq.insert(g.nd, [0,-this.score1(cur,g)]));	    
 		// if we moved, then basically we start all over with all
 		// computations...
 	    }
@@ -289,7 +299,8 @@ module.exports.opt = function(dim,model,coords,goals,fixed) {
 	    // and we need add nothing to the pqueue...
 	    cur[nam] = this.copy_vector(cg.pos);
 	}
-	cg = pq.extract();
+	var cnam = pq.extract();
+	cg = goals.find(g => g.nd == cnam);
 	cnt++;
     }
     return cur;
