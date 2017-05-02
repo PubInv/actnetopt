@@ -58,38 +58,48 @@ module.exports.limits = function(model,cur,cg) {
     var pos = cur[nam];
     // TODO: This is dim-dependent.
     var dir = this.copy_vector(cg.pos);
-    console.log("dir",dir);
     dir.subVectors(dir,pos);
 
     var limits = [];
     // now we need to iterate over only the connected nodes from model...
     var neighbors = model.g.neighbors(nam);
     neighbors.forEach(neighbor => {
-	var lb = model.lbs[neighbor];
-	var ub = model.ubs[neighbor];
+	var ename = (nam < neighbor) ? nam + ' ' + neighbor
+	    : neighbor + ' ' + nam;
+	var lb = model.lbs[ename];
+	var ub = model.ubs[ename];
 	var npos = cur[neighbor];
-	// actually, I think there is a linear relationship
-	// between the parameter length and this...but
-	// for right now, I'll just treat it as limited or not.
+	
+
 	var d = npos.distanceTo(cg.pos);
+	
+	var ndir = this.copy_vector(cg.pos);
+	ndir.subVectors(ndir,npos);
 
 	// TODO: this should be replacable
+	    // Note: it is not clearly picking lowest move distance is
+	    // really the right metric here. Is new_goal even guaranteed to be legal?
+	// Only the path between npos and new_goal hits no other constraint.
+	// So that does make it seem like the shortest move is best.
+	
 	if (d < lb) {
 	    var delta = lb - d;
 	    var new_goal = this.copy_vector(npos);
-	    console.log("lower goal",new_goal);
-	    var s = delta / dir.length();
-	    new_goal.addScaledVector(dir,-s);
-	    console.log("lower goal X",s,new_goal);	    	    
-	    limits.push([neighbor,-s,new_goal]);	    
+	    var s = lb / ndir.length();
+	    
+	    new_goal.addScaledVector(dir,s);
+
+	    var dtm = new_goal.distanceTo(pos);	    
+	    
+	    limits.push([neighbor,dtm,new_goal]);	    
 	} else if (d > ub) {
 	    var delta = d - ub;
 	    var new_goal = this.copy_vector(npos);
-	    console.log("upper goal",new_goal,dir.length());	    
-	    var s = delta / dir.length();
-	    new_goal.addScaledVector(dir,s);
-	    console.log("upper goal X",s,new_goal);	    
-	    limits.push([neighbor,s,new_goal]);	    
+	    ndir.setLength(ub);
+	    new_goal.add(ndir)
+	    var dtm = new_goal.distanceTo(pos);
+	    
+	    limits.push([neighbor,dtm,new_goal]);	    
 	} else {
 	    // we're okay!
 	}
@@ -103,11 +113,11 @@ module.exports.limits = function(model,cur,cg) {
 // However, we only want move the node up to the smallest limit.
 // if the limits tells us to move in opposit directions, we are in some trouble!
 // We want to return the position to move to.
-module.exports.max_move = function(limits,pos) {
+module.exports.min_move = function(limits,pos) {
     // find the position that is definitely inside the limits!
     var init = limits[0];
     var possible_move = limits.reduce(function(acc,val) {
-	return (Math.abs(val[1]) < Math.abs(val[1])) ?
+	return (Math.abs(val[1]) < Math.abs(acc[1])) ?
 	    val : acc;
     },
 				      init);
@@ -119,6 +129,32 @@ module.exports.copy_vector = function(v) {
 		    new THREE.Vector2(v.x,v.y) :
 	new THREE.Vector3(v.x,v.y,v.z);
     return nv;
+}
+
+module.exports.legal_configp = function(model,config) {
+    var string = "";
+    model.g.vertices.forEach(
+	v0 =>
+	    model.g.neighbors(v0).forEach(
+		v1 =>
+		    {
+			var c0 = config[v0];
+			var c1 = config[v1];
+			var d = c0.distanceTo(c1);
+			var ename = (v0 < v1) ? v0 + ' ' + v1
+			    : v1 + ' ' + v0;
+			if (d < model.lbs[ename]) {
+			    string += "lower bound not met: " + ename + " " + d + " \n";
+			    return ename;
+			}
+			if (d > model.ubs[ename]) {
+			    string += "upper bound not met: " + ename +  " " + d  + " \n";
+			    return ename;
+			}
+		    }
+	    )
+    );
+    return (string == "") ? true : string;
 }
 
 module.exports.opt = function(dim,model,coords,goals,fixed) {
@@ -144,39 +180,50 @@ module.exports.opt = function(dim,model,coords,goals,fixed) {
 
     // now begin the interative processing...
     var cg = pq.extract();
-    while (cg && cnt < 4) {
+    while (cg && cnt < 10) {
 	// Now cg is the "worst" goal we need to try to move...
 	// compute the direction to move...
 	var nam = cg.nd;
 	var pos = cur[nam];
 	var dir = this.copy_vector(pos);
-	console.log("dirx",dir);		
 	dir.subVectors(dir,pos)
 	// Now we want to try to move in this direction until
 	// we hit a constaint..
 	var limiting_nodes = this.limits(model,cur,cg,dir);
-	console.log("max_move",limiting_nodes);	
+	console.log(limiting_nodes);
+
 	if (limiting_nodes.length > 0) {
 	    // Now compute the maximum move the limits allow
 	    // (with 1.0 in case of empty...
-	    var max_move = this.max_move(limiting_nodes,pos);
+	    var min_move = this.min_move(limiting_nodes,pos);
 
-	    // now max_move is a triple  chosen from limits....
-	    assert(max_move[1] != 0.0);
+	    console.log("min_move",min_move);	    
 
-	    // make the move...
-	    cur[nam] = this.copy_vector(max_move[2]);
-	    // rebuild the pq...
-	    pq = new algols.PriorityQueue();
+	    // now min_move is a triple  chosen from limits....
 
-	    goals.forEach(g => pq.insert(g, -this.score1(cur,g)));	    
-	    // if we moved, then basically we start all over with all
-	    // computations...
+	    if (min_move[1] == 0.0) {
+		// In this case, there is no point n moving, we must move one of
+		// our neighbors (this one) in an attempt to get closer if we can.
+		// This is effective this point where we need to recurse or do something different.
+		// Now if we can't get min_mov[0] to move, we are done.
+		
+		
+	    } else {
+
+		// make the move...
+		cur[nam] = this.copy_vector(min_move[2]);
+		// rebuild the pq...
+		pq = new algols.PriorityQueue();
+
+		goals.forEach(g => pq.insert(g, -this.score1(cur,g)));	    
+		// if we moved, then basically we start all over with all
+		// computations...
+	    }
 	} else {
-	    // if we couldn't move, then we need to add some goals
-	    // to our priority_queue based on limits...
+	    // If there are not limits, we can move directly to the goal...
+	    // and we need add nothing to the pqueue...
+	    cur[nam] = this.copy_vector(cg.pos);
 	}
-	console.log(pq);
 	cg = pq.extract();
 	cnt++;
     }

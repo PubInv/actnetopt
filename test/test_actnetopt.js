@@ -25,27 +25,29 @@ function simple_triangle_problem() {
     m.g.addEdge('a','b');
     m.g.addEdge('b','c');
     m.g.addEdge('c','a');
-	    
-    m.lbs['a'] = 1;
-    m.ubs['a'] = 2;
-    m.lbs['b'] = 1;
-    m.ubs['b'] = 2;
-    m.lbs['c'] = 1;
-    m.ubs['c'] = 2;
+
+    // ARG -- this need to be edge, not per node,
+    // although really it is constant in most circumstances.
+    m.lbs['a b'] = 1;
+    m.ubs['a b'] = 2;
+    m.lbs['b c'] = 1;
+    m.ubs['b c'] = 2;
+    m.lbs['a c'] = 1;
+    m.ubs['a c'] = 2;
 	    
     var fixed = [];
     fixed[0] = 'a';
     fixed[1] = 'b';
 
     var goals = [];
-    goals[0] = { nd: 'a',
+    goals[0] = { nd: 'c',
 		 pos: new THREE.Vector2(4,4),
 		 wt: 3 };
 
     var nodes = {};
-    var a = new THREE.Vector2(1,1);
-    var b = new THREE.Vector2(1,3);
-    var c = new THREE.Vector2(2,2);
+    var a = new THREE.Vector2(0,0);
+    var b = new THREE.Vector2(0,1.5);
+    var c = new THREE.Vector2(1,1);
     nodes['a'] = a;
     nodes['b'] = b;
     nodes['c'] = c;
@@ -57,8 +59,65 @@ function simple_triangle_problem() {
 	     fixed: fixed};
 }
 
+function medium_triangle_problem() {
+    var dim = ano.dim2;
+    var m = { g: new algols.Graph(false),
+	      lbs: {},
+	      ubs: {}
+	    };
+
+    m.g.addVertex('a');
+    m.g.addVertex('b');
+    m.g.addVertex('c');
+    m.g.addVertex('d');    
+    m.g.addEdge('a','b');
+    m.g.addEdge('b','c');
+    m.g.addEdge('c','a');
+    m.g.addEdge('b','d');
+    m.g.addEdge('c','d');
+
+    // ARG -- this need to be edge, not per node,
+    // although really it is constant in most circumstances.
+    m.lbs['a b'] = 1;
+    m.ubs['a b'] = 2;
+    m.lbs['b c'] = 1;
+    m.ubs['b c'] = 2;
+    m.lbs['a c'] = 1;
+    m.ubs['a c'] = 2;
+    m.lbs['c d'] = 1;
+    m.ubs['c d'] = 2;
+    m.lbs['b d'] = 1;
+    m.ubs['b d'] = 2;
+
+    
+    var fixed = [];
+    fixed[0] = 'a';
+
+    var goals = [];
+    goals[0] = { nd: 'd',
+		 pos: new THREE.Vector2(4,4),
+		 wt: 3 };
+
+    var nodes = {};
+    var a = new THREE.Vector2(0,0);
+    var b = new THREE.Vector2(0,1.5);
+    var c = new THREE.Vector2(1,1);
+    var d = new THREE.Vector2(0.25,2.5);    
+    nodes['a'] = a;
+    nodes['b'] = b;
+    nodes['c'] = c;
+    nodes['d'] = d;    
+    
+    return { dim: dim,
+	     coords: nodes,
+	     model: m,
+	     goals: goals,
+	     fixed: fixed};
+}
+
 describe('actoptnet_math', function() {
-/*    describe('first_test', function() {
+    /*
+    describe('first_test', function() {
 	it('has a variable that is true', function() {
 	    assert.equal(ano.dim2,2);
 	});
@@ -106,7 +165,7 @@ describe('actoptnet_math', function() {
 	    assert.equal(sc,54);
 	});
     });
-*/
+    */
     describe('main_algorithm', function() {
 	it('we can invoke it', function() {
 
@@ -117,8 +176,48 @@ describe('actoptnet_math', function() {
 				 stm.coords,
 				 stm.goals,
 				 stm.fixed);
+	    
+	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
+	});
+    });
+    describe('main_algorithm', function() {
+	it('We get a good answer for a siimple triangle', function() {
+	    var stm = simple_triangle_problem();
+
+	    var result = ano.opt(stm.dim2,
+				 stm.model,
+				 stm.coords,
+				 stm.goals,
+				 stm.fixed);
+	    var score = ano.score(result,stm.goals);
+	    console.log(result,score);
+
+	    console.log(stm.model);
+	    assert.equal(ano.legal_configp(stm.model,result),true);
 
 	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
+	    console.log(score);
+	    assert.ok(score < 40.2);
+	});
+    });
+    describe('main_algorithm', function() {
+	it('We can deal with a more complex function', function() {
+	    var stm = medium_triangle_problem();
+	    assert.equal(ano.legal_configp(stm.model,stm.coords),true);
+	    
+	    var result = ano.opt(stm.dim2,
+				 stm.model,
+				 stm.coords,
+				 stm.goals,
+				 stm.fixed);
+	    var score = ano.score(result,stm.goals);
+	    console.log(result,score);
+
+	    console.log(stm.model);
+	    assert.equal(ano.legal_configp(stm.model,result),true);
+
+	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
+	    assert(score < 20);
 	});
     });
 });
