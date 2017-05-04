@@ -634,24 +634,29 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 // C is the current coordinates of the nodes
 // S is the current strainfront
 // returns a strainfront
-module.exports.perturb = function(d,M,C,S,a,v) {
+module.exports.perturb = function(d,M,C,S,a,v,num) {
 
     assert(!(a in M.fixed));
     assert(!(a in S.fixed));
-    if (a in S.perturbed) return S;
     
     // if we have already perturbed this, we will not
     // perturb again unless on the backwave...
-    if (a in S.perturbed) {
-	return S;
-    }
+    var previously_perturbed = S.perturbed[a];
+//    if (a in S.perturbed) {
+//	return S;
+    //    }
+    console.log("perturb:",a,v);
     S.cur[a] = v;
     S.perturbed[a] = true;
-    M.g.neighbors(a)
-	.forEach(v0 => {
-		 if (!S.s.find(sv => (sv.tl == a && sv.hd == v0)))
-		     S.s.push({tl:a, hd:v0, fwd: true})
-	});
+    if (!previously_perturbed) {
+	M.g.neighbors(a)
+	    .forEach(v0 => {
+		if (!S.s.find(sv => (sv.tl == a && sv.hd == v0)))
+		    S.s.push({tl:a, hd:v0, fwd: true, num: num});
+		if (!S.s.find(sv => (sv.tl == v0 && sv.hd == a)))			      
+		    S.s.push({tl:v0, hd:a, fwd: true, num: -num});			      
+	    });
+    }
     return S;
 }
 
@@ -661,33 +666,52 @@ module.exports.perturb = function(d,M,C,S,a,v) {
 // S is the current strainfront
 // This function is used for the back-propagating wave
 // returns a strainfront
-module.exports.reperturb = function(d,M,C,S,a,v) {
+module.exports.reperturb = function(d,M,C,S,a,v,num) {
     console.log("calling reperturb: ", a);
     S.cur[a] = v;
     return S;
 }
 
-module.exports.relieves = function(d,M,C,S) {
+module.exports.relieves = function(d,M,C,S,num) {
     // choose an element of the strainfront.
-    // We want to choose the element with shortest path to our target here...
-    const v = S.s.reduce(
-	(acc,sv) =>
-	    (S.dsp[sv.tl] < S.dsp[acc.tl]) ? sv : acc,
-	S.s[0]);
+    // our algorithm is to choose the loosest numbered positive edge
+    // non-negaive edge exists. (zero not allowed.)
+    // If no positive edge, we choose the lowest-valued negative edge
+    var lowest_non_negative = Number.MAX_VALUE;
+    var lnn;
+    var lowest_negative = Number.MAX_VALUE;
+    var ln;
+    for(var i = 0; i < S.s.length; i++) {
+	var k = S.s[i];
+	assert(k.num != 0);
+
+	if ((k.num > 0) && (k.num < lowest_non_negative)) {
+	    lnn = k;
+	    lowest_non_negative = k.num;
+	}
+	if ((k.num < 0) && (k.num < lowest_negative)) {
+	    ln = k;
+	    lowest_negative = k.num;	    
+	}
+    }
+    const v = (lnn instanceof Object)
+	  ? lnn : ln;
+    assert(v);
     console.log("v : ",v);    
     // remove element v...
     S.s = S.s.filter(item => item !== v)
     // now v is a node of minum depth...
     if ((v.hd in M.fixed) || (v.hd in S.fixed)) {
 	S.fixed[v.hd] = true;
-	S.s.push({tl:v.hd, hd:v.tl, fwd: false});
+//	S.s.push({tl:v.hd, hd:v.tl, fwd: false, num: num});
+//	S.s.push({tl:.tl, hd:f.hd, fwd: false, num: -num});	
 	return S;
     } else {
 	var z = this.zero_x_strain(d,M,S.cur,v.tl,v.hd);
 	console.log("in relieves",v);
 	return v.fwd ?
-	    this.perturb(d,M,C,S,v.hd,z)
-	    : this.reperturb(d,M,C,S,v.hd,z);
+	    this.perturb(d,M,C,S,v.hd,z,num)
+	    : this.reperturb(d,M,C,S,v.hd,z,num);
     }
     return S;
 }
@@ -715,11 +739,15 @@ module.exports.strainfront = function(d,M,C,a,v) {
 //    console.log("YYYYYYYYYY");
 //    console.log(cur);    
     var S = { s: [], cur: cur, fixed: {}, perturbed: {} , dsp: shortestPath};
-    S = this.perturb(d,M,C,S,a,v,0);
+    var num = 1;
+    
+    S = this.perturb(d,M,C,S,a,v,num);
+    num++;
     while (S.s.length > 0) {
 	console.log("pre-relieve",S.s);
-	S = this.relieves(d,M,S.cur,S);
-	console.log("post-relieve",S.s);	
+	S = this.relieves(d,M,S.cur,S,num);
+	console.log("post-relieve",S.s);
+	num++;
     }
     console.log("XXXX");
     console.log(S);
