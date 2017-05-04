@@ -364,6 +364,7 @@ module.exports.strain = function(d,M,C,x,y)  {
 }
 
 module.exports.strain_points = function(d,M,x,y,px,py)  {
+//    console.log("STRAIN_POINTS x,y,px,y",x,y,px,py);
     var b = px.distanceTo(py);
     
     var en = this.ename(x,y);
@@ -371,6 +372,7 @@ module.exports.strain_points = function(d,M,x,y,px,py)  {
     if (en in M.lbs) {
 	var lb = M.lbs[en];
 	if (lb > b) {
+//	    console.log("STRAIN_POINTS lb- b",lb-b);
 	    return lb - b;
 	}
     }
@@ -378,6 +380,7 @@ module.exports.strain_points = function(d,M,x,y,px,py)  {
 	var ub = M.ubs[en];
 	if (ub < b) {
 	    // tensile strain is negative
+//	    console.log("STRAIN_POINTS ub - b",ub-b);	    
 	    return ub - b;
 	}
     }
@@ -496,17 +499,29 @@ module.exports.all_strains = function(d,M,C,x,p) {
 			   p,
 			   C[y]));
 }
+
+// Compute the maximum strain on node x if it is at point p.
+module.exports.max_strain_on_point = function(d,M,C,x,p) {
+    const as = this.all_strains(d,M,C,x,p);
+    
+    var max_strain = as.reduce((a,v) =>
+			       Math.max(Math.abs(v),a)
+			       ,0);
+    return max_strain;
+}
+
 // d is the dimension (2 or 3)
 // M is the connectivity graph
 // C is the current coordinates of the nodes
 // S is the current strainfront
 // x is the tail of the strainfront vector
 // y is the head of the strainfront vector
-// return z, the position which completely eases x->y strain.
-module.exports.least_strain = function(d,M,C,x,y) {
+// return z, the position of y which completely eases x->y strain.
+module.exports.zero_x_strain = function(d,M,C,x,y) {
+//    console.log("x :",x, "y :", y, "C[x] :",C[x]);
+//    console.log("C :",C);    
     // first, let us determine if there is any strain.
     var s = this.strain(d,M,C,x,y);
-    console.log(x,y,C[x],C[y],s);
     var retval; 
     if (s == 0) {
 	// No change to C required.
@@ -535,21 +550,23 @@ module.exports.least_strain = function(d,M,C,x,y) {
 	var zero_strain_point;
 	intersections.forEach( i => {
 	    const py = i.p;
-	    // This is not right.  I need to look for all strains on the C[y] position!
-	    // I need two think about this...clearly I am confused.
-	    const as = this.all_strains(d,M,C,y,py);
-	    console.log("all_strains",i.p,py,as);
-	    var max_strain = as.reduce((a,v) =>
-			  Math.max(Math.abs(v),a)
-				       ,0);
+	    var max_strain = this.max_strain_on_point(d,M,C,y,py);
+//	    console.log("ZZZ",y,py,max_strain);
 	    if (max_strain == 0) {
-		zero_strain_point = i.p;
+//		console.log("AAA : ",i.p,i.p.distanceTo(C[y]));
+		if (!zero_strain_point ||
+		    i.p.distanceTo(C[y]) < zero_strain_point.distanceTo(C[y])) {
+		    zero_strain_point = i.p;
+//		    console.log("BBB: ",zero_strain_point,zero_strain_point.distanceTo(C[y]));
+		}
 	    }
 	});
+//	if (zero_strain_point)
+//	    console.log("END: ",zero_strain_point,zero_strain_point.distanceTo(C[x]));		
 	// if we have found a zero_strain_point, we should surely return that!
 	// Note: This is type dependent
 	if (zero_strain_point instanceof Object) {
-	    console.log("zero strain point",zero_strain_point);
+//	    console.log("zero strain point",zero_strain_point);
 	    retval = zero_strain_point;
 	} else {
 	    // Since we have no intersection point which is universally strain-free,
@@ -564,10 +581,15 @@ module.exports.least_strain = function(d,M,C,x,y) {
 					   y,
 					   C[x],
 					   i.p);
-		    return (xs == 0) ? acc.push(i.p) : acc;
+		    if (xs == 0) {
+			acc.push(i.p);
+			return acc;
+		    } else {
+			return acc;
+		    }
 		},
 				      []);
-	    console.log("zero_x_strain: ",zero_x_strain_points);
+//	    console.log("zero_x_strain: ",zero_x_strain_points);
 	    if (zero_x_strain_points.length != 0) { // we're in luck...
 		// we can should return one which is closest to C[x]...
 		retval = zero_x_strain_points.reduce(
@@ -577,7 +599,7 @@ module.exports.least_strain = function(d,M,C,x,y) {
 			acc,
 		    [Number.MAX_VALUE,zero_x_strain_points[0]])[1];
 	    } else {
-		console.log("NO ZERO_X_STRAIN POINTS!");
+//		console.log("NO ZERO_X_STRAIN POINTS!");
 		// Okay, so if there are no points of zero x strain,
 		// we will have to choose a point on a line that is NOT an
 		// intersection point.
@@ -589,20 +611,102 @@ module.exports.least_strain = function(d,M,C,x,y) {
 		g.sub(C[x]);
 		// Now g is a vector from C[x] to C[y].
 		var en = this.ename(x,y);
-		console.log("g = ",g);
+//		console.log("g = ",g);
 		g = g.setLength((s < 0) ? M.ubs[en] : M.lbs[en]);
 		g = g.add(C[x]);
 		retval = g;
-		console.log("bound",(s < 0) ? M.ubs[en] : M.lbs[en]);				
-		console.log(C[x],C[y],g);		
-		console.log(this.strain_points(d,M,x,y,C[x],retval));
+//		console.log("bound",(s < 0) ? M.ubs[en] : M.lbs[en]);				
+//		console.log(C[x],C[y],g);		
+//		console.log(this.strain_points(d,M,x,y,C[x],retval));
 	    }
 	}
     }
-    console.log("retval",retval);
+//    console.log("retval",retval);
     if (this.DEBUG_LEVEL > 0)
 	assert(
 	    this.strain_points(d,M,x,y,C[x],retval) == 0,
 	    `${x} = (${C[x].toArray()}), ${y} = (${C[y].toArray()}) `);
     return retval;
+}
+
+// d is the dimension (2 or 3)
+// M is the connectivity graph
+// C is the current coordinates of the nodes
+// S is the current strainfront
+// returns a strainfront
+module.exports.perturb = function(d,M,C,S,a,v,dpth) {
+
+    assert(!(a in M.fixed));
+    assert(!(a in S.fixed));    
+    
+    // if we have already perturbed this, we will not
+    // perturb again unless on the backwave...
+    if (a in S.perturbed) {
+	return S;
+    }
+    S.cur[a] = v;
+    M.g.neighbors(a)
+	.forEach(v0 =>    
+		 S.s.push({tl:a, hd:v0, fwd: true, dpth: dpth})
+		);
+    return S;
+}
+
+// d is the dimension (2 or 3)
+// M is the connectivity graph
+// C is the current coordinates of the nodes
+// S is the current strainfront
+// This function is used for the back-propagating wave
+// returns a strainfront
+module.exports.reperturb = function(d,M,C,S,a,v,depth) {
+    S.cur[a] = v;
+    return S;
+}
+
+module.exports.relieves = function(d,M,C,S) {
+    // choose an element of the strainfront.
+    // This should really be done in bread
+    const v = S.s.reduce(
+	(acc,sv) =>
+	    (sv.dpth < acc.dpth) ? sv : acc,
+	S.s[0]);
+//    console.log("v : ",v);    
+    // remove element v...
+    S.s = S.s.filter(item => item !== v)
+    // now v is a node of minum depth...
+    if ((v.hd in M.fixed) || (v.hd in S.fixed)) {
+	S.fixed[v.hd] = true;
+	S.s.push({tl:v.hd, hd:v.tl, fwd: false, dpth: v.dpth+1});
+	return S;
+    } else {
+	var z = this.zero_x_strain(d,M,S.cur,v.tl,v.hd);
+	return v.fwd ?
+	    this.perturb(d,M,C,S,v.hd,z,v.dpth+1)
+	    : this.reperturb(d,M,C,S,v.hd,z,v.dpth+1);
+    }
+    return S;
+}
+
+// d is the dimension (2 or 3)
+// M is the connectivity graph
+// C is the current coordinates of the nodes
+// S is the current strainfront
+// a the node to move
+// v the desired position of a
+// returns a configuration mapping nodes to points which
+// is guaranteed to be legal. Hopefully a as close to v as possible.
+module.exports.strainfront = function(d,M,C,a,v) {
+//    console.log("a =",a,M.fixed);
+    assert(!(a in M.fixed),a)
+    // I think we want to copy the initial configuration here into cur...
+    const cur = Object.keys(C).map( nd => this.copy_vector(nd));
+    
+    var S = { s: [], cur: C, fixed: {}, perturbed: {} };
+    S = this.perturb(d,M,C,S,a,v,0);
+    while (S.s.length > 0) {
+	console.log("pre-relieve",C,S);
+	S = this.relieves(d,M,S.cur,S);
+	console.log("post-relieve",S);	
+    }
+    return S.cur;
 }

@@ -17,7 +17,7 @@ function simple_triangle_problem() {
     var m = { g: new algols.Graph(false),
 	      lbs: {},
 	      ubs: {},
-	      fixed: []
+	      fixed: {}
 	    };
 
     m.g.addVertex('a');
@@ -36,9 +36,9 @@ function simple_triangle_problem() {
     m.lbs['a c'] = 1;
     m.ubs['a c'] = 2;
 	    
-    var fixed = [];
-    fixed[0] = 'a';
-    fixed[1] = 'b';
+    var fixed = {};
+    fixed['a'] = true;
+    fixed['b'] = true;
     m.fixed = fixed;
 
     var goals = [];
@@ -66,7 +66,7 @@ function medium_triangle_problem() {
     var m = { g: new algols.Graph(false),
 	      lbs: {},
 	      ubs: {},
-	      fixed: []
+	      fixed: {}
 	    };
 
     m.g.addVertex('a');
@@ -93,8 +93,8 @@ function medium_triangle_problem() {
     m.ubs['b d'] = 2;
 
     
-    var fixed = [];
-    fixed[0] = 'a';
+    var fixed = {};
+    fixed['a'] = true;
     m.fixed = fixed;
 
     var goals = [];
@@ -244,141 +244,209 @@ describe('actoptnet_math', function() {
 });
 
 describe('strainfront_algorithm', function() {
-    describe('first_test', function() {
-    	it('has a variable that is true', function() {
-    	    assert.equal(ano.dim2,2);
-    	});
-    });
+    // describe('first_test', function() {
+    // 	it('has a variable that is true', function() {
+    // 	    assert.equal(ano.dim2,2);
+    // 	});
+    // });
 
-    describe('circle math', function() {
-    	it('can compute circle intersctions', function() {
-	    var v0 = new THREE.Vector2(0,0);
-	    var v1 = new THREE.Vector2(1,0);
-	    var r0 = 0.0;
-	    var r1 = 0.1;
-	    var res0 = ano.circle_intersections(v0,r0,v1,r1);
-	    assert(res0.length == 0);
-	    var r0 = 0.5;
-	    var r1 = 0.5;
-	    var res0 = ano.circle_intersections(v0,r0,v1,r1);
-	    assert(res0.length == 1,res0);
-	    var r0 = 0.6;
-	    var r1 = 0.6;
-	    var res0 = ano.circle_intersections(v0,r0,v1,r1);	    
-	    assert(res0.length == 2);
-    	});
-    });
+    // describe('circle math', function() {
+    // 	it('can compute circle intersctions', function() {
+    // 	    var v0 = new THREE.Vector2(0,0);
+    // 	    var v1 = new THREE.Vector2(1,0);
+    // 	    var r0 = 0.0;
+    // 	    var r1 = 0.1;
+    // 	    var res0 = ano.circle_intersections(v0,r0,v1,r1);
+    // 	    assert(res0.length == 0);
+    // 	    var r0 = 0.5;
+    // 	    var r1 = 0.5;
+    // 	    var res0 = ano.circle_intersections(v0,r0,v1,r1);
+    // 	    assert(res0.length == 1,res0);
+    // 	    var r0 = 0.6;
+    // 	    var r1 = 0.6;
+    // 	    var res0 = ano.circle_intersections(v0,r0,v1,r1);	    
+    // 	    assert(res0.length == 2);
+    // 	});
+    // });
 
-    describe('STRAIN', function() {
-    	it('We can compute strain', function() {
-	    var stm = simple_triangle_problem();
-	    var s0 = ano.strain(stm.dim2,
- 				stm.model,
- 				stm.coords,
-				'a',
-				'c');
-	    assert.equal(s0,0);
-	    // This should produce tensile strain
-	    stm.coords['c'] = new THREE.Vector2(4,4);
-	    var s1 = ano.strain(stm.dim2,
- 				stm.model,
- 				stm.coords,
-				'a',
-				'c');
-	    assert(s1 < 0);
+    // describe('STRAIN', function() {
+    // 	it('We can compute strain', function() {
+    // 	    var stm = simple_triangle_problem();
+    // 	    var s0 = ano.strain(stm.dim2,
+    // 				stm.model,
+    // 				stm.coords,
+    // 				'a',
+    // 				'c');
+    // 	    assert.equal(s0,0);
+    // 	    // This should produce tensile strain
+    // 	    stm.coords['c'] = new THREE.Vector2(4,4);
+    // 	    var s1 = ano.strain(stm.dim2,
+    // 				stm.model,
+    // 				stm.coords,
+    // 				'a',
+    // 				'c');
+    // 	    assert(s1 < 0);
 	    
-	    // This should produce compressive strain
-	    stm.coords['c'] = new THREE.Vector2(0,0);
-	    var s2 = ano.strain(stm.dim2,
- 				stm.model,
- 				stm.coords,
-				'a',
-				'c');
-	    assert(s2 > 0);	    
+    // 	    // This should produce compressive strain
+    // 	    stm.coords['c'] = new THREE.Vector2(0,0);
+    // 	    var s2 = ano.strain(stm.dim2,
+    // 				stm.model,
+    // 				stm.coords,
+    // 				'a',
+    // 				'c');
+    // 	    assert(s2 > 0);	    
+    // 	});
+    // });
+
+    // describe('bound_intersections', function() {
+    // 	it('gives basic resulsts', function() {
+    // 	    var stm = simple_triangle_problem();
+    // 	    stm.coords['a'] = new THREE.Vector2(0,0);
+    // 	    stm.coords['c'] = new THREE.Vector2(3,0);	    
+    // 	    var s0 = ano.bound_intersections(stm.dim2,
+    // 				stm.model,
+    // 				stm.coords,
+    // 				'a',
+    // 					     'c');
+    // 	    assert.equal(4,s0.length,s0);
+    // 	    // This should produce tensile strain
+    // 	    stm.coords['c'] = new THREE.Vector2(0,1.5);
+    // 	    var s1 = ano.bound_intersections(stm.dim2,
+    // 				stm.model,
+    // 				stm.coords,
+    // 				'a',
+    // 				'c');
+    // 	    assert.equal(8,s1.length);
+	    
+    // 	    // This should produce compressive strain
+    // 	    stm.coords['c'] = new THREE.Vector2(0,0);
+    // 	    var s2 = ano.bound_intersections(stm.dim2,
+    // 				stm.model,
+    // 				stm.coords,
+    // 				'a',
+    // 				'c');
+    // 	    assert(s2);	    
+    // 	});
+    // });
+    // describe('all_strains', function() {
+    // 	it('all_strains increases as we get beyond upper bound', function() {
+    // 	    var stm = simple_triangle_problem();
+    // 	    for(var i = 0; i < 10; i++) {
+    // 		console.log(ano.all_strains(stm.d,stm.model,stm.coords,'c',new THREE.Vector2(0,i)));
+    // 	    }
+    // 	});
+    // });
+
+    describe('ZERO_X_STRAIN', function() {
+    	it('computes a position with zero strain for a super-liberal bound set', function() {
+    	    var stm = simple_triangle_problem();
+    	    // We set up a very simple situation and show that ZERO_X_STRAIN
+    	    // minimizes the x->y strain
+    	    const lb = 0;
+    	    const ub = 4;
+    	    const m = stm.model
+    	    m.lbs['a b'] = lb;
+    	    m.ubs['a b'] = ub;
+    	    m.lbs['b c'] = lb;
+    	    m.ubs['b c'] = ub;
+    	    m.lbs['a c'] = lb;
+    	    m.ubs['a c'] = ub;
+	    
+    	    var NUM = 4;
+    	    for(var i = 0; i < NUM; i++) {
+    		for(var j = 0; j < NUM; j++) {
+    		    stm.coords['c'] = new THREE.Vector2(i,j);
+    		    var z = ano.zero_x_strain(stm.dim2,stm.model,stm.coords,'a','c');
+    		    console.log(i,j,z);
+    		    stm.coords['c'] = z;
+    		    assert(ano.strain(stm.dim2,stm.model,stm.coords,'a','c') == 0);		    
+    		}
+    	    }
     	});
+    	it('computes a position with zero strain for an integer grid', function() {
+    	    var stm = simple_triangle_problem();
+    	    // We set up a very simple situation and show that ZERO_X_STRAIN
+    	    // minimizes the x->y strain
+    	    var NUM = 5;
+    	    for(var i = 3; i < NUM; i++) {
+    		for(var j = 3; j < NUM; j++) {
+    		    stm.coords['a'] = new THREE.Vector2(i,j);
+    		    var z = ano.zero_x_strain(stm.dim2,stm.model,stm.coords,'a','c');
+    		    console.log(i,j,z);
+    		    stm.coords['c'] = z;
+    		    console.log(ano.strain(stm.dim2,stm.model,stm.coords,'a','c'));
+    		    assert(ano.strain(stm.dim2,stm.model,stm.coords,'a','c') == 0);
+    		}
+    	    }
+    	});
+    });
+    describe('max_strain_on_point', function() {    
+        it('strain is correctly compute simple values', function() {
+    	    var stm = simple_triangle_problem();
+    	    var z = ano.max_strain_on_point(stm.dim2,stm.model,stm.coords,'c',new THREE.Vector2(0,2));
+	    assert.equal(0.5,z);
+    	    var z = ano.max_strain_on_point(stm.dim2,stm.model,stm.coords,'c',new THREE.Vector2(0,3));
+	    assert.equal(1,z);
+    	    var z = ano.max_strain_on_point(stm.dim2,stm.model,stm.coords,'c',new THREE.Vector2(1,3));
+	    assert(z > 1);
+    	});
+        it('strain is correctly computes a matrix', function() {
+    	    var stm = simple_triangle_problem();
+    
+    	    var NUM = 5;
+    	    for(var i = 0; i < NUM; i++) {
+    		for(var j = 0; j < NUM; j++) {
+    		    var z = ano.max_strain_on_point(stm.dim2,stm.model,stm.coords,'c',new THREE.Vector2(i,j));
+    		    console.log(i,j,z);
+    		}
+    	    }
+    		});
     });
 
-    describe('bound_intersections', function() {
-    	it('gives basic resulsts', function() {
+    describe('STRAIN_FRONT', function() {
+    	it('given a basic problem, returns something without crashing', function() {
 	    var stm = simple_triangle_problem();
-	    stm.coords['a'] = new THREE.Vector2(0,0);
-	    stm.coords['c'] = new THREE.Vector2(3,0);	    
-	    var s0 = ano.bound_intersections(stm.dim2,
- 				stm.model,
- 				stm.coords,
-				'a',
-					     'c');
-	    assert.equal(4,s0.length,s0);
-	    // This should produce tensile strain
-	    stm.coords['c'] = new THREE.Vector2(0,1.5);
-	    var s1 = ano.bound_intersections(stm.dim2,
- 				stm.model,
- 				stm.coords,
-				'a',
-				'c');
-	    assert.equal(8,s1.length);
-	    
-	    // This should produce compressive strain
-	    stm.coords['c'] = new THREE.Vector2(0,0);
-	    var s2 = ano.bound_intersections(stm.dim2,
- 				stm.model,
- 				stm.coords,
-				'a',
-				'c');
-	    assert(s2);	    
-    	});
-    });
-    describe('all_strains', function() {
-    	it('all_strains increases as we get beyond upper bound', function() {
-	    var stm = simple_triangle_problem();
-	    for(var i = 0; i < 10; i++) {
-		console.log(ano.all_strains(stm.d,stm.model,stm.coords,'c',new THREE.Vector2(0,i)));
+	    var NUM = 4;
+	    for(var i = 3; i < NUM; i++) {
+		for(var j = 3; j < NUM; j++) {
+		    var C = ano.strainfront(stm.d,stm.model,stm.coords,'c',new THREE.Vector2(i,j));
+		    assert(C);
+		}
 	    }
 	});
-    });
-
-    describe('LEAST_STRAIN', function() {
-    	it('computes a position with zero strain for a super-liberal bound set', function() {
+    	it('strainfront actually computes a solution to a simple problem', function() {
 	    var stm = simple_triangle_problem();
-	    // We set up a very simple situation and show that LEAST_STRAIN
-	    // minimizes the x->y strain
-	    const lb = 0;
-	    const ub = 4;
-	    const m = stm.model
-	    m.lbs['a b'] = lb;
-	    m.ubs['a b'] = ub;
-	    m.lbs['b c'] = lb;
-	    m.ubs['b c'] = ub;
-	    m.lbs['a c'] = lb;
-	    m.ubs['a c'] = ub;
-	    
+	    console.log("coords",stm.coords);
+	    var C = ano.strainfront(stm.d,stm.model,stm.coords,'c',new THREE.Vector2(2,2));
+	    console.log(C);
+	    assert(C);
+	    assert.equal(ano.legal_configp(stm.model,C),true);		    
+	});
+    	it('Every grid point in neihborhood is reasonable', function() {
+	    var stm = simple_triangle_problem();
 	    var NUM = 4;
 	    for(var i = 0; i < NUM; i++) {
 		for(var j = 0; j < NUM; j++) {
-		    stm.coords['c'] = new THREE.Vector2(i,j);
-		    var z = ano.least_strain(stm.dim2,stm.model,stm.coords,'a','c');
-		    console.log(i,j,z);
-		    stm.coords['c'] = z;
-		    assert(ano.strain(stm.dim2,stm.model,stm.coords,'a','c') == 0);		    
+		    var targ = new THREE.Vector2(i,j);
+		    var C = ano.strainfront(stm.d,stm.model,stm.coords,'c',new THREE.Vector2(i,j));
+//		    console.log(targ,C['c'],C['c'].distanceTo(targ)); 
+		    assert.equal(ano.legal_configp(stm.model,C),true);
 		}
 	    }
-    	});
-    	it('computes a position with zero strain for an integer grid', function() {
-	    var stm = simple_triangle_problem();
-	    // We set up a very simple situation and show that LEAST_STRAIN
-	    // minimizes the x->y strain
-	    var NUM = 5;
+	});
+    	it('Every grid point in medium, one-fixed functions', function() {
+	    var stm = medium_triangle_problem();
+	    var NUM = 4;
 	    for(var i = 3; i < NUM; i++) {
 		for(var j = 3; j < NUM; j++) {
-		    stm.coords['a'] = new THREE.Vector2(i,j);
-		    var z = ano.least_strain(stm.dim2,stm.model,stm.coords,'a','c');
-		    console.log(i,j,z);
-		    stm.coords['c'] = z;
-		    console.log(ano.strain(stm.dim2,stm.model,stm.coords,'a','c'));
-		    assert(ano.strain(stm.dim2,stm.model,stm.coords,'a','c') == 0);
+		    var targ = new THREE.Vector2(i,j);
+		    var C = ano.strainfront(stm.d,stm.model,stm.coords,'c',new THREE.Vector2(i,j));
+		    console.log(targ,C['c'],C['c'].distanceTo(targ)); 
+		    assert.equal(ano.legal_configp(stm.model,C),true);
 		}
 	    }
-    	});
+	});
+	
     });
 
 });
