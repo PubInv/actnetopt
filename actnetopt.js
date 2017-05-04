@@ -25,7 +25,7 @@
 
 var algols = require('algorithms').DataStructures;
 var heap = require('algorithms').DataStructures.Heap;
-
+var dijkstra = require('algorithms').Graph.dijkstra;
 
 var THREE = require('./javascripts/three.js');
 var assert = require('assert');
@@ -634,10 +634,11 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 // C is the current coordinates of the nodes
 // S is the current strainfront
 // returns a strainfront
-module.exports.perturb = function(d,M,C,S,a,v,dpth) {
+module.exports.perturb = function(d,M,C,S,a,v) {
 
     assert(!(a in M.fixed));
-    assert(!(a in S.fixed));    
+    assert(!(a in S.fixed));
+    if (a in S.perturbed) return S;
     
     // if we have already perturbed this, we will not
     // perturb again unless on the backwave...
@@ -645,10 +646,12 @@ module.exports.perturb = function(d,M,C,S,a,v,dpth) {
 	return S;
     }
     S.cur[a] = v;
+    S.perturbed[a] = true;
     M.g.neighbors(a)
-	.forEach(v0 =>    
-		 S.s.push({tl:a, hd:v0, fwd: true, dpth: dpth})
-		);
+	.forEach(v0 => {
+		 if (!S.s.find(sv => (sv.tl == a && sv.hd == v0)))
+		     S.s.push({tl:a, hd:v0, fwd: true})
+	});
     return S;
 }
 
@@ -658,31 +661,33 @@ module.exports.perturb = function(d,M,C,S,a,v,dpth) {
 // S is the current strainfront
 // This function is used for the back-propagating wave
 // returns a strainfront
-module.exports.reperturb = function(d,M,C,S,a,v,depth) {
+module.exports.reperturb = function(d,M,C,S,a,v) {
+    console.log("calling reperturb: ", a);
     S.cur[a] = v;
     return S;
 }
 
 module.exports.relieves = function(d,M,C,S) {
     // choose an element of the strainfront.
-    // This should really be done in bread
+    // We want to choose the element with shortest path to our target here...
     const v = S.s.reduce(
 	(acc,sv) =>
-	    (sv.dpth < acc.dpth) ? sv : acc,
+	    (S.dsp[sv.tl] < S.dsp[acc.tl]) ? sv : acc,
 	S.s[0]);
-//    console.log("v : ",v);    
+    console.log("v : ",v);    
     // remove element v...
     S.s = S.s.filter(item => item !== v)
     // now v is a node of minum depth...
     if ((v.hd in M.fixed) || (v.hd in S.fixed)) {
 	S.fixed[v.hd] = true;
-	S.s.push({tl:v.hd, hd:v.tl, fwd: false, dpth: v.dpth+1});
+	S.s.push({tl:v.hd, hd:v.tl, fwd: false});
 	return S;
     } else {
 	var z = this.zero_x_strain(d,M,S.cur,v.tl,v.hd);
+	console.log("in relieves",v);
 	return v.fwd ?
-	    this.perturb(d,M,C,S,v.hd,z,v.dpth+1)
-	    : this.reperturb(d,M,C,S,v.hd,z,v.dpth+1);
+	    this.perturb(d,M,C,S,v.hd,z)
+	    : this.reperturb(d,M,C,S,v.hd,z);
     }
     return S;
 }
@@ -699,14 +704,24 @@ module.exports.strainfront = function(d,M,C,a,v) {
 //    console.log("a =",a,M.fixed);
     assert(!(a in M.fixed),a)
     // I think we want to copy the initial configuration here into cur...
-    const cur = Object.keys(C).map( nd => this.copy_vector(nd));
+    const cur = {};
+    Object.keys(C).forEach( nd => cur[nd] = this.copy_vector(C[nd]));
+    console.log(dijkstra);    
+    var shortestPath = dijkstra(M.g, a);
+    console.log(shortestPath);
     
-    var S = { s: [], cur: C, fixed: {}, perturbed: {} };
+//    console.log("XXXXXXXXXX");
+//    console.log(C);
+//    console.log("YYYYYYYYYY");
+//    console.log(cur);    
+    var S = { s: [], cur: cur, fixed: {}, perturbed: {} , dsp: shortestPath};
     S = this.perturb(d,M,C,S,a,v,0);
     while (S.s.length > 0) {
-	console.log("pre-relieve",C,S);
+	console.log("pre-relieve",S.s);
 	S = this.relieves(d,M,S.cur,S);
-	console.log("post-relieve",S);	
+	console.log("post-relieve",S.s);	
     }
+    console.log("XXXX");
+    console.log(S);
     return S.cur;
 }
