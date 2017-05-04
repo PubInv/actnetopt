@@ -34,6 +34,7 @@ var assert = require('assert');
 // a score from a model
 
 module.exports.dim2 = 2;
+module.exports.DEBUG_LEVEL = 1;
 
 module.exports.score1 = function(coords,g) {
     var c = coords[g.nd];
@@ -102,12 +103,12 @@ PriorityQueue.prototype.changePriority = function(item, priority) {
 
 //module.exports = PriorityQueue;
 
-// compute the nodes that limit our ability to reach
-// the goal point and return those that limit and
-// the parametric travel on the interval [0..1] in
-// the direction vector, where those with 1 need not
-// be returned. If not node is a limit, then
-// it returns an empty list.
+// For the goal cg, compute the nodes that limit
+// our ability to reach cg, returning the list
+// of potentially movable (not-fixed) nodes.
+// if the there are not limits, it returns "nolimits"
+// if there are limits but no nodes that can be moved,
+// it returns the empty list.
 module.exports.limits = function(model,cur,cg) {
     var nam = cg.nd;
     var pos = cur[nam];
@@ -118,6 +119,7 @@ module.exports.limits = function(model,cur,cg) {
     var limits = [];
     // now we need to iterate over only the connected nodes from model...
     var neighbors = model.g.neighbors(nam);
+    var nolimits = true;
     neighbors.forEach(neighbor => {
 	var ename = (nam < neighbor) ? nam + ' ' + neighbor
 	    : neighbor + ' ' + nam;
@@ -125,15 +127,14 @@ module.exports.limits = function(model,cur,cg) {
 	var ub = model.ubs[ename];
 	var npos = cur[neighbor];
 	
-
 	var d = npos.distanceTo(cg.pos);
 	
 	var ndir = this.copy_vector(cg.pos);
-	ndir.subVectors(ndir,npos);
+	ndir.sub(npos);
 
 	// TODO: this should be replacable
-	    // Note: it is not clearly picking lowest move distance is
-	    // really the right metric here. Is new_goal even guaranteed to be legal?
+	// Note: it is not clearly picking lowest move distance is
+	// really the right metric here. Is new_goal even guaranteed to be legal?
 	// Only the path between npos and new_goal hits no other constraint.
 	// So that does make it seem like the shortest move is best.
 	
@@ -144,23 +145,23 @@ module.exports.limits = function(model,cur,cg) {
 	    
 	    new_goal.addScaledVector(dir,s);
 
-	    var dtm = new_goal.distanceTo(pos);	    
-	    
-	    limits.push([neighbor,dtm,new_goal]);	    
+	    var dtm = new_goal.distanceTo(pos);
+	    limits.push([neighbor,dtm,new_goal]);
+	    nolimits = false;
 	} else if (d > ub) {
 	    var delta = d - ub;
 	    var new_goal = this.copy_vector(npos);
 	    ndir.setLength(ub);
 	    new_goal.add(ndir)
 	    var dtm = new_goal.distanceTo(pos);
-	    
-	    limits.push([neighbor,dtm,new_goal]);	    
+	    limits.push([neighbor,dtm,new_goal]);
+	    nolimits = false;
 	} else {
 	    // we're okay!
 	}
-    }
-		     );
-    return limits;
+    });
+
+    return (nolimits) ? "nolimits" : limits;
 }
 
 
@@ -233,11 +234,12 @@ function find_goals(goals,name) {
     goals.find(g => g.nd == name);
 }
 
-module.exports.opt = function(dim,model,coords,goals,fixed) {
+module.exports.opt = function(dim,model,coords,goals) {
     // create my own set of goals in a priority queue...
     // The priority queue from algorithms.js is minimizing queue,
     // so we will use the negation of our scores, remembering
     // this.  We are in fact seeking a zero score.
+
     var cur = {};
     Object.keys(coords).forEach(
 	c =>
@@ -253,14 +255,22 @@ module.exports.opt = function(dim,model,coords,goals,fixed) {
     // by shortest move.
     goals.forEach(g =>
 		  {
-		      pq.insert(g.nd, [0,-this.score1(coords,g)])
+		      pq.insert(g.nd, [0,-this.score1(cur,g)])
 		  });
+
+    // xgoals is the set of goals we are currently working on,
+    // which is a superset of the goals.
+    var xgoals = goals.slice();
+    
     var cnt = 0; 
 
     // now begin the interative processing...
-    var cnam = pq.extract();
-    var cg = goals.find(g => g.nd == cnam);
-    while (cg) {
+    // we extract with priority so that we can implement breadth-first
+    // effectively
+    var cext = pq.extract(true);
+    var cg = xgoals.find(g => g.nd == cext.item);
+
+    while (cg && cnt < 3) {
 	// Now cg is the "worst" goal we need to try to move...
 	// compute the direction to move...
 	var nam = cg.nd;
@@ -269,43 +279,330 @@ module.exports.opt = function(dim,model,coords,goals,fixed) {
 	dir.subVectors(dir,pos)
 	// Now we want to try to move in this direction until
 	// we hit a constaint..
+	// Possibly we should reorganize to put the limiting
+	// nodes in the priority queue.
 	var limiting_nodes = this.limits(model,cur,cg,dir);
 
-	if (limiting_nodes.length > 0) {
+
+	if (limiting_nodes != "nolimits") {
 	    // Now compute the maximum move the limits allow
 	    // (with 1.0 in case of empty...
-	    var min_move = this.min_move(limiting_nodes,pos);
 
-	    // now min_move is a triple  chosen from limits....
+	    if (limiting_nodes.length > 0) {
+		var min_move = this.min_move(limiting_nodes,pos);
 
-	    if (min_move[1] == 0.0) {
-		// In this case, there is no point n moving, we must move one of
-		// our neighbors (this one) in an attempt to get closer if we can.
-		// This is effective this point where we need to recurse or do something different.
-		// Now if we can't get min_mov[0] to move, we are done.
-		
-		
+		// now min_move is a triple  chosen from limits....
+
+		if (min_move[1] == 0.0) {
+		    // In this case, there is no point n moving, we must move one of
+		    // our neighbors (this one) in an attempt to get closer if we can.
+		    // We need to add to our priority queue the limiting node as
+		    // a goal, (and some new goal point).
+		    var depth = cext.priority[0] + 1;
+		    var a = min_move[0];
+		    var apos = this.copy_vector(cur[a]);
+		    var ldir = this.copy_vector(pos);
+		    ldir.sub(apos);
+		    var ename = (nam < a) ? nam + ' ' + a
+			: a + ' ' + nam;
+		    var median = (model.ubs[ename] - model.lbs[ename])/2.0;
+		    var len = apos.distanceTo(cg.pos) - median;
+		    ldir.setLength(len);
+		    apos.add(ldir);
+		    xgoals.push({ nd: a, pos: apos, wt: cg.wt });
+		    // I'm pretty sure this is not really the right score to add.
+		    var score = -10;
+		    pq.insert(a,[depth,score]);
+		} else {
+
+		    // make the move...
+		    cur[nam] = this.copy_vector(min_move[2]);
+		    // rebuild the pq...
+		    pq = new algols.PriorityQueue();
+
+		    goals.forEach(g => pq.insert(g.nd, [0,-this.score1(cur,g)]));	    
+		    // if we moved, then basically we start all over with all
+		    // computations...
+		}
 	    } else {
-
-		// make the move...
-		cur[nam] = this.copy_vector(min_move[2]);
-		// rebuild the pq...
-		pq = new algols.PriorityQueue();
-
-		goals.forEach(g => pq.insert(g.nd, [0,-this.score1(cur,g)]));	    
-		// if we moved, then basically we start all over with all
-		// computations...
+		// we can't move, and every neighbor is fixed, so there
+		// is nothing for us to put back in the queue.
 	    }
 	} else {
 	    // If there are not limits, we can move directly to the goal...
 	    // and we need add nothing to the pqueue...
 	    cur[nam] = this.copy_vector(cg.pos);
+	    pq = new algols.PriorityQueue();
+	    goals.forEach(g => pq.insert(g.nd, [0,-this.score1(cur,g)]));	    
 	}
-	var cnam = pq.extract();
-	cg = goals.find(g => g.nd == cnam);
+	var cext = pq.extract(true);
+	if (cext) {
+	    cg = goals.find(g => g.nd == cext.item);
+	} else {
+	    cg = null;
+	}
 	cnt++;
     }
     return cur;
 }
 
+module.exports.ename = function(x,y) {
+    return (x < y) ? x + ' ' + y
+	: y + ' ' + x;
+}
 
+// d is the dimension (2 or 3)
+// M is the connectivity graph
+// C is the current coordinates of the nodes
+// x is the tail of the strainfront vector
+// y is the head of the strainfront vector
+// return 0 if there is no strain, negative number
+// if there is tensile strain, positive if compressive strain.
+module.exports.strain = function(d,M,C,x,y)  {
+    var px = C[x], py = C[y];
+    return this.strain_points(d,M,x,y,px,py);
+}
+
+module.exports.strain_points = function(d,M,x,y,px,py)  {
+    var b = px.distanceTo(py);
+    
+    var en = this.ename(x,y);
+    
+    if (en in M.lbs) {
+	var lb = M.lbs[en];
+	if (lb > b) {
+	    return lb - b;
+	}
+    }
+    if (en in M.ubs) {
+	var ub = M.ubs[en];
+	if (ub < b) {
+	    // tensile strain is negative
+	    return ub - b;
+	}
+    }
+    return 0;
+}
+
+// This code from jupdike:    
+// https://gist.github.com/jupdike/bfe5eb23d1c395d8a0a1a4ddd94882ac   
+
+// based on the math here:
+// http://math.stackexchange.com/a/1367732
+    
+// x1,y1 is the center of the first circle, with radius r1
+// x2,y2 is the center of the second ricle, with radius r2
+function intersectTwoCircles(x1,y1,r1, x2,y2,r2) {
+  var centerdx = x1 - x2;
+  var centerdy = y1 - y2;
+  var R = Math.sqrt(centerdx * centerdx + centerdy * centerdy);
+  if (!(Math.abs(r1 - r2) <= R && R <= r1 + r2)) { // no intersection
+    return []; // empty list of results
+  }
+  // intersection(s) should exist
+
+  var R2 = R*R;
+  var R4 = R2*R2;
+  var a = (r1*r1 - r2*r2) / (2 * R2);
+  var r2r2 = (r1*r1 - r2*r2);
+  var c = Math.sqrt(2 * (r1*r1 + r2*r2) / R2 - (r2r2 * r2r2) / R4 - 1);
+
+  var fx = (x1+x2) / 2 + a * (x2 - x1);
+  var gx = c * (y2 - y1) / 2;
+  var ix1 = fx + gx;
+  var ix2 = fx - gx;
+
+  var fy = (y1+y2) / 2 + a * (y2 - y1);
+  var gy = c * (x1 - x2) / 2;
+  var iy1 = fy + gy;
+  var iy2 = fy - gy;
+
+  // note if gy == 0 and gx == 0 then the circles are tangent and there is only one solution
+  // but that one solution will just be duplicated as the code is currently written
+  return [[ix1, iy1], [ix2, iy2]];
+}
+
+// return an array of circle intersections (0,1, or 2)
+// This only works with 2 dimensions right now!!
+module.exports.circle_intersections = function(v0,r0,v1,r1,tag) {
+    var x0 = v0.x;
+    var x1 = v1.x;
+    var y0 = v0.y;
+    var y1 = v1.y;
+    var is = intersectTwoCircles(x0,y0,r0,x1,y1,r1);
+    if ((is.length == 2)
+	&& is[0][0] == is[1][0]
+	&& is[0][1] == is[1][1]) {
+	is = is.slice(0,1);
+    }
+    return is.map(ip => {
+	return { tag: tag, p: new THREE.Vector2(ip[0],ip[1])};
+    });
+}
+
+function isNumeric(n) {
+  return !isNaN(parseFloat(n)) && isFinite(n);
+}
+// d is the dimension (2 or 3)
+// M is the connectivity graph
+// C is the current coordinates of the nodes
+// a is a node connected to b
+// b is a node connected to a
+// return the labelled intersectiosn of the boundaries of a,b
+module.exports.bound_intersections = function(d,M,C,a,b) {
+    assert(a != b,a);
+    var en = this.ename(a,b);
+    var lb,ub;
+
+    var ubis = [];
+    var luis = [];
+    var ulis = [];
+    var lbis = [];
+    
+    if (en in M.lbs) {
+	lb = M.lbs[en];
+	lbis = this.circle_intersections(C[a],lb,C[b],lb,
+					 { b0: 'lb', nd0: a, b1: 'lb', nd1: b});
+    }
+    if (en in M.ubs) {
+	ub = M.ubs[en];
+	ubis = this.circle_intersections(C[a],ub,C[b],ub,
+					 { b0: 'lb', nd0: a, b1: 'lb', nd1: b});	
+    }
+    if (isNumeric(ub) && isNumeric(lb)) {
+	luis = this.circle_intersections(C[a],lb,C[b],ub,
+					 { b0: 'lb', nd0: a, b1: 'ub', nd1: b});
+	ulis = this.circle_intersections(C[a],ub,C[b],lb,
+					{ b0: 'ub', nd0: a, b1: 'lb', nd1: b});
+    }
+    var is = [];
+    var is = is.concat(ubis).concat(luis).
+	concat(ulis).concat(lbis);
+    
+    return is;
+}
+
+// d is the dimension (2 or 3)
+// M is the connectivity graph
+// C is the current coordinates of the nodes
+// x is the node name
+// p is the candidate position of x
+module.exports.all_strains = function(d,M,C,x,p) {
+    return M.g.neighbors(x).map( y =>
+	this.strain_points(d,
+			   M,
+			   x,
+			   y,
+			   p,
+			   C[y]));
+}
+// d is the dimension (2 or 3)
+// M is the connectivity graph
+// C is the current coordinates of the nodes
+// S is the current strainfront
+// x is the tail of the strainfront vector
+// y is the head of the strainfront vector
+// return z, the position which completely eases x->y strain.
+module.exports.least_strain = function(d,M,C,x,y) {
+    // first, let us determine if there is any strain.
+    var s = this.strain(d,M,C,x,y);
+    console.log(x,y,C[x],C[y],s);
+    var retval; 
+    if (s == 0) {
+	// No change to C required.
+	retval =  C[y];
+    } else {
+	// Now we want to find the set of points representing
+	// the intersection points of all bounds for all neighbors of y
+	var intersections = [];
+	M.g.neighbors(y).forEach(
+	    v0 =>
+		{
+		    M.g.neighbors(y).forEach(
+			v1 => {
+			    if (v0 == v1) return; // do nothing
+			    else { // compute v0 v1 intersections (0,1, or 2, and add)
+				var en = this.ename(v0,v1);
+				intersections = intersections.concat(this.bound_intersections(d,M,C,v0,v1));
+			    }
+			});
+		}
+	);
+	// now that we have the intersections, we want to see if there is one
+	// that has no strain at all...
+	// so we iterate of all intersections, seeking a point that
+	// has no strains...
+	var zero_strain_point;
+	intersections.forEach( i => {
+	    const py = i.p;
+	    // This is not right.  I need to look for all strains on the C[y] position!
+	    // I need two think about this...clearly I am confused.
+	    const as = this.all_strains(d,M,C,y,py);
+	    console.log("all_strains",i.p,py,as);
+	    var max_strain = as.reduce((a,v) =>
+			  Math.max(Math.abs(v),a)
+				       ,0);
+	    if (max_strain == 0) {
+		zero_strain_point = i.p;
+	    }
+	});
+	// if we have found a zero_strain_point, we should surely return that!
+	// Note: This is type dependent
+	if (zero_strain_point instanceof Object) {
+	    console.log("zero strain point",zero_strain_point);
+	    retval = zero_strain_point;
+	} else {
+	    // Since we have no intersection point which is universally strain-free,
+	    // let's at least see if we have a point that x-strain-free, and choose
+	    // between those.
+	    var zero_x_strain_points =
+		intersections.reduce( (acc,i) => {
+		    var xs =
+			this.strain_points(d,
+					   M,
+					   x,
+					   y,
+					   C[x],
+					   i.p);
+		    return (xs == 0) ? acc.push(i.p) : acc;
+		},
+				      []);
+	    console.log("zero_x_strain: ",zero_x_strain_points);
+	    if (zero_x_strain_points.length != 0) { // we're in luck...
+		// we can should return one which is closest to C[x]...
+		retval = zero_x_strain_points.reduce(
+		    (acc,p) =>
+			(p.distanceTo(C[x]) < acc[0]) ?
+			[p.distanceTo(C[x]),p] :
+			acc,
+		    [Number.MAX_VALUE,zero_x_strain_points[0]])[1];
+	    } else {
+		console.log("NO ZERO_X_STRAIN POINTS!");
+		// Okay, so if there are no points of zero x strain,
+		// we will have to choose a point on a line that is NOT an
+		// intersection point.
+
+		// One idea is to draw a line to the centroid of the free area,
+		// or to the closest point to y in in the free area of y (assuming that
+		// we don't count x). Then try to get
+		var g = this.copy_vector(C[y]);
+		g.sub(C[x]);
+		// Now g is a vector from C[x] to C[y].
+		var en = this.ename(x,y);
+		console.log("g = ",g);
+		g = g.setLength((s < 0) ? M.ubs[en] : M.lbs[en]);
+		g = g.add(C[x]);
+		retval = g;
+		console.log("bound",(s < 0) ? M.ubs[en] : M.lbs[en]);				
+		console.log(C[x],C[y],g);		
+		console.log(this.strain_points(d,M,x,y,C[x],retval));
+	    }
+	}
+    }
+    console.log("retval",retval);
+    if (this.DEBUG_LEVEL > 0)
+	assert(
+	    this.strain_points(d,M,x,y,C[x],retval) == 0,
+	    `${x} = (${C[x].toArray()}), ${y} = (${C[y].toArray()}) `);
+    return retval;
+}

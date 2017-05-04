@@ -127,22 +127,170 @@ Which can be represented in the matrix $P_i$, assume $i = 0$, $j = 2$, the 3-vec
 \end{pmatrix}
 \]
 
-This matrix has 9 entries representing the nine coefficients. In fact it is positive definite (proof?).
+This matrix has 9 entries representing the nine coefficients. In fact it is
+positive definite (proof?).
 
-So: $ x^TP_ix + r_i \leq 0 $ represents a distance constraint when $r_i$ is the square of the mininum distances for actuator $i$.
+So: $ x^TP_ix + r_i \leq 0 $ represents a distance constraint when $r_i$ is the square of
+the mininum distances for actuator $i$.
 
-The goal matrix $P_0$ can be constructed similarly, multiplying each set of 9 entries by a $w(j)$ to weight that node.
+The goal matrix $P_0$ can be constructed similarly, multiplying each set of 9 entries by
+a $w(j)$ to weight that node.
 
-Since there is one $P_i$ for each actuator and each such matrix has only nine entries, this entire approach is very
-sparse. In the fact the constraint matrices are so specialized that we can expect an algorithm specific to this
-problem to do well.  Since most of the quadratic constraint programming packages are commercial, there is a strong
+Since there is one $P_i$ for each actuator and each such matrix has only nine entries,
+this entire approach is very
+sparse. In the fact the constraint matrices are so specialized that
+we can expect an algorithm specific to this
+problem to do well.  Since most of the quadratic constraint
+programming packages are commercial, there is a strong
 incentive to develop a specific algorithm.
 
-\section{Algorithm}
+\section{First Algorithm}
 
-Although this problem is a quadratic constraint problem, is is highly specialized, and such solvers are not
-freely available. Because our robots are at present models (the current robot has 24 actuators), it is
+Although this problem is a quadratic constraint problem,
+is is highly specialized, and such solvers are not
+freely available. Because our robots are at present models
+(the current robot has 24 actuators), it is
 reasonable to assume this nut can be cracked with a small hammer.
+
+Basic ideas for an algorithm:
+\begin{itemize}
+\item Keep a set of goals, which are nodes to move.  Attempt to compute a ``goodness''
+  for each goal,
+  which will basically be the improvement of the weighted score if the goal is reached. If the
+  expected change is equal (which can happen?) then order by shortest move.
+\item Keep a set of goals and search Breadth-first. For a given goal, move the shortest distance
+  of all limitations applied to it.  Amoungst goals, move the distance that increases the goodness
+  the most.
+\item If in processing a goal new new goals are added possibly
+  take only the highest ``goodness'' goal in order
+  to keep the set of goals as small as possible.
+  \item Keep moving so long as each move improves the score by an input $\epsilon$.
+\end{itemize}
+
+So we can try imagine the data structures used by the algotihm:
+
+A priority Queue ordered first by Breadth from the primary goals and secondly by goodness.
+A goal is a node, a position, and an estimated change to the weighted score
+if the goal is acheived.
+A goal additionally has back pointers to the nodes that may improve
+if the node of this goal is improved.
+
+The basic operation is:
+Take the goal from the top of the priority queue.
+Try to move the node to the goal.
+
+If the node moves but does not reach its goal, backtrack to the nodes that are expected
+to improve. Move each node in the goal queue as possible as you back track.
+
+If the node cannot be moved, find the connected nodes
+which are not in the fixed set. Compute a goal point for each of these nodes. Compute the
+expected change to the weighting if these points are are acheived. If that expected
+goodness is greater than epsion, add the goal to the
+priority queue.
+
+What are the termination properties of this algorithm?
+Invariant: Every move improves the goodness.
+
+Conjecture: The estimate of the improvement of goodness is guaranteed to improve the
+goodness that much.
+
+Even if it has to visit all N nodes, the running time of O( (inital score / epsilon ) * N )
+
+\section{Strainfront Algorithm}
+
+The idea here is to perturb the target node, creating a \emph{strainfront}. A strainfront is a
+set of directed edges. The strainfront tries to relieve strain by moving the head node of the
+edge. Each such move may cause new edges to be added to the strainfront. When a strainfront
+reaches a fixed nodes, it is reflected backwards.
+
+This seems like a really beautiful idea to me.
+
+Questions remain:
+\begin{itemize}
+\item in what order to we process the strainfront?
+\item how do we prove termination?
+\item can we prove that all strain is relieved by this algorithm? (yes, because
+  it can leave things unchanged and it starts with a legal configuration.)
+\end{itemize}
+
+Here is my attempt to start the algorithm
+
+Input: A node to move $a$, and target point to move it to, $\vec{v}$.
+A connectivity graph $G$, and a set of fixed nodes $F$, and
+a legal configuration $C$ satisfying all constraints.
+
+Output: A new legal configuration with $a$ as close to $\vec{v}$ as possible.
+
+Begin Algorithm STRAINFRONT:
+
+Let S = perturb($a,\vec{v}$).
+
+While $S \neq \emptyset$ do:
+
+$ S = Relieve(S) $
+
+End Algorithm
+
+
+Subroutine PERTURB($a,\vec{v}$):
+Input $a$, a node, and $\vec{v}$, a desired position for $a$.
+Create empty strainfront $S$.
+
+If $a$ is not marked ``PERTURBED'', Move $a$ to $G$.
+Mark $a$ ``PERTURBED'' and annonate it with the original position.
+
+For each node $b_i$ connected  to $a$ in $G$,
+compute $s = strain(a,b_i)$. Strain is negative if they are too far apart,
+positive if they are too close together.
+If $s \neq 0$, add  $a \rightarrow b_i$ to the strainfront $S$. Return $S$.
+
+Subroutine RELIEVE(S,C) (where S is a strainfront):
+
+Outpout: a new strainfront and configuraiton
+
+Choose and remove a directed edge $x \rightarrow y$ from the strainfront in order
+of number of edges from our start node $a$.
+
+If $y$ is a fixed node or marked ``FIXED'' node, add $y \rightarrow x$ to the strainfront and return.
+
+Mark the node $y$ ``FIXED''.
+
+Let $z_s = \text{LEAST-STRAIN}(y,S,C)$.
+
+Return $Perturb(S,x,z_s)$.
+
+Subroutine $\text{LEAST-STRAIN}(x,y,S,C)$:
+
+There are a variety of possible implemetations for this.  We can evolve it
+rather simply I think.
+
+If $y$ is ``PERTURBED'', then we will only seek solutions that occur on a straight line
+between the current $y$ position and the original $y$ position.
+
+First algorithm: for the $N$ neighbors of $y$, compute the at most $4N^2$ intersection points
+of the circles corresponding to the lower bound and upper bound of each circle. Test
+each such intersection point for being part of the ``free region'' (that is, satisfying all
+constraints.)  Return the free region intersection point that minimizes the strain on the
+$x \rightarrow y$ joint.
+
+If $y$ is PERTURBED, insure that all neighbor constraints are satisfied, by restoring
+to the original position if necessary.
+
+
+
+Sketch of termination:
+Each node is visited at most twice.
+
+Sketch of correctness:
+The algorithm proceeds as two wave fronts: a wave front generated by the first perturbation,
+and a wavefront reflected off the fixed nodes going in the opposite direction. The
+internal configurations temporarily violate the constraints.  However, once the back
+wave has passed a node, it has all constraints obeyed, if nessary by restoration to its
+original position.
+
+
+
+
 
 
 \section{References}

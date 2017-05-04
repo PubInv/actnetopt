@@ -16,7 +16,8 @@ function simple_triangle_problem() {
     var dim = ano.dim2;
     var m = { g: new algols.Graph(false),
 	      lbs: {},
-	      ubs: {}
+	      ubs: {},
+	      fixed: []
 	    };
 
     m.g.addVertex('a');
@@ -38,6 +39,7 @@ function simple_triangle_problem() {
     var fixed = [];
     fixed[0] = 'a';
     fixed[1] = 'b';
+    m.fixed = fixed;
 
     var goals = [];
     goals[0] = { nd: 'c',
@@ -63,7 +65,8 @@ function medium_triangle_problem() {
     var dim = ano.dim2;
     var m = { g: new algols.Graph(false),
 	      lbs: {},
-	      ubs: {}
+	      ubs: {},
+	      fixed: []
 	    };
 
     m.g.addVertex('a');
@@ -92,6 +95,7 @@ function medium_triangle_problem() {
     
     var fixed = [];
     fixed[0] = 'a';
+    m.fixed = fixed;
 
     var goals = [];
     goals[0] = { nd: 'd',
@@ -117,132 +121,264 @@ function medium_triangle_problem() {
 
 describe('actoptnet_math', function() {
     describe('first_test', function() {
-	it('has a variable that is true', function() {
-	    assert.equal(ano.dim2,2);
-	});
+    	it('has a variable that is true', function() {
+    	    assert.equal(ano.dim2,2);
+    	});
     });
     describe('main_algorithm', function() {
-	it('function exists and returns something', function() {
-	    var stm = simple_triangle_problem();
+    	it('function exists and returns something', function() {
+    	    var stm = simple_triangle_problem();
 
-	    var result = ano.opt(stm.dim2,
-				 stm.model,
-				 stm.coords,
-				 stm.goals,
-				 stm.fixed);
+    	    var result = ano.opt(stm.dim2,
+    				 stm.model,
+    				 stm.coords,
+    				 stm.goals);
 
-	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);	    
-	});
+    	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);	    
+    	});
     });
     describe('main_algorithm', function() {
-	it('we can do something with a 2d triangle', function() {
-	    var dim = ano.dim2;
-	    var model = new algols.Graph();
-	    model.addVertex(1);
-	    model.addVertex(2);
-	    model.addVertex(3);
-	    model.addEdge(1, 2);
-	    model.addEdge(2, 3);
-	    model.addEdge(1, 3);
-	    assert.equal(model.vertices.size,3);
-	});
+    	it('we can do something with a 2d triangle', function() {
+    	    var dim = ano.dim2;
+    	    var model = new algols.Graph();
+    	    model.addVertex(1);
+    	    model.addVertex(2);
+    	    model.addVertex(3);
+    	    model.addEdge(1, 2);
+    	    model.addEdge(2, 3);
+    	    model.addEdge(1, 3);
+    	    assert.equal(model.vertices.size,3);
+    	});
     });
-    describe('limits', function() {
-	it('limits returns a useful answer', function() {
-	    var stm = simple_triangle_problem();
-	    var limits = ano.limits(stm.model,stm.coords,stm.goals[0]);
-	    assert.equal(limits[0][0],'b');
-	    assert.equal(limits[1][0],'a');
-	    assert(limits[0][1]);
-	    assert(limits[1][1]);	    
-	});
-    });
+    // describe('limits', function() {
+    // 	it('limits returns a useful answer', function() {
+    // 	    var stm = simple_triangle_problem();
+    // 	    var limits = ano.limits(stm.model,stm.coords,stm.goals[0]);
+    // 	    assert.equal(limits.length,0);
+    // 	});
+    // });
     describe('score', function() {
-	it('we can compute a score', function() {
-	    var stm = simple_triangle_problem();
-	    var sc = ano.score(stm.coords, stm.goals);
-	    assert.equal(sc,54);
-	});
+    	it('we can compute a score', function() {
+    	    var stm = simple_triangle_problem();
+    	    var sc = ano.score(stm.coords, stm.goals);
+    	    assert.equal(sc,54);
+    	});
     });
     describe('main_algorithm', function() {
-	it('we can invoke it', function() {
+    	it('we can invoke it', function() {
 
-	    var stm = simple_triangle_problem();
+    	    var stm = simple_triangle_problem();
 
-	    var result = ano.opt(stm.dim2,
-				 stm.model,
-				 stm.coords,
-				 stm.goals,
-				 stm.fixed);
+    	    var result = ano.opt(stm.dim2,
+    				 stm.model,
+    				 stm.coords,
+    				 stm.goals);
 	    
-	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
-	});
+    	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
+    	});
     });
     describe('main_algorithm', function() {
-	it('We get a good answer for a siimple triangle', function() {
-	    var stm = simple_triangle_problem();
+    	it('We get a good answer for a siimple triangle', function() {
+    	    var stm = simple_triangle_problem();
 
-	    var result = ano.opt(stm.dim2,
-				 stm.model,
-				 stm.coords,
-				 stm.goals,
-				 stm.fixed);
-	    var score = ano.score(result,stm.goals);
+    	    var result = ano.opt(stm.dim2,
+    				 stm.model,
+    				 stm.coords,
+    				 stm.goals);
+    	    var score = ano.score(result,stm.goals);
 
-	    assert.equal(ano.legal_configp(stm.model,result),true);
 
-	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
+    	    assert.equal(ano.legal_configp(stm.model,result),true);
 
-	    assert.ok(score < 40.2);
-	});
+    	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
+
+    	    assert.ok(score < 40.2);
+    	});
     });
-    describe('main_algorithm', function() {
-	it('We can optimize two goals if simple', function() {
+    // describe('main_algorithm', function() {
+    // 	it('We can optimize two goals if simple', function() {
+    // 	    var stm = simple_triangle_problem();
 
+    // 	    // remove the 'b' note from fixed
+    // 	    stm.fixed.slice(0,2);
+    // 	    stm.goals[1] = { nd: 'b',
+    // 		 pos: new THREE.Vector2(0.3,1.7),
+    // 		 wt: 3 };
+
+    // 	    var result = ano.opt(stm.dim2,
+    // 				 stm.model,
+    // 				 stm.coords,
+    // 				 stm.goals);
+    // 	    var score = ano.score(result,stm.goals);
+    // 	    console.log("result,score =",result,score);
+
+    // 	    assert.equal(ano.legal_configp(stm.model,result),true);
+
+    // 	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
+
+    // 	    // assert that b and c both moved
+    // 	    assert.deepEqual(result['a'],stm.coords['a']);	    
+    // 	    assert.notDeepEqual(result['b'],stm.coords['b']);
+    // 	    assert.notDeepEqual(result['c'],stm.coords['c']);	    
+    // 	    assert.ok(score < 40.6);
+    // 	});
+    // });
+    // describe('main_algorithm', function() {
+    // 	it('We can deal with a more complex function', function() {
+    // 	    var stm = medium_triangle_problem();
+    // 	    assert.equal(ano.legal_configp(stm.model,stm.coords),true);
 	    
+    // 	    var result = ano.opt(stm.dim2,
+    // 				 stm.model,
+    // 				 stm.coords,
+    // 				 stm.goals);
+    // 	    var score = ano.score(result,stm.goals);
+    // 	    console.log(result,score);
+
+    // 	    assert.equal(ano.legal_configp(stm.model,result),true);
+
+    // 	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
+    // 	    assert(score < 20);
+    // 	});
+    // });
+});
+
+describe('strainfront_algorithm', function() {
+    describe('first_test', function() {
+    	it('has a variable that is true', function() {
+    	    assert.equal(ano.dim2,2);
+    	});
+    });
+
+    describe('circle math', function() {
+    	it('can compute circle intersctions', function() {
+	    var v0 = new THREE.Vector2(0,0);
+	    var v1 = new THREE.Vector2(1,0);
+	    var r0 = 0.0;
+	    var r1 = 0.1;
+	    var res0 = ano.circle_intersections(v0,r0,v1,r1);
+	    assert(res0.length == 0);
+	    var r0 = 0.5;
+	    var r1 = 0.5;
+	    var res0 = ano.circle_intersections(v0,r0,v1,r1);
+	    assert(res0.length == 1,res0);
+	    var r0 = 0.6;
+	    var r1 = 0.6;
+	    var res0 = ano.circle_intersections(v0,r0,v1,r1);	    
+	    assert(res0.length == 2);
+    	});
+    });
+
+    describe('STRAIN', function() {
+    	it('We can compute strain', function() {
 	    var stm = simple_triangle_problem();
-
-	    // remove the 'b' note from fixed
-	    stm.fixed.slice(0,2);
-	    stm.goals[1] = { nd: 'b',
-		 pos: new THREE.Vector2(0.3,1.7),
-		 wt: 3 };
-
-	    var result = ano.opt(stm.dim2,
-				 stm.model,
-				 stm.coords,
-				 stm.goals,
-				 stm.fixed);
-	    var score = ano.score(result,stm.goals);
-
-	    assert.equal(ano.legal_configp(stm.model,result),true);
-
-	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
-
-	    // assert that b and c both moved
-	    assert.deepEqual(result['a'],stm.coords['a']);	    
-	    assert.notDeepEqual(result['b'],stm.coords['b']);
-	    assert.notDeepEqual(result['c'],stm.coords['c']);	    
-	    assert.ok(score < 40.6);
-	});
-    });
-    describe('main_algorithm', function() {
-	it('We can deal with a more complex function', function() {
-	    var stm = medium_triangle_problem();
-	    assert.equal(ano.legal_configp(stm.model,stm.coords),true);
+	    var s0 = ano.strain(stm.dim2,
+ 				stm.model,
+ 				stm.coords,
+				'a',
+				'c');
+	    assert.equal(s0,0);
+	    // This should produce tensile strain
+	    stm.coords['c'] = new THREE.Vector2(4,4);
+	    var s1 = ano.strain(stm.dim2,
+ 				stm.model,
+ 				stm.coords,
+				'a',
+				'c');
+	    assert(s1 < 0);
 	    
-	    var result = ano.opt(stm.dim2,
-				 stm.model,
-				 stm.coords,
-				 stm.goals,
-				 stm.fixed);
-	    var score = ano.score(result,stm.goals);
-	    console.log(result,score);
+	    // This should produce compressive strain
+	    stm.coords['c'] = new THREE.Vector2(0,0);
+	    var s2 = ano.strain(stm.dim2,
+ 				stm.model,
+ 				stm.coords,
+				'a',
+				'c');
+	    assert(s2 > 0);	    
+    	});
+    });
 
-	    assert.equal(ano.legal_configp(stm.model,result),true);
-
-	    assert.equal(Object.keys(result).length, Object.keys(stm.coords).length);
-	    assert(score < 20);
+    describe('bound_intersections', function() {
+    	it('gives basic resulsts', function() {
+	    var stm = simple_triangle_problem();
+	    stm.coords['a'] = new THREE.Vector2(0,0);
+	    stm.coords['c'] = new THREE.Vector2(3,0);	    
+	    var s0 = ano.bound_intersections(stm.dim2,
+ 				stm.model,
+ 				stm.coords,
+				'a',
+					     'c');
+	    assert.equal(4,s0.length,s0);
+	    // This should produce tensile strain
+	    stm.coords['c'] = new THREE.Vector2(0,1.5);
+	    var s1 = ano.bound_intersections(stm.dim2,
+ 				stm.model,
+ 				stm.coords,
+				'a',
+				'c');
+	    assert.equal(8,s1.length);
+	    
+	    // This should produce compressive strain
+	    stm.coords['c'] = new THREE.Vector2(0,0);
+	    var s2 = ano.bound_intersections(stm.dim2,
+ 				stm.model,
+ 				stm.coords,
+				'a',
+				'c');
+	    assert(s2);	    
+    	});
+    });
+    describe('all_strains', function() {
+    	it('all_strains increases as we get beyond upper bound', function() {
+	    var stm = simple_triangle_problem();
+	    for(var i = 0; i < 10; i++) {
+		console.log(ano.all_strains(stm.d,stm.model,stm.coords,'c',new THREE.Vector2(0,i)));
+	    }
 	});
     });
+
+    describe('LEAST_STRAIN', function() {
+    	it('computes a position with zero strain for a super-liberal bound set', function() {
+	    var stm = simple_triangle_problem();
+	    // We set up a very simple situation and show that LEAST_STRAIN
+	    // minimizes the x->y strain
+	    const lb = 0;
+	    const ub = 4;
+	    const m = stm.model
+	    m.lbs['a b'] = lb;
+	    m.ubs['a b'] = ub;
+	    m.lbs['b c'] = lb;
+	    m.ubs['b c'] = ub;
+	    m.lbs['a c'] = lb;
+	    m.ubs['a c'] = ub;
+	    
+	    var NUM = 4;
+	    for(var i = 0; i < NUM; i++) {
+		for(var j = 0; j < NUM; j++) {
+		    stm.coords['c'] = new THREE.Vector2(i,j);
+		    var z = ano.least_strain(stm.dim2,stm.model,stm.coords,'a','c');
+		    console.log(i,j,z);
+		    stm.coords['c'] = z;
+		    assert(ano.strain(stm.dim2,stm.model,stm.coords,'a','c') == 0);		    
+		}
+	    }
+    	});
+    	it('computes a position with zero strain for an integer grid', function() {
+	    var stm = simple_triangle_problem();
+	    // We set up a very simple situation and show that LEAST_STRAIN
+	    // minimizes the x->y strain
+	    var NUM = 5;
+	    for(var i = 3; i < NUM; i++) {
+		for(var j = 3; j < NUM; j++) {
+		    stm.coords['a'] = new THREE.Vector2(i,j);
+		    var z = ano.least_strain(stm.dim2,stm.model,stm.coords,'a','c');
+		    console.log(i,j,z);
+		    stm.coords['c'] = z;
+		    console.log(ano.strain(stm.dim2,stm.model,stm.coords,'a','c'));
+		    assert(ano.strain(stm.dim2,stm.model,stm.coords,'a','c') == 0);
+		}
+	    }
+    	});
+    });
+
 });
