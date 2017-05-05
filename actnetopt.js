@@ -49,6 +49,122 @@ module.exports.score = function(coords,goals) {
     return sum;
 }
 
+
+Math.distance3 = function(p0,p1) {
+    x = p0[0] - p1[0];
+    y = p0[1] - p1[1];
+    z = p0[2] - p1[2];        
+    return Math.sqrt(x*x + y*y + z*z);
+}
+
+module.exports.simple_triangle_problem = function() {
+    var dim = this.dim2;
+    var m = { g: new algols.Graph(false),
+	      lbs: {},
+	      ubs: {},
+	      fixed: {}
+	    };
+
+    m.g.addVertex('a');
+    m.g.addVertex('b');
+    m.g.addVertex('c');
+    m.g.addEdge('a','b');
+    m.g.addEdge('b','c');
+    m.g.addEdge('c','a');
+
+    // ARG -- this need to be edge, not per node,
+    // although really it is constant in most circumstances.
+    m.lbs['a b'] = 1;
+    m.ubs['a b'] = 2;
+    m.lbs['b c'] = 1;
+    m.ubs['b c'] = 2;
+    m.lbs['a c'] = 1;
+    m.ubs['a c'] = 2;
+	    
+    var fixed = {};
+    fixed['a'] = true;
+    fixed['b'] = true;
+    m.fixed = fixed;
+
+    var goals = [];
+    goals[0] = { nd: 'c',
+		 pos: new THREE.Vector2(4,4),
+		 wt: 3 };
+
+    var nodes = {};
+    var a = new THREE.Vector2(0,0);
+    var b = new THREE.Vector2(0,1.5);
+    var c = new THREE.Vector2(1,1);
+    nodes['a'] = a;
+    nodes['b'] = b;
+    nodes['c'] = c;
+    
+    return { dim: dim,
+	     coords: nodes,
+	     model: m,
+	     goals: goals,
+	     fixed: fixed};
+}
+
+module.exports.medium_triangle_problem = function() {
+    var dim = this.dim2;
+    var m = { g: new algols.Graph(false),
+	      lbs: {},
+	      ubs: {},
+	      fixed: {}
+	    };
+
+    m.g.addVertex('a');
+    m.g.addVertex('b');
+    m.g.addVertex('c');
+    m.g.addVertex('d');    
+    m.g.addEdge('a','b');
+    m.g.addEdge('b','c');
+    m.g.addEdge('c','a');
+    m.g.addEdge('b','d');
+    m.g.addEdge('c','d');
+
+    // ARG -- this need to be edge, not per node,
+    // although really it is constant in most circumstances.
+    m.lbs['a b'] = 1;
+    m.ubs['a b'] = 2;
+    m.lbs['b c'] = 1;
+    m.ubs['b c'] = 2;
+    m.lbs['a c'] = 1;
+    m.ubs['a c'] = 2;
+    m.lbs['c d'] = 1;
+    m.ubs['c d'] = 2;
+    m.lbs['b d'] = 1;
+    m.ubs['b d'] = 2;
+
+    
+    var fixed = {};
+    fixed['a'] = true;
+    m.fixed = fixed;
+
+    var goals = [];
+    goals[0] = { nd: 'd',
+		 pos: new THREE.Vector2(4,4),
+		 wt: 3 };
+
+    var nodes = {};
+    var a = new THREE.Vector2(0,0);
+    var b = new THREE.Vector2(0,1.5);
+    var c = new THREE.Vector2(1,1);
+    var d = new THREE.Vector2(2,2);    
+    nodes['a'] = a;
+    nodes['b'] = b;
+    nodes['c'] = c;
+    nodes['d'] = d;    
+    
+    return { dim: dim,
+	     coords: nodes,
+	     model: m,
+	     goals: goals,
+	     fixed: fixed};
+}
+
+
 // This is from Algorithm.js ...
 // I am forced to include here because it doesn't provide
 // a way for me to use my own comparator in the PrioirtyQueue.
@@ -703,15 +819,14 @@ module.exports.relieves = function(d,M,C,S,num) {
     // now v is a node of minum depth...
     if ((v.hd in M.fixed) || (v.hd in S.fixed)) {
 	S.fixed[v.hd] = true;
-//	S.s.push({tl:v.hd, hd:v.tl, fwd: false, num: num});
-//	S.s.push({tl:.tl, hd:f.hd, fwd: false, num: -num});	
 	return S;
     } else {
 	var z = this.zero_x_strain(d,M,S.cur,v.tl,v.hd);
-	console.log("in relieves",v);
-	return v.fwd ?
+	console.log("in relieves",v,z);
+	return  (v.num > 0) ?
 	    this.perturb(d,M,C,S,v.hd,z,num)
-	    : this.reperturb(d,M,C,S,v.hd,z,num);
+		    : this.reperturb(d,M,C,S,v.hd,z,num)
+	;
     }
     return S;
 }
@@ -733,23 +848,20 @@ module.exports.strainfront = function(d,M,C,a,v) {
     console.log(dijkstra);    
     var shortestPath = dijkstra(M.g, a);
     console.log(shortestPath);
-    
-//    console.log("XXXXXXXXXX");
-//    console.log(C);
-//    console.log("YYYYYYYYYY");
-//    console.log(cur);    
     var S = { s: [], cur: cur, fixed: {}, perturbed: {} , dsp: shortestPath};
     var num = 1;
     
     S = this.perturb(d,M,C,S,a,v,num);
     num++;
     while (S.s.length > 0) {
-	console.log("pre-relieve",S.s);
+	console.log("pre-relieve",S.cur);
 	S = this.relieves(d,M,S.cur,S,num);
-	console.log("post-relieve",S.s);
+	console.log("post-relieve",S.cur);
 	num++;
     }
     console.log("XXXX");
     console.log(S);
     return S.cur;
 }
+
+const ANO = require("./actnetopt.js");

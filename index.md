@@ -28,11 +28,18 @@ title: Actuator Net Optimization
 
     <p>Check out our parent project, <a href="https://pubinv.github.io/PubInv">Public Invention</a>.</p>
 
+    <p>
+    To run the tests, execute "mocha".  To browserify, execute :
+<pre>  browserify ano_shim.js -o bundle.js </pre>
+
         </section>
 
-<script src="./javascripts/two.min.js"></script>
+    <script src="./javascripts/two.min.js"></script>
+<script src="./bundle.js"></script>    
 
-        <script>
+    <script>
+
+    const ANO = UGLY_GLOBAL_SINCE_I_CANT_GET_MY_MODULE_INTO_THE_BROWSER;
 
 // Make an instance of two and place it on the page.
 var elem = document.getElementById('visualsection');
@@ -57,6 +64,8 @@ rect.noStroke();
 // Don't forget to tell two to render everything
 // to the screen
 two.update();
+
+var stp = ANO.simple_triangle_problem();
 
     </script>
 
