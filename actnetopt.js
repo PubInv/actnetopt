@@ -56,6 +56,38 @@ Math.distance3 = function(p0,p1) {
     return Math.sqrt(x*x + y*y + z*z);
 }
 
+function gen_nodeset(n) {
+    const nodeset = [];
+    for(var i = 0; i < n; i++) {
+	nodeset.push(String.fromCharCode(97 + i));
+    }
+    return nodeset;
+}
+function  construct_bounds(m,ns,lb,ub) {
+    for(var i in ns) {
+	for(var j in ns) {
+	    if (i != j) {
+		const ename = ANO.ename(ns[i],ns[j]);
+		m.lbs[ename] = m.deflb;
+		m.ubs[ename] = m.defub;
+	    }
+	}
+    }
+}
+function gen_regular_2d_net(m,nodeset) {
+    assert(nodeset.length >= 3);
+    m.g.addEdge('a','b');
+    m.g.addEdge('b','c');
+    m.g.addEdge('c','a');
+    for(var i = 3; i < nodeset.length; i++) {
+	var p0 = nodeset[i-2];
+	var p1 = nodeset[i-1];
+	var c0 = nodeset[i];
+	m.g.addEdge(p0,c0);
+	m.g.addEdge(p1,c0);
+    }
+}
+
 
 // MAJOR CONCEPTUAL PROBLEM: my algorithm is pretty much assuming
 // that all the lowerbounds and upper bounds are the same.
@@ -69,23 +101,12 @@ module.exports.simple_triangle_problem = function() {
 	      fixed: {}
 	    };
 
-    m.g.addVertex('a');
-    m.g.addVertex('b');
-    m.g.addVertex('c');
-    m.g.addEdge('a','b');
-    m.g.addEdge('b','c');
-    m.g.addEdge('c','a');
+    const nodeset = gen_nodeset(3);
+    nodeset.forEach(nd => m.g.addVertex(nd));
 
-    // ARG -- this need to be edge, not per node,
-    // although really it is constant in most circumstances.
+    construct_bounds(m,nodeset,m.deflb,m.defub);
+    gen_regular_2d_net(m,nodeset);
 
-    m.lbs['a b'] = m.deflb;
-    m.ubs['a b'] = m.defub;
-    m.lbs['b c'] = m.deflb;
-    m.ubs['b c'] = m.defub;
-    m.lbs['a c'] = m.deflb;
-    m.ubs['a c'] = m.defub;
-	    
     var fixed = {};
     fixed['a'] = true;
     fixed['b'] = true;
@@ -120,30 +141,10 @@ module.exports.medium_triangle_problem = function() {
 	      defub: 2,
 	      fixed: {}
 	    };
-    m.g.addVertex('a');
-    m.g.addVertex('b');
-    m.g.addVertex('c');
-    m.g.addVertex('d');    
-    m.g.addEdge('a','b');
-    m.g.addEdge('b','c');
-    m.g.addEdge('c','a');
-    m.g.addEdge('b','d');
-    m.g.addEdge('c','d');
-
-    // ARG -- this need to be edge, not per node,
-    // although really it is constant in most circumstances.
-
-    m.lbs['a b'] = m.deflb;
-    m.ubs['a b'] = m.defub;
-    m.lbs['b c'] = m.deflb;
-    m.ubs['b c'] = m.defub;
-    m.lbs['a c'] = m.deflb;
-    m.ubs['a c'] = m.defub;
-    m.lbs['c d'] = m.deflb;
-    m.ubs['c d'] = m.defub;
-    m.lbs['b d'] = m.deflb;
-    m.ubs['b d'] = m.defub;
-
+    const nodeset = gen_nodeset(4);
+    nodeset.forEach(nd => m.g.addVertex(nd));    
+    construct_bounds(m,nodeset,m.deflb,m.defub);
+    gen_regular_2d_net(m,nodeset);
     
     var fixed = {};
     fixed['a'] = true;
@@ -151,7 +152,7 @@ module.exports.medium_triangle_problem = function() {
 
     var goals = [];
     goals[0] = { nd: 'd',
-		 pos: new THREE.Vector2(3.9,3.9),
+		 pos: new THREE.Vector2(3.9,-2),
 		 wt: 3 };
 
     var nodes = {};
@@ -163,6 +164,49 @@ module.exports.medium_triangle_problem = function() {
     nodes['b'] = b;
     nodes['c'] = c;
     nodes['d'] = d;    
+    
+    return { dim: dim,
+	     coords: nodes,
+	     model: m,
+	     goals: goals,
+	     fixed: fixed};
+}
+
+module.exports.medium_triangle_problem2 = function() {
+    var dim = this.dim2;
+    var m = { g: new algols.Graph(false),
+	      lbs: {},
+	      ubs: {},
+	      deflb: 1.1,
+	      defub: 2,
+	      fixed: {}
+	    };
+    const nodeset = gen_nodeset(5);
+    nodeset.forEach(nd => m.g.addVertex(nd));
+    gen_regular_2d_net(m,nodeset);
+
+
+    construct_bounds(m,nodeset,m.deflb,m.defub);
+    var fixed = {};
+    fixed['a'] = true;
+    m.fixed = fixed;
+
+    var goals = [];
+    goals[0] = { nd: 'd',
+		 pos: new THREE.Vector2(3.9,-2),
+		 wt: 3 };
+
+    var nodes = {};
+    var a = new THREE.Vector2(0,0);
+    var b = new THREE.Vector2(0,1.5);
+    var c = new THREE.Vector2(1,1);
+    var d = new THREE.Vector2(1.5,2);
+    var e = new THREE.Vector2(2.5,1);        
+    nodes['a'] = a;
+    nodes['b'] = b;
+    nodes['c'] = c;
+    nodes['d'] = d;
+    nodes['e'] = e;        
     
     return { dim: dim,
 	     coords: nodes,
@@ -244,8 +288,7 @@ module.exports.limits = function(model,cur,cg) {
     var neighbors = model.g.neighbors(nam);
     var nolimits = true;
     neighbors.forEach(neighbor => {
-	var ename = (nam < neighbor) ? nam + ' ' + neighbor
-	    : neighbor + ' ' + nam;
+	var ename = this.ename(nam,neighbor);
 	var lb = model.lbs[ename];
 	var ub = model.ubs[ename];
 	var npos = cur[neighbor];
@@ -353,121 +396,6 @@ function compare_arr(arra,arrb) {
     return 0;
 }
 
-function find_goals(goals,name) {
-    goals.find(g => g.nd == name);
-}
-
-module.exports.opt = function(dim,model,coords,goals) {
-    // create my own set of goals in a priority queue...
-    // The priority queue from algorithms.js is minimizing queue,
-    // so we will use the negation of our scores, remembering
-    // this.  We are in fact seeking a zero score.
-
-    var cur = {};
-    Object.keys(coords).forEach(
-	c =>
-	    {
-		cur[c] =  this.copy_vector(coords[c]);
-	    });
-    var pq = new algols.PriorityQueue(compare_arr);
-
-    // now it is possible that this can add a
-    // zero goal...we will have to be careful of that.
-    // Really I need to have my own comparator here that
-    // orders by greated weighted distance first, then
-    // by shortest move.
-    goals.forEach(g =>
-		  {
-		      pq.insert(g.nd, [0,-this.score1(cur,g)])
-		  });
-
-    // xgoals is the set of goals we are currently working on,
-    // which is a superset of the goals.
-    var xgoals = goals.slice();
-    
-    var cnt = 0; 
-
-    // now begin the interative processing...
-    // we extract with priority so that we can implement breadth-first
-    // effectively
-    var cext = pq.extract(true);
-    var cg = xgoals.find(g => g.nd == cext.item);
-
-    while (cg && cnt < 3) {
-	// Now cg is the "worst" goal we need to try to move...
-	// compute the direction to move...
-	var nam = cg.nd;
-	var pos = cur[nam];
-	var dir = this.copy_vector(pos);
-	dir.subVectors(dir,pos)
-	// Now we want to try to move in this direction until
-	// we hit a constaint..
-	// Possibly we should reorganize to put the limiting
-	// nodes in the priority queue.
-	var limiting_nodes = this.limits(model,cur,cg,dir);
-
-
-	if (limiting_nodes != "nolimits") {
-	    // Now compute the maximum move the limits allow
-	    // (with 1.0 in case of empty...
-
-	    if (limiting_nodes.length > 0) {
-		var min_move = this.min_move(limiting_nodes,pos);
-
-		// now min_move is a triple  chosen from limits....
-
-		if (min_move[1] == 0.0) {
-		    // In this case, there is no point n moving, we must move one of
-		    // our neighbors (this one) in an attempt to get closer if we can.
-		    // We need to add to our priority queue the limiting node as
-		    // a goal, (and some new goal point).
-		    var depth = cext.priority[0] + 1;
-		    var a = min_move[0];
-		    var apos = this.copy_vector(cur[a]);
-		    var ldir = this.copy_vector(pos);
-		    ldir.sub(apos);
-		    var ename = (nam < a) ? nam + ' ' + a
-			: a + ' ' + nam;
-		    var median = (model.ubs[ename] - model.lbs[ename])/2.0;
-		    var len = apos.distanceTo(cg.pos) - median;
-		    ldir.setLength(len);
-		    apos.add(ldir);
-		    xgoals.push({ nd: a, pos: apos, wt: cg.wt });
-		    // I'm pretty sure this is not really the right score to add.
-		    var score = -10;
-		    pq.insert(a,[depth,score]);
-		} else {
-
-		    // make the move...
-		    cur[nam] = this.copy_vector(min_move[2]);
-		    // rebuild the pq...
-		    pq = new algols.PriorityQueue();
-
-		    goals.forEach(g => pq.insert(g.nd, [0,-this.score1(cur,g)]));	    
-		    // if we moved, then basically we start all over with all
-		    // computations...
-		}
-	    } else {
-		// we can't move, and every neighbor is fixed, so there
-		// is nothing for us to put back in the queue.
-	    }
-	} else {
-	    // If there are not limits, we can move directly to the goal...
-	    // and we need add nothing to the pqueue...
-	    cur[nam] = this.copy_vector(cg.pos);
-	    pq = new algols.PriorityQueue();
-	    goals.forEach(g => pq.insert(g.nd, [0,-this.score1(cur,g)]));	    
-	}
-	var cext = pq.extract(true);
-	if (cext) {
-	    cg = goals.find(g => g.nd == cext.item);
-	} else {
-	    cg = null;
-	}
-	cnt++;
-    }
-    return cur;
-}
 
 module.exports.ename = function(x,y) {
     return (x < y) ? x + ' ' + y
@@ -491,16 +419,21 @@ module.exports.strain_points = function(d,M,x,y,px,py)  {
     var b = px.distanceTo(py);
     
     var en = this.ename(x,y);
-    
+///	console.log("STRAIN_POINTS ",M.lbs);	    
     if (en in M.lbs) {
+
 	var lb = M.lbs[en];
+//	console.log("STRAIN_POINTS lb",lb);	
 	if (lb > b) {
 //	    console.log("STRAIN_POINTS lb- b",x,y,lb-b);
 	    return lb - b;
 	}
     }
+//    console.log("STRAIN_POINTS ",M.ubs);		    
     if (en in M.ubs) {
+
 	var ub = M.ubs[en];
+//	console.log("STRAIN_POINTS ub",ub);
 	if (ub < b) {
 	    // tensile strain is negative
 //	    console.log("STRAIN_POINTS ub - b",x,y,ub-b);	    
@@ -711,7 +644,7 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 	// if we have found a zero_strain_point, we should surely return that!
 	// Note: This is type dependent
 	if (zero_strain_point instanceof Object) {
-	    console.log("zero strain point",zero_strain_point);
+//	    console.log("zero strain point",zero_strain_point);
 	    retval = zero_strain_point;
 	} else {
 	    // Since we have no intersection point which is universally strain-free,
@@ -734,7 +667,7 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 		    }
 		},
 				      []);
-	    console.log("zero_x_strain: ",zero_x_strain_points);
+//	    console.log("zero_x_strain: ",zero_x_strain_points);
 	    if (zero_x_strain_points.length != 0) { // we're in luck...
 		// we can should return one which is closest to C[x]...
 		retval = zero_x_strain_points.reduce(
@@ -744,7 +677,7 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 			acc,
 		    [Number.MAX_VALUE,zero_x_strain_points[0]])[1];
 	    } else {
-		console.log("NO ZERO_X_STRAIN POINTS!");
+//		console.log("NO ZERO_X_STRAIN POINTS!");
 		// Okay, so if there are no points of zero x strain,
 		// we will have to choose a point on a line that is NOT an
 		// intersection point.
@@ -801,13 +734,13 @@ module.exports.perturb = function(d,M,C,S,a,v,num) {
 		    &&
 		    (!S.used.find(sv => (sv.tl == a && sv.hd == v0)))) {
  		    S.s.push({tl:a, hd:v0, num: num});
-		    console.log("ADDING: ",{tl:a, hd:v0, num: num});
+//		    console.log("ADDING: ",{tl:a, hd:v0, num: num});
 		}
 		if ((!S.s.find(sv => (sv.tl == v0 && sv.hd == a)))
 		    &&
 		    (!S.used.find(sv => (sv.tl == v0 && sv.hd == a)))) {
 		    S.s.push({tl:v0, hd:a,  num: -num});
-		    console.log("ADDING: ",{tl:v0, hd:a,  num: -num});		    
+//		    console.log("ADDING: ",{tl:v0, hd:a,  num: -num});		    
 		}
 	    });
     }
@@ -851,7 +784,7 @@ module.exports.relieves = function(d,M,C,S,num) {
     const v = (lnn instanceof Object)
 	  ? lnn : ln;
     assert(v);
-    console.log("v : ",v.tl,v.hd, v.num);    
+//    console.log("v : ",v.tl,v.hd, v.num);    
     // remove element v...
     S.s = S.s.filter(item => item !== v)
     S.used.push(v);
@@ -861,7 +794,7 @@ module.exports.relieves = function(d,M,C,S,num) {
 	return S;
     } else {
 	var z = this.zero_x_strain(d,M,S.cur,v.tl,v.hd);
-	console.log("in relieves",v,z);
+//	console.log("in relieves",v,z);
 	return  (v.num > 0) ?
 	    this.perturb(d,M,C,S,v.hd,z,num)
 		    : this.reperturb(d,M,C,S,v.hd,z,num)

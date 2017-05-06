@@ -160,7 +160,7 @@ function render_graph(M,C,color,trans) {
 
 createGrid(params.width / (2 * 10.0));
 
-var mtp = ANO.medium_triangle_problem();
+var mtp = ANO.medium_triangle_problem2();
 
 function render_origin() {
 var origin = transform_to_viewport(new THREE.Vector2(0,0));
@@ -185,20 +185,23 @@ var step = 0;
 var color = ['red','blue','green','purple','gray']
 var ycnt = 0;
 var xcnt = 0;
-var limit = 20;
+var limit = 40;
 function animate(s) {
     //    console.log(s);
     var ALGS_PER_ROW = 6;
-    xcnt = step % ALGS_PER_ROW;
-    ycnt = Math.floor(step / ALGS_PER_ROW);
+    if ((step % 1) == 0) {
+	var lstep = step / 1;
+    xcnt = lstep  % ALGS_PER_ROW;
+    ycnt = Math.floor(lstep / ALGS_PER_ROW);
 
 	render_graph(mtp.model,s.cur,
-		     color[step % color.length],
+		     color[lstep % color.length],
 		     ( x => {
 			 var p = ANO.copy_vector(x);
 			 p.add(new THREE.Vector2((xcnt-(ALGS_PER_ROW/2))*6,10*((-ycnt+1))));
 			 return p;
 		     }));
+    }
 	step++;
     console.log(step,s.s.length);
     console.log(step,s.s);    
@@ -209,8 +212,11 @@ function animate(s) {
 }
 // var C = ANO.strainfront(mtp.d,mtp.model,mtp.coords,'c',new THREE.Vector2(0,4),animate);
 
-    var C = ANO.strainfront(mtp.d,mtp.model,mtp.coords,'d',new THREE.Vector2(0,4),animate);
+var C = ANO.strainfront(mtp.d,mtp.model,mtp.coords,'e',new THREE.Vector2(0,4),animate);
 console.log("C = ",C);
+
+// var D = ANO.strainfront(mtp.d,mtp.model,C,'e',new THREE.Vector2(0,4),animate);
+// console.log("D = ",D);
 
     </script>
 
