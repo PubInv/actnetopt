@@ -288,7 +288,43 @@ internal configurations temporarily violate the constraints.  However, once the 
 wave has passed a node, it has all constraints obeyed, if nessary by restoration to its
 original position.
 
+\section{Notes}
 
+This algorithm is almost certainly not globally optimal.  I have not even proved correctness
+nor termination.
+
+However, it seems pretty clearly that one operation of the algorithm is extraordinarily fast.
+
+If we kept a data structure that kept intersection points, it is possible that we would
+have an $O(n)$ algorithm, where $n$ is the number of nodes, but we may very well have
+less than that if the net has slack to acheive the position in question.
+
+It seems that this may be a very valuable adjunct algorithm to the algorithms that
+use a general purpose objective function, which could also be used.
+
+An open question remains how the algorithm will function with repeated uses.
+For example, will it fine tune a solution?  Possible not, due to the way the
+intersection points are used.
+
+Note that the algorithm can be improved by lambda-lifting selection critera into
+the basic strain-front algorithm. This could allow better control of the  works;
+for example, on a secon iteration, an algorithm that departed from the basic
+intersection point system could be valuable.
+
+The current algorithm may be adding too much to the strain front.
+
+Major TODOs at this point are:
+\begin{itemize}
+\item clean up the code!
+\item work out termination proof and asymptotic complexity.
+\item count major operation.
+\item shift to squares instead of square roots whenever possible.
+\item lambda lift
+\item MAKE WORK WITH 3D vectors!
+\item develop more awesome test cases.
+  \item develop a highly over constrained network.
+  \item develop interactive work.
+  \end{itemize}
 
 
 
