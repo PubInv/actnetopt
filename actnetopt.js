@@ -1,4 +1,3 @@
-
     // Copyright 2017, Robert L. Read
 
     // This file is part of ActNetOpt.
@@ -57,11 +56,16 @@ Math.distance3 = function(p0,p1) {
     return Math.sqrt(x*x + y*y + z*z);
 }
 
+
+// MAJOR CONCEPTUAL PROBLEM: my algorithm is pretty much assuming
+// that all the lowerbounds and upper bounds are the same.
 module.exports.simple_triangle_problem = function() {
     var dim = this.dim2;
     var m = { g: new algols.Graph(false),
 	      lbs: {},
 	      ubs: {},
+	      deflb: 1.1,
+	      defub: 2,
 	      fixed: {}
 	    };
 
@@ -74,12 +78,13 @@ module.exports.simple_triangle_problem = function() {
 
     // ARG -- this need to be edge, not per node,
     // although really it is constant in most circumstances.
-    m.lbs['a b'] = 1;
-    m.ubs['a b'] = 2;
-    m.lbs['b c'] = 1;
-    m.ubs['b c'] = 2;
-    m.lbs['a c'] = 1;
-    m.ubs['a c'] = 2;
+
+    m.lbs['a b'] = m.deflb;
+    m.ubs['a b'] = m.defub;
+    m.lbs['b c'] = m.deflb;
+    m.ubs['b c'] = m.defub;
+    m.lbs['a c'] = m.deflb;
+    m.ubs['a c'] = m.defub;
 	    
     var fixed = {};
     fixed['a'] = true;
@@ -111,9 +116,10 @@ module.exports.medium_triangle_problem = function() {
     var m = { g: new algols.Graph(false),
 	      lbs: {},
 	      ubs: {},
+	      deflb: 1.1,
+	      defub: 2,
 	      fixed: {}
 	    };
-
     m.g.addVertex('a');
     m.g.addVertex('b');
     m.g.addVertex('c');
@@ -126,16 +132,17 @@ module.exports.medium_triangle_problem = function() {
 
     // ARG -- this need to be edge, not per node,
     // although really it is constant in most circumstances.
-    m.lbs['a b'] = 1;
-    m.ubs['a b'] = 2;
-    m.lbs['b c'] = 1;
-    m.ubs['b c'] = 2;
-    m.lbs['a c'] = 1;
-    m.ubs['a c'] = 2;
-    m.lbs['c d'] = 1;
-    m.ubs['c d'] = 2;
-    m.lbs['b d'] = 1;
-    m.ubs['b d'] = 2;
+
+    m.lbs['a b'] = m.deflb;
+    m.ubs['a b'] = m.defub;
+    m.lbs['b c'] = m.deflb;
+    m.ubs['b c'] = m.defub;
+    m.lbs['a c'] = m.deflb;
+    m.ubs['a c'] = m.defub;
+    m.lbs['c d'] = m.deflb;
+    m.ubs['c d'] = m.defub;
+    m.lbs['b d'] = m.deflb;
+    m.ubs['b d'] = m.defub;
 
     
     var fixed = {};
@@ -144,14 +151,14 @@ module.exports.medium_triangle_problem = function() {
 
     var goals = [];
     goals[0] = { nd: 'd',
-		 pos: new THREE.Vector2(4,4),
+		 pos: new THREE.Vector2(3.9,3.9),
 		 wt: 3 };
 
     var nodes = {};
     var a = new THREE.Vector2(0,0);
     var b = new THREE.Vector2(0,1.5);
     var c = new THREE.Vector2(1,1);
-    var d = new THREE.Vector2(2,2);    
+    var d = new THREE.Vector2(1.5,2);    
     nodes['a'] = a;
     nodes['b'] = b;
     nodes['c'] = c;
@@ -488,7 +495,7 @@ module.exports.strain_points = function(d,M,x,y,px,py)  {
     if (en in M.lbs) {
 	var lb = M.lbs[en];
 	if (lb > b) {
-//	    console.log("STRAIN_POINTS lb- b",lb-b);
+	    console.log("STRAIN_POINTS lb- b",x,y,lb-b);
 	    return lb - b;
 	}
     }
@@ -496,7 +503,7 @@ module.exports.strain_points = function(d,M,x,y,px,py)  {
 	var ub = M.ubs[en];
 	if (ub < b) {
 	    // tensile strain is negative
-//	    console.log("STRAIN_POINTS ub - b",ub-b);	    
+	    console.log("STRAIN_POINTS ub - b",x,y,ub-b);	    
 	    return ub - b;
 	}
     }
@@ -511,7 +518,8 @@ module.exports.strain_points = function(d,M,x,y,px,py)  {
     
 // x1,y1 is the center of the first circle, with radius r1
 // x2,y2 is the center of the second ricle, with radius r2
-function intersectTwoCircles(x1,y1,r1, x2,y2,r2) {
+module.exports.intersectTwoCircles = function (x1,y1,r1, x2,y2,r2) {
+//    console.log("COMPS == ",x1,y1,r1,x2,y2,r2);        
   var centerdx = x1 - x2;
   var centerdy = y1 - y2;
   var R = Math.sqrt(centerdx * centerdx + centerdy * centerdy);
@@ -548,13 +556,17 @@ module.exports.circle_intersections = function(v0,r0,v1,r1,tag) {
     var x1 = v1.x;
     var y0 = v0.y;
     var y1 = v1.y;
-    var is = intersectTwoCircles(x0,y0,r0,x1,y1,r1);
+//    console.log("FROM cirlce_intersections COMPS == ",x0,y0,r0,x1,y1,r1);    
+    var is = this.intersectTwoCircles(x0,y0,r0,x1,y1,r1);
+//    console.log("IS == ",is);
     if ((is.length == 2)
-	&& is[0][0] == is[1][0]
-	&& is[0][1] == is[1][1]) {
+	&& (is[0][0] == is[1][0])
+	&& (is[0][1] == is[1][1])) {
 	is = is.slice(0,1);
     }
+//    console.log("IS == ",is);    
     return is.map(ip => {
+//	console.log("IP == ",ip);	
 	return { tag: tag, p: new THREE.Vector2(ip[0],ip[1])};
     });
 }
@@ -578,22 +590,24 @@ module.exports.bound_intersections = function(d,M,C,a,b) {
     var ulis = [];
     var lbis = [];
     
-    if (en in M.lbs) {
-	lb = M.lbs[en];
+//    if (en in M.lbs) {
+	lb = M.lbs[en]  || M.deflb;
 	lbis = this.circle_intersections(C[a],lb,C[b],lb,
 					 { b0: 'lb', nd0: a, b1: 'lb', nd1: b});
-    }
-    if (en in M.ubs) {
-	ub = M.ubs[en];
+//    }
+//    if (en in M.ubs) {
+	ub = M.ubs[en]  || M.defub;
 	ubis = this.circle_intersections(C[a],ub,C[b],ub,
-					 { b0: 'lb', nd0: a, b1: 'lb', nd1: b});	
-    }
-    if (isNumeric(ub) && isNumeric(lb)) {
+					 { b0: 'ub', nd0: a, b1: 'ub', nd1: b});
+	console.log("UBIS",a,b,ub,ubis);
+//    }
+//    if (isNumeric(ub) && isNumeric(lb)) {
 	luis = this.circle_intersections(C[a],lb,C[b],ub,
 					 { b0: 'lb', nd0: a, b1: 'ub', nd1: b});
 	ulis = this.circle_intersections(C[a],ub,C[b],lb,
 					{ b0: 'ub', nd0: a, b1: 'lb', nd1: b});
-    }
+//    }
+    console.log("LB, UB", lb,ub,M.deflb,M.defub);
     var is = [];
     var is = is.concat(ubis).concat(luis).
 	concat(ulis).concat(lbis);
@@ -608,12 +622,17 @@ module.exports.bound_intersections = function(d,M,C,a,b) {
 // p is the candidate position of x
 module.exports.all_strains = function(d,M,C,x,p) {
     return M.g.neighbors(x).map( y =>
-	this.strain_points(d,
-			   M,
-			   x,
-			   y,
-			   p,
-			   C[y]));
+				 {
+				     var s = this.strain_points(d,
+								M,
+								x,
+								y,
+								p,
+								C[y]);
+				     console.log("S =",x,p,y,C[y],s);
+				     return s;
+				  }
+				 );
 }
 
 // Compute the maximum strain on node x if it is at point p.
@@ -634,8 +653,8 @@ module.exports.max_strain_on_point = function(d,M,C,x,p) {
 // y is the head of the strainfront vector
 // return z, the position of y which completely eases x->y strain.
 module.exports.zero_x_strain = function(d,M,C,x,y) {
-//    console.log("x :",x, "y :", y, "C[x] :",C[x]);
-//    console.log("C :",C);    
+    console.log("x :",x, "y :", y, "C[x] :",C[x]);
+    console.log("C :",C);    
     // first, let us determine if there is any strain.
     var s = this.strain(d,M,C,x,y);
     var retval; 
@@ -653,12 +672,18 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 			v1 => {
 			    if (v0 == v1) return; // do nothing
 			    else { // compute v0 v1 intersections (0,1, or 2, and add)
-				var en = this.ename(v0,v1);
-				intersections = intersections.concat(this.bound_intersections(d,M,C,v0,v1));
+				if (v0 < v1) {
+				    var en = this.ename(v0,v1);
+				    console.log("ENAME",en);
+				    var ints = this.bound_intersections(d,M,C,v0,v1);
+				    console.log("intersections",C[v0],C[v1],ints);				    
+				    intersections = intersections.concat(ints);
+				}
 			    }
 			});
 		}
 	);
+	console.log("BOUND INTERSECTIONS = ",intersections);
 	// now that we have the intersections, we want to see if there is one
 	// that has no strain at all...
 	// so we iterate of all intersections, seeking a point that
@@ -667,13 +692,17 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 	intersections.forEach( i => {
 	    const py = i.p;
 	    var max_strain = this.max_strain_on_point(d,M,C,y,py);
+	    console.log("QQQ",this.all_strains(d,M,C,y,py));	    
 //	    console.log("ZZZ",y,py,max_strain);
 	    if (max_strain == 0) {
-//		console.log("AAA : ",i.p,i.p.distanceTo(C[y]));
+		console.log("AAA : ",i.p,i.p.distanceTo(C[y]));
+
+		// My animation of this algorithm now leads me to believe this is making
+		// a bad choice.
 		if (!zero_strain_point ||
 		    i.p.distanceTo(C[y]) < zero_strain_point.distanceTo(C[y])) {
 		    zero_strain_point = i.p;
-//		    console.log("BBB: ",zero_strain_point,zero_strain_point.distanceTo(C[y]));
+		    console.log("BBB: ",zero_strain_point,zero_strain_point.distanceTo(C[y]));
 		}
 	    }
 	});
@@ -737,11 +766,12 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 	    }
 	}
     }
-//    console.log("retval",retval);
+    console.log("retval",retval);
     if (this.DEBUG_LEVEL > 0)
 	assert(
 	    this.strain_points(d,M,x,y,C[x],retval) == 0,
 	    `${x} = (${C[x].toArray()}), ${y} = (${C[y].toArray()}) `);
+    
     return retval;
 }
 
@@ -761,7 +791,7 @@ module.exports.perturb = function(d,M,C,S,a,v,num) {
 //    if (a in S.perturbed) {
 //	return S;
     //    }
-    console.log("perturb:",a,v);
+//    console.log("perturb:",a,v);
     S.cur[a] = v;
     S.perturbed[a] = true;
     if (!previously_perturbed) {
@@ -783,7 +813,7 @@ module.exports.perturb = function(d,M,C,S,a,v,num) {
 // This function is used for the back-propagating wave
 // returns a strainfront
 module.exports.reperturb = function(d,M,C,S,a,v,num) {
-    console.log("calling reperturb: ", a);
+//    console.log("calling reperturb: ", a);
     S.cur[a] = v;
     return S;
 }
@@ -813,7 +843,7 @@ module.exports.relieves = function(d,M,C,S,num) {
     const v = (lnn instanceof Object)
 	  ? lnn : ln;
     assert(v);
-    console.log("v : ",v);    
+//    console.log("v : ",v);    
     // remove element v...
     S.s = S.s.filter(item => item !== v)
     // now v is a node of minum depth...
@@ -822,7 +852,7 @@ module.exports.relieves = function(d,M,C,S,num) {
 	return S;
     } else {
 	var z = this.zero_x_strain(d,M,S.cur,v.tl,v.hd);
-	console.log("in relieves",v,z);
+//	console.log("in relieves",v,z);
 	return  (v.num > 0) ?
 	    this.perturb(d,M,C,S,v.hd,z,num)
 		    : this.reperturb(d,M,C,S,v.hd,z,num)
@@ -837,30 +867,41 @@ module.exports.relieves = function(d,M,C,S,num) {
 // S is the current strainfront
 // a the node to move
 // v the desired position of a
+// anim is an "animation" function callback to be called step
+// through the algorithm.
 // returns a configuration mapping nodes to points which
 // is guaranteed to be legal. Hopefully a as close to v as possible.
-module.exports.strainfront = function(d,M,C,a,v) {
+module.exports.strainfront = function(d,M,C,a,v,anim) {
 //    console.log("a =",a,M.fixed);
     assert(!(a in M.fixed),a)
     // I think we want to copy the initial configuration here into cur...
     const cur = {};
     Object.keys(C).forEach( nd => cur[nd] = this.copy_vector(C[nd]));
-    console.log(dijkstra);    
+//    console.log(dijkstra);    
     var shortestPath = dijkstra(M.g, a);
-    console.log(shortestPath);
+//    console.log(shortestPath);
     var S = { s: [], cur: cur, fixed: {}, perturbed: {} , dsp: shortestPath};
     var num = 1;
+    if (anim)
+	if (!anim(S)) return S.cur;
+
     
-    S = this.perturb(d,M,C,S,a,v,num);
+    S = this.perturb(d,M,S.cur,S,a,v,num);
+
+    if (anim)
+	if (!anim(S)) return S.cur;
+    
     num++;
     while (S.s.length > 0) {
-	console.log("pre-relieve",S.cur);
+//	console.log("pre-relieve",S.cur);
 	S = this.relieves(d,M,S.cur,S,num);
-	console.log("post-relieve",S.cur);
+//	console.log("post-relieve",S.cur);
+	if (anim)
+	    if (!anim(S)) return S.cur;
 	num++;
     }
-    console.log("XXXX");
-    console.log(S);
+//    console.log("XXXX");
+//    console.log(S);
     return S.cur;
 }
 

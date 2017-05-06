@@ -131,30 +131,60 @@ describe('actoptnet_math', function() {
 });
 
 describe('strainfront_algorithm', function() {
-    // describe('first_test', function() {
-    // 	it('has a variable that is true', function() {
-    // 	    assert.equal(ANO.dim2,2);
-    // 	});
-    // });
+    describe('first_test', function() {
+    	it('has a variable that is true', function() {
+    	    assert.equal(ANO.dim2,2);
+    	});
+    });
 
-    // describe('circle math', function() {
-    // 	it('can compute circle intersctions', function() {
-    // 	    var v0 = new THREE.Vector2(0,0);
-    // 	    var v1 = new THREE.Vector2(1,0);
-    // 	    var r0 = 0.0;
-    // 	    var r1 = 0.1;
-    // 	    var res0 = ANO.circle_intersections(v0,r0,v1,r1);
-    // 	    assert(res0.length == 0);
-    // 	    var r0 = 0.5;
-    // 	    var r1 = 0.5;
-    // 	    var res0 = ANO.circle_intersections(v0,r0,v1,r1);
-    // 	    assert(res0.length == 1,res0);
-    // 	    var r0 = 0.6;
-    // 	    var r1 = 0.6;
-    // 	    var res0 = ANO.circle_intersections(v0,r0,v1,r1);	    
-    // 	    assert(res0.length == 2);
-    // 	});
-    // });
+    describe('circle math', function() {
+    	it('can compute circle intersctions', function() {
+    	    var v0 = new THREE.Vector2(0,0);
+    	    var v1 = new THREE.Vector2(1,0);
+    	    var v2 = new THREE.Vector2(0,4);	    
+    	    var r0 = 0.0;
+    	    var r1 = 0.1;
+    	    var res0 = ANO.circle_intersections(v0,r0,v1,r1);
+    	    assert(res0.length == 0);
+    	    var r0 = 0.5;
+    	    var r1 = 0.5;
+    	    var res0 = ANO.circle_intersections(v0,r0,v1,r1);
+    	    assert(res0.length == 1,res0);
+    	    var r0 = 0.6;
+    	    var r1 = 0.6;
+    	    var res0 = ANO.circle_intersections(v0,r0,v1,r1);
+    	    assert(res0.length == 2);	    
+
+    	});
+    });
+    describe('circle math', function() {
+    	it('can compute circle tight intersctions', function() {
+    	    var v0 = new THREE.Vector2(0,0);
+    	    var v1 = new THREE.Vector2(0,4);
+	    var r0 = 2;
+    	    var r1 = 2;
+    	    var res0 = ANO.circle_intersections(v0,r0,v1,r1);
+	    console.log("INTERSECTION",res0);
+    	    assert.equal(1,res0.length);	    
+
+    	});
+    });
+    describe('circle math', function() {
+    	it('can compute circle slight intersctions', function() {
+    	    var v0 = new THREE.Vector2(0,0);
+    	    var v1 = new THREE.Vector2(0,4);
+	    var r0 = 2.01;
+    	    var r1 = 2.01;
+	    var ips = ANO.intersectTwoCircles(0,0,2.01,0,4,2.01);
+	    
+    	    var res1 = ANO.circle_intersections(v0,r0,v1,r1);
+	    console.log("INTERSECTION 2.01",ips);
+	    console.log("INTERSECTION 2.01",res1);	    
+    	    assert.equal(2,res1.length);	    
+
+    	});
+    });
+    
 
     // describe('STRAIN', function() {
     // 	it('We can compute strain', function() {
@@ -345,7 +375,7 @@ describe('strainfront_algorithm', function() {
 	    var C = ANO.strainfront(stm.d,stm.model,stm.coords,'d',new THREE.Vector2(0,4));
 	    console.log(targ,C['d'],C['d'].distanceTo(targ));
 	    console.log(C); 		    
-//	    assert.equal(ANO.legal_configp(stm.model,C),true);
+	    assert.equal(ANO.legal_configp(stm.model,C),true);
 	});
 	
     });
