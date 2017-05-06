@@ -495,7 +495,7 @@ module.exports.strain_points = function(d,M,x,y,px,py)  {
     if (en in M.lbs) {
 	var lb = M.lbs[en];
 	if (lb > b) {
-	    console.log("STRAIN_POINTS lb- b",x,y,lb-b);
+//	    console.log("STRAIN_POINTS lb- b",x,y,lb-b);
 	    return lb - b;
 	}
     }
@@ -503,7 +503,7 @@ module.exports.strain_points = function(d,M,x,y,px,py)  {
 	var ub = M.ubs[en];
 	if (ub < b) {
 	    // tensile strain is negative
-	    console.log("STRAIN_POINTS ub - b",x,y,ub-b);	    
+//	    console.log("STRAIN_POINTS ub - b",x,y,ub-b);	    
 	    return ub - b;
 	}
     }
@@ -599,7 +599,7 @@ module.exports.bound_intersections = function(d,M,C,a,b) {
 	ub = M.ubs[en]  || M.defub;
 	ubis = this.circle_intersections(C[a],ub,C[b],ub,
 					 { b0: 'ub', nd0: a, b1: 'ub', nd1: b});
-	console.log("UBIS",a,b,ub,ubis);
+//	console.log("UBIS",a,b,ub,ubis);
 //    }
 //    if (isNumeric(ub) && isNumeric(lb)) {
 	luis = this.circle_intersections(C[a],lb,C[b],ub,
@@ -607,7 +607,7 @@ module.exports.bound_intersections = function(d,M,C,a,b) {
 	ulis = this.circle_intersections(C[a],ub,C[b],lb,
 					{ b0: 'ub', nd0: a, b1: 'lb', nd1: b});
 //    }
-    console.log("LB, UB", lb,ub,M.deflb,M.defub);
+//    console.log("LB, UB", lb,ub,M.deflb,M.defub);
     var is = [];
     var is = is.concat(ubis).concat(luis).
 	concat(ulis).concat(lbis);
@@ -629,7 +629,7 @@ module.exports.all_strains = function(d,M,C,x,p) {
 								y,
 								p,
 								C[y]);
-				     console.log("S =",x,p,y,C[y],s);
+//				     console.log("S =",x,p,y,C[y],s);
 				     return s;
 				  }
 				 );
@@ -653,8 +653,8 @@ module.exports.max_strain_on_point = function(d,M,C,x,p) {
 // y is the head of the strainfront vector
 // return z, the position of y which completely eases x->y strain.
 module.exports.zero_x_strain = function(d,M,C,x,y) {
-    console.log("x :",x, "y :", y, "C[x] :",C[x]);
-    console.log("C :",C);    
+//    console.log("x :",x, "y :", y, "C[x] :",C[x]);
+//    console.log("C :",C);    
     // first, let us determine if there is any strain.
     var s = this.strain(d,M,C,x,y);
     var retval; 
@@ -674,16 +674,16 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 			    else { // compute v0 v1 intersections (0,1, or 2, and add)
 				if (v0 < v1) {
 				    var en = this.ename(v0,v1);
-				    console.log("ENAME",en);
+//				    console.log("ENAME",en);
 				    var ints = this.bound_intersections(d,M,C,v0,v1);
-				    console.log("intersections",C[v0],C[v1],ints);				    
+//				    console.log("intersections",C[v0],C[v1],ints);				    
 				    intersections = intersections.concat(ints);
 				}
 			    }
 			});
 		}
 	);
-	console.log("BOUND INTERSECTIONS = ",intersections);
+//	console.log("BOUND INTERSECTIONS = ",intersections);
 	// now that we have the intersections, we want to see if there is one
 	// that has no strain at all...
 	// so we iterate of all intersections, seeking a point that
@@ -692,17 +692,17 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 	intersections.forEach( i => {
 	    const py = i.p;
 	    var max_strain = this.max_strain_on_point(d,M,C,y,py);
-	    console.log("QQQ",this.all_strains(d,M,C,y,py));	    
+//	    console.log("QQQ",this.all_strains(d,M,C,y,py));	    
 //	    console.log("ZZZ",y,py,max_strain);
 	    if (max_strain == 0) {
-		console.log("AAA : ",i.p,i.p.distanceTo(C[y]));
+//		console.log("AAA : ",i.p,i.p.distanceTo(C[y]));
 
 		// My animation of this algorithm now leads me to believe this is making
 		// a bad choice.
 		if (!zero_strain_point ||
 		    i.p.distanceTo(C[y]) < zero_strain_point.distanceTo(C[y])) {
 		    zero_strain_point = i.p;
-		    console.log("BBB: ",zero_strain_point,zero_strain_point.distanceTo(C[y]));
+//		    console.log("BBB: ",zero_strain_point,zero_strain_point.distanceTo(C[y]));
 		}
 	    }
 	});
@@ -711,7 +711,7 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 	// if we have found a zero_strain_point, we should surely return that!
 	// Note: This is type dependent
 	if (zero_strain_point instanceof Object) {
-//	    console.log("zero strain point",zero_strain_point);
+	    console.log("zero strain point",zero_strain_point);
 	    retval = zero_strain_point;
 	} else {
 	    // Since we have no intersection point which is universally strain-free,
@@ -734,17 +734,17 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 		    }
 		},
 				      []);
-//	    console.log("zero_x_strain: ",zero_x_strain_points);
+	    console.log("zero_x_strain: ",zero_x_strain_points);
 	    if (zero_x_strain_points.length != 0) { // we're in luck...
 		// we can should return one which is closest to C[x]...
 		retval = zero_x_strain_points.reduce(
 		    (acc,p) =>
-			(p.distanceTo(C[x]) < acc[0]) ?
-			[p.distanceTo(C[x]),p] :
+			(p.distanceTo(C[y]) < acc[0]) ?
+			[p.distanceTo(C[y]),p] :
 			acc,
 		    [Number.MAX_VALUE,zero_x_strain_points[0]])[1];
 	    } else {
-//		console.log("NO ZERO_X_STRAIN POINTS!");
+		console.log("NO ZERO_X_STRAIN POINTS!");
 		// Okay, so if there are no points of zero x strain,
 		// we will have to choose a point on a line that is NOT an
 		// intersection point.
@@ -766,7 +766,7 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 	    }
 	}
     }
-    console.log("retval",retval);
+//    console.log("retval",retval);
     if (this.DEBUG_LEVEL > 0)
 	assert(
 	    this.strain_points(d,M,x,y,C[x],retval) == 0,
@@ -843,7 +843,7 @@ module.exports.relieves = function(d,M,C,S,num) {
     const v = (lnn instanceof Object)
 	  ? lnn : ln;
     assert(v);
-//    console.log("v : ",v);    
+    console.log("v : ",v.tl,v.hd);    
     // remove element v...
     S.s = S.s.filter(item => item !== v)
     // now v is a node of minum depth...
@@ -852,7 +852,7 @@ module.exports.relieves = function(d,M,C,S,num) {
 	return S;
     } else {
 	var z = this.zero_x_strain(d,M,S.cur,v.tl,v.hd);
-//	console.log("in relieves",v,z);
+	console.log("in relieves",v,z);
 	return  (v.num > 0) ?
 	    this.perturb(d,M,C,S,v.hd,z,num)
 		    : this.reperturb(d,M,C,S,v.hd,z,num)

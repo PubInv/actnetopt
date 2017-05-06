@@ -40,6 +40,11 @@ title: Actuator Net Optimization
 
     <script>
 
+// Major questions:
+// Why is it taking more steps than it should?
+// Why isn't the last node being relaxed properly?
+
+
     const ANO = UGLY_GLOBAL_SINCE_I_CANT_GET_MY_MODULE_INTO_THE_BROWSER;
 
 // Make an instance of two and place it on the page.
@@ -180,7 +185,7 @@ var step = 0;
 var color = ['red','blue','green','purple','gray']
 var ycnt = 0;
 var xcnt = 0;
-var limit = 3;
+var limit = 20;
 function animate(s) {
     //    console.log(s);
     var ALGS_PER_ROW = 6;
@@ -195,7 +200,8 @@ function animate(s) {
 			 return p;
 		     }));
 	step++;
-	console.log(step,s.s);	
+    console.log(step,s.s.length);
+    console.log(step,s.s);    
 
     //    alert();
     two.update();
