@@ -748,7 +748,6 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 		// Okay, so if there are no points of zero x strain,
 		// we will have to choose a point on a line that is NOT an
 		// intersection point.
-
 		// One idea is to draw a line to the centroid of the free area,
 		// or to the closest point to y in in the free area of y (assuming that
 		// we don't count x). Then try to get
@@ -797,10 +796,19 @@ module.exports.perturb = function(d,M,C,S,a,v,num) {
     if (!previously_perturbed) {
 	M.g.neighbors(a)
 	    .forEach(v0 => {
-		if (!S.s.find(sv => (sv.tl == a && sv.hd == v0)))
-		    S.s.push({tl:a, hd:v0, fwd: true, num: num});
-		if (!S.s.find(sv => (sv.tl == v0 && sv.hd == a)))			      
-		    S.s.push({tl:v0, hd:a, fwd: true, num: -num});			      
+		// This is failing to catch us somehow
+		if ((!S.s.find(sv => (sv.tl == a && sv.hd == v0)))
+		    &&
+		    (!S.used.find(sv => (sv.tl == a && sv.hd == v0)))) {
+ 		    S.s.push({tl:a, hd:v0, num: num});
+		    console.log("ADDING: ",{tl:a, hd:v0, num: num});
+		}
+		if ((!S.s.find(sv => (sv.tl == v0 && sv.hd == a)))
+		    &&
+		    (!S.used.find(sv => (sv.tl == v0 && sv.hd == a)))) {
+		    S.s.push({tl:v0, hd:a,  num: -num});
+		    console.log("ADDING: ",{tl:v0, hd:a,  num: -num});		    
+		}
 	    });
     }
     return S;
@@ -843,9 +851,10 @@ module.exports.relieves = function(d,M,C,S,num) {
     const v = (lnn instanceof Object)
 	  ? lnn : ln;
     assert(v);
-    console.log("v : ",v.tl,v.hd);    
+    console.log("v : ",v.tl,v.hd, v.num);    
     // remove element v...
     S.s = S.s.filter(item => item !== v)
+    S.used.push(v);
     // now v is a node of minum depth...
     if ((v.hd in M.fixed) || (v.hd in S.fixed)) {
 	S.fixed[v.hd] = true;
@@ -880,7 +889,7 @@ module.exports.strainfront = function(d,M,C,a,v,anim) {
 //    console.log(dijkstra);    
     var shortestPath = dijkstra(M.g, a);
 //    console.log(shortestPath);
-    var S = { s: [], cur: cur, fixed: {}, perturbed: {} , dsp: shortestPath};
+    var S = { s: [], used: [], cur: cur, fixed: {}, perturbed: {} , dsp: shortestPath};
     var num = 1;
     if (anim)
 	if (!anim(S)) return S.cur;
