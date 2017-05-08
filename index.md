@@ -212,11 +212,13 @@ function animate(s) {
 }
 // var C = ANO.strainfront(mtp.d,mtp.model,mtp.coords,'c',new THREE.Vector2(0,4),animate);
 
-var C = ANO.strainfront(mtp.d,mtp.model,mtp.coords,'e',new THREE.Vector2(0,4),animate);
+var C = ANO.strainfront(mtp.d,mtp.model,mtp.coords,'j',new THREE.Vector2(6,4),animate);
 console.log("C = ",C);
+step = 0;
 
-// var D = ANO.strainfront(mtp.d,mtp.model,C,'e',new THREE.Vector2(0,4),animate);
+// var D = ANO.strainfront(mtp.d,mtp.model,C,'d',new THREE.Vector2(4,4),animate);
 // console.log("D = ",D);
+
 
     </script>
 

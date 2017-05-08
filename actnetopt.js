@@ -181,7 +181,7 @@ module.exports.medium_triangle_problem2 = function() {
 	      defub: 2,
 	      fixed: {}
 	    };
-    const nodeset = gen_nodeset(5);
+    const nodeset = gen_nodeset(10);
     nodeset.forEach(nd => m.g.addVertex(nd));
     gen_regular_2d_net(m,nodeset);
 
@@ -197,16 +197,31 @@ module.exports.medium_triangle_problem2 = function() {
 		 wt: 3 };
 
     var nodes = {};
-    var a = new THREE.Vector2(0,0);
+
+    var med = (m.deflb + m.defub)/2;
+    var h = (Math.sqrt(3))/2* med;
+    
+    for(var i = 0; i < nodeset.length; i++) {
+	var nd = nodeset[i];
+	var x = (i % 2) * h;
+	var y = i*(med/2)
+	var p = new THREE.Vector2(x,y);
+	console.log("NODE",i,nd,x,y,p);	
+	nodes[nd] = p;
+    }
+    console.log("NODES",nodes);
+/*    var a = new THREE.Vector2(0,0);
     var b = new THREE.Vector2(0,1.5);
     var c = new THREE.Vector2(1,1);
     var d = new THREE.Vector2(1.5,2);
     var e = new THREE.Vector2(2.5,1);        
+
     nodes['a'] = a;
     nodes['b'] = b;
     nodes['c'] = c;
     nodes['d'] = d;
     nodes['e'] = e;        
+*/
     
     return { dim: dim,
 	     coords: nodes,
@@ -355,6 +370,7 @@ module.exports.copy_vector = function(v) {
 
 module.exports.legal_configp = function(model,config) {
     var string = "";
+    var epsilon = 0.00000000000001;
     model.g.vertices.forEach(
 	v0 =>
 	    model.g.neighbors(v0).forEach(
@@ -365,11 +381,11 @@ module.exports.legal_configp = function(model,config) {
 			var d = c0.distanceTo(c1);
 			var ename = (v0 < v1) ? v0 + ' ' + v1
 			    : v1 + ' ' + v0;
-			if (d < model.lbs[ename]) {
+			if (d < (model.lbs[ename] - epsilon)) {
 			    string += "lower bound not met: " + ename + " " + d + " \n";
 			    return ename;
 			}
-			if (d > model.ubs[ename]) {
+			if (d > (model.ubs[ename] + epsilon)) {
 			    string += "upper bound not met: " + ename +  " " + d  + " \n";
 			    return ename;
 			}
