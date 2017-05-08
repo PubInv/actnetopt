@@ -89,6 +89,18 @@ function gen_regular_2d_net(m,nodeset) {
 }
 
 
+function gen_simple_3d_net(m,nodeset) {
+    assert(nodeset.length >= 3);
+    m.g.addEdge('a','b');
+    m.g.addEdge('b','c');
+    m.g.addEdge('c','a');
+    m.g.addEdge('a','d');
+    m.g.addEdge('b','d');
+    m.g.addEdge('c','d');
+    
+}
+
+
 // MAJOR CONCEPTUAL PROBLEM: my algorithm is pretty much assuming
 // that all the lowerbounds and upper bounds are the same.
 module.exports.simple_triangle_problem = function() {
@@ -124,6 +136,51 @@ module.exports.simple_triangle_problem = function() {
     nodes['a'] = a;
     nodes['b'] = b;
     nodes['c'] = c;
+    
+    return { dim: dim,
+	     coords: nodes,
+	     model: m,
+	     goals: goals,
+	     fixed: fixed};
+}
+
+
+module.exports.simple_tetrahedron_problem = function() {
+    var dim = this.dim2;
+    var m = { g: new algols.Graph(false),
+	      lbs: {},
+	      ubs: {},
+	      deflb: 1.1,
+	      defub: 2,
+	      fixed: {}
+	    };
+
+    const nodeset = gen_nodeset(4);
+    nodeset.forEach(nd => m.g.addVertex(nd));
+
+    construct_bounds(m,nodeset,m.deflb,m.defub);
+    
+    gen_simple_3d_net(m,nodeset);
+
+    var fixed = {};
+    fixed['a'] = true;
+    fixed['b'] = true;
+    m.fixed = fixed;
+
+    var goals = [];
+    goals[0] = { nd: 'c',
+		 pos: new THREE.Vector3(4,4),
+		 wt: 3 };
+
+    var nodes = {};
+    var a = new THREE.Vector3(0,0,0);
+    var b = new THREE.Vector3(0,1.5,0);
+    var c = new THREE.Vector3(1,1,0);
+    var d = new THREE.Vector3(0.5,0.5,1);    
+    nodes['a'] = a;
+    nodes['b'] = b;
+    nodes['c'] = c;
+    nodes['d'] = d;    
     
     return { dim: dim,
 	     coords: nodes,
@@ -172,6 +229,22 @@ module.exports.medium_triangle_problem = function() {
 	     fixed: fixed};
 }
 
+function gen_regular_2d_coords(m,nodeset) {
+    var med = (m.deflb + m.defub)/2;
+    var h = (Math.sqrt(3))/2* med;
+    var nodes = {};
+    
+    for(var i = 0; i < nodeset.length; i++) {
+	var nd = nodeset[i];
+	var x = (i % 2) * h;
+	var y = i*(med/2)
+	var p = new THREE.Vector2(x,y);
+	console.log("NODE",i,nd,x,y,p);	
+	nodes[nd] = p;
+    }
+    return nodes;
+}
+
 module.exports.medium_triangle_problem2 = function() {
     var dim = this.dim2;
     var m = { g: new algols.Graph(false),
@@ -196,32 +269,10 @@ module.exports.medium_triangle_problem2 = function() {
 		 pos: new THREE.Vector2(3.9,-2),
 		 wt: 3 };
 
-    var nodes = {};
+    const nodes = gen_regular_2d_coords(m,nodeset);
 
-    var med = (m.deflb + m.defub)/2;
-    var h = (Math.sqrt(3))/2* med;
-    
-    for(var i = 0; i < nodeset.length; i++) {
-	var nd = nodeset[i];
-	var x = (i % 2) * h;
-	var y = i*(med/2)
-	var p = new THREE.Vector2(x,y);
-	console.log("NODE",i,nd,x,y,p);	
-	nodes[nd] = p;
-    }
+
     console.log("NODES",nodes);
-/*    var a = new THREE.Vector2(0,0);
-    var b = new THREE.Vector2(0,1.5);
-    var c = new THREE.Vector2(1,1);
-    var d = new THREE.Vector2(1.5,2);
-    var e = new THREE.Vector2(2.5,1);        
-
-    nodes['a'] = a;
-    nodes['b'] = b;
-    nodes['c'] = c;
-    nodes['d'] = d;
-    nodes['e'] = e;        
-*/
     
     return { dim: dim,
 	     coords: nodes,

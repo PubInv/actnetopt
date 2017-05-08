@@ -310,6 +310,16 @@ describe('strainfront_algorithm', function() {
 		}
 	    }
 	});
+    	it('Can create a simple tetrahedron', function() {
+	    var stm = ANO.simple_tetrahedron_problem();
+	    var NUM = 4;
+	    for(var i = 3; i < NUM; i++) {
+		for(var j = 3; j < NUM; j++) {
+		    var C = ANO.strainfront(stm.d,stm.model,stm.coords,'d',new THREE.Vector3(i,j,1.5));
+		    assert(C);
+		}
+	    }
+	});
 	
     });
 
