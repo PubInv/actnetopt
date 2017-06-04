@@ -37,7 +37,7 @@ satisfactorily. In this model "X" will be a six vector (3 x 2), representing
 */
 	var fxprime = [0,0,0,0,0,0];
 
-	var H = [0,0,0,1,0.5,Math.sqrt(3)/2];
+	var H = [0,0,0,1,0.6,Math.sqrt(3)/2];
 	var G = [[0,1],[1,2],[0,2]];
 	var f = function(X,fxprime) {
 	    // We define f to be the sum or the reward function and penalty function
@@ -81,7 +81,7 @@ satisfactorily. In this model "X" will be a six vector (3 x 2), representing
 
 
     describe('parametric trinagle case', function() {
-	var params = {'maxIterations' : 500, 'history' : []};
+	var params = {'maxIterations' : 50, 'history' : []};
 
 	/* An attempt to set up the simplest triangle we can 
 for the purpose of testing fmin and our ability to define the gradient 
@@ -90,18 +90,20 @@ satisfactorily. In this model "X" will be a six vector (3 x 2), representing
 */
 	var fxprime = [0,0,0,0,0,0];
 
-	var H = [0,0,0,1,0.5,Math.sqrt(3)/2]; // Goal positions.
+	var H = [0,0,0,1,0.6,1.1]; // Goal positions.
 	var E = [[0,1],[1,2],[0,2]]; // Edges
-	var N = [0,1,2]; // Node 
-	var Y = [0.5,0.5,0.5]; // minimum edge lengths
-	var Z = [1.0,1.0,1.0]; // maximum edge lengths
+	var N = [0,1,2]; // Node
+	var min = 0.5;
+	var Y = [min,min,min]; // minimum edge lengths
+	var max = 1.3;
+	var Z = [max,max,max]; // maximum edge lengths
 	var f = function(X,fxprime) {
 	    // We define f to be the sum or the reward function and penalty function
 	    // Although we could operate on fxprime, I prefer pure functions,
 	    // so I will define r and p to be pure functions that return the pair [f(X),f'(X)].
 	    // Note that f(X) is a scalar, and f'(X) is a vector in the same shape as X.
 	    var rv = r(X,H);
-	    var pv = p(X,E);
+	    var pv = p(X,N,E,Y,Z);
 	    // against my preferred style, the fmin system requires us to modify the fxprime parameter
 	    for(var i = 0; i < rv[1].length; i++) {
 		fxprime[i] = rv[1][i] + pv[1][i];		
@@ -125,22 +127,36 @@ satisfactorily. In this model "X" will be a six vector (3 x 2), representing
 	    return [v,d];
 	}
 	
-	var p = function(X,E,Y,Z) {
+	var p = function(X,N,E,Y,Z) {
 	    var v = 0;
-	    E.forEach(function(e,n) {
-		var i = e[0];
-		var j = e[1];
-		var A = new THREE.Vector2(X[i*2],X[i*2+1]);
-		var B = new THREE.Vector2(X[j*2],X[j*2+1]);
-		var len = distance(A,B);
-		if (len < Y[n]) {
-		    v += -2* (X[i] - X[j]);
-		}
-		if (len > Z[n]) {
-		    v += 2* (X[i] - X[j]);
-		}
-	    }
 	    var d = [0,0,0,0,0,0];
+	    
+	    N.forEach(function(n,ix) {
+		var s = 0;
+		E.forEach(function(e,n) {
+		    var i = e[0];
+		    if (ix == i) { // we only operate on edges related to i
+			var j = e[1];
+			var A = new THREE.Vector2(X[i*2],X[i*2+1]);
+			var B = new THREE.Vector2(X[j*2],X[j*2+1]);
+			var len = A.distanceTo(B);
+			var q = 0;
+			if (len < Y[n]) {
+			    q += -2;
+			}
+			if (len > Z[n]) {
+			    q += 2;
+			}
+			if (q) {
+			    var temp = ((A.x - B.x) + (A.y - B.y));
+			    s += q * temp;
+			    v += temp*temp;
+			}
+		    }
+		});
+		d[ix] = s;
+	    });
+//	    console.log("v",v);
 	    return [v,d];	    
 	}
 

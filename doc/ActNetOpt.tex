@@ -8,6 +8,7 @@
 \usepackage{pifont}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{relsize}
 \usepackage{draftwatermark}
 
 \SetWatermarkText{DRAFT}
@@ -205,8 +206,8 @@ represents a penalty function defined by:
 
 
 \begin{multline}
-  p(\mathbf{x}) = \sum_{e_{i,j} \in E} max \bigg(0, \Big(y(i,j) - ((X_{ix} - X_{jx})^2 + (X_{iy} - X_{jy})^2)  \Big) \bigg) \\
-  + max \bigg(0,  \Big((X_{ix} - X_{jx})^2 + (X_{iy} - X_{jy})^2) - z(i,j) \Big) \bigg)
+  p(\mathbf{x}) = \sum_{e_{i,j} \in E} max \bigg(0, \Big(y(i,j) - ( \sum_{d \in D}(X_{id} - X_{jd})^2 )  \Big) \bigg) \\
+  + max \bigg(0,  \Big(\sum_{d \in D}(X_{id} - X_{jd})^2) - z(i,j) \Big) \bigg)
 \end{multline}
 
 To use the fmin software, we need to compute the derivative of $f$. In parcticular
@@ -221,15 +222,15 @@ it requires the computation of the partial derivative for each variable $x_i$.
 
 \begin{multline}
   \frac{\partial p}{\partial x_i}
-  =  \sum_{j:e_(i,j) \in E}
-  -2((x_{ix} - x_{jx}) + (x_{iy} - x_{jy}) + (x_{iz} - x_{jz}))\big[\lVert \mathbf{x}_i - \mathbf{x}_j \rVert < y(i,j)\big]\\
-  + 2((x_{ix} - x_{jx}) + (x_{iy} - x_{jy}) + (x_{iz} - x_{jz}))\big[\lVert \mathbf{x}_i - \mathbf{x}_j \rVert > z(i,j)\big]
+  =  \mathlarger{\sum_{j:e_(i,j) \in E}}
+  -2(\sum_{d \in D}(x_{id} - x_{jd}))\big[\lVert \mathbf{x}_i - \mathbf{x}_j \rVert < y(i,j)\big]\\
+  + 2(\sum_{d \in D}(x_{id} - x_{jd}))\big[\lVert \mathbf{x}_i - \mathbf{x}_j \rVert > z(i,j)\big]
 \end{multline}
 
 \begin{multline}
   \frac{\partial p}{\partial x_i}
-  =  \sum_{j:e_(i,j) \in E}
-  \big((x_{ix} - x_{jx}) + (x_{iy} - x_{jy}) + (x_{iz} - x_{jz})\big) \big(-2\big[\lVert \mathbf{x}_i - \mathbf{x}_j \rVert < y(i,j)\big]
+  =  \mathlarger{\sum_{j:e_(i,j) \in E}}
+  \big(\sum_{d \in D}(x_{id} - x_{jd})\big) \big(-2\big[\lVert \mathbf{x}_i - \mathbf{x}_j \rVert < y(i,j)\big]
   + 2\big[\lVert \mathbf{x}_i - \mathbf{x}_j \rVert > z(i,j)\big]\big)
 \end{multline}
 
