@@ -74,9 +74,10 @@ We now define the problem ACTNETOPT.
 The input to our problem can be formalized as:
 \begin{itemize}
  \item An input dimension $d$ (probably 2 or 3.) Nodes positions are elemenst of $\mathbb{R}^d$
- \item A model of a net of $n$ nodes in the form of a graph.
-   \item A mapping from from node index $i$ to minimum length $Y(i)$ and maximum length $Z(i)$.
-\item A set of goal points $g_j$ associated with node $j$ chosen from $\mathbb{R}^d$.
+ \item A model of a net of $n$ nodes in the form of a graph $G = (N, E)$.
+ \item A mapping from from node index $i$ to the square of the minimum length $Y(i)$ and maximum length $Z(i)$ It is
+   convenient to treat these as the square of the length, or quadrance.
+\item A set of goal points $H$ $h_j$ associated with node $j$ chosen from $\mathbb{R}^d$.
 \item A linear weighting $w(j)$ of goal points interpreted as the cost of not placing the node $j$ at
   the goal point $g_j$ proportional to the square of that distance.
 \item A set of static nodes $S$ which may not be moved by the algorithm.
@@ -143,6 +144,103 @@ we can expect an algorithm specific to this
 problem to do well.  Since most of the quadratic constraint
 programming packages are commercial, there is a strong
 incentive to develop a specific algorithm.
+
+\section{Why we may use Powell's Method}
+
+This is fundatmentally a constraint optimization problem. However, we can model it as a continuous
+optimization problem with heavy penalties for violating the constraints.
+
+Given that we have a relatively small number of nodes, it is possible that a global optimization
+system, such as Powell's Method, might work just fine for what we are trying to acheive here.
+
+I do not anticipate the space to have many local minima. Although using Powell's method
+is probably wasteful from a scientific point of view, coding it has a number of advantages:
+\begin{itemize}
+\item This will be a contribution to open source systems in general.
+\item It can be used as a subroutine in the Strainfront algorithm below.
+  \item It may simply solve our problem without much additional effort.
+\end{itemize}
+
+Powell's method has been implemented many times in C and C++. However, I am contemplating
+implemeting it in JavaScript.  This could be considered a forward-thinking action in the vanguard,
+or it could be considered a limitation.  Since Public Invention leans very heavily on browser-based
+functionality to be as accessbile to as many people as possible, a JavaScript implemention is
+potentially useful because it can be run in the  browser.
+
+Certainly at present my immediate goals are to be able to work on the Ammo simulation which
+is all browser-based.  From our emacs-lisp control structure, we can call a C function
+or a Node function with inter-process communication equally easily.
+
+If I can't do this in JavaScript, it will be inaccessible to all of my other browser-based
+code.
+
+\section{Open source project: fmin}
+
+There is an open source javascript project called fmin that looks really awesome and appears to
+be what we want.  The only limitation is that it requires the computation of the gradient at
+each point.  I wanted to avoid this, but in fact it is quite calculatable for this situation,
+so I think the best thing is for me to actually work out the gradient and use these methods,
+which is undoubtably a better approach than relying purely on a non-gradient approach.
+
+So here begins my attemtp to define the objective function in a differentiable way.
+
+\begin{equation}
+  f(\mathbf{x}) = r(\mathbf{x}) + p(\mathbf{x});
+\end{equation}
+
+\begin{equation}
+  r(\mathbf{x}) = \sum_{i \in H} w_id(\mathbf{x}_i,Targ_i)^2 
+\end{equation}
+
+\begin{equation}
+  r(\mathbf{x}) = \sum_{i \in H} w_i\big((x_{ix} - h_{ix})^2 + (x_{iy} - h_{iy})^2 + (x_{iz} - h_{iz})^2\big)
+\end{equation}
+
+where $\mathbf{x}$ represents the vector of 3-dimensional node positions, $p(\mathbf{x})$
+represents a penalty function defined by:
+\begin{equation}
+  p(\mathbf{x}) = \sum_{e_{i,j} \in E} max(0, (y(i,j) - \lVert \mathbf{x}_i - \mathbf{x}_j \rVert^2  ))
+  + max(0,  (\lVert \mathbf{x}_i - \mathbf{x}_j \rVert^2 - z(i,j) ))
+\end{equation}
+
+
+\begin{multline}
+  p(\mathbf{x}) = \sum_{e_{i,j} \in E} max \bigg(0, \Big(y(i,j) - ((X_{ix} - X_{jx})^2 + (X_{iy} - X_{jy})^2)  \Big) \bigg) \\
+  + max \bigg(0,  \Big((X_{ix} - X_{jx})^2 + (X_{iy} - X_{jy})^2) - z(i,j) \Big) \bigg)
+\end{multline}
+
+To use the fmin software, we need to compute the derivative of $f$. In parcticular
+it requires the computation of the partial derivative for each variable $x_i$.
+\begin{equation}
+  f'(\mathbf{x}) = r'(\mathbf{x}) + p'(\mathbf{x})
+\end{equation}
+
+\begin{equation}
+  \frac{\partial r}{\partial x_i}  =  2w_i(x_i - h_i)
+\end{equation}
+
+\begin{multline}
+  \frac{\partial p}{\partial x_i}
+  =  \sum_{j:e_(i,j) \in E}
+  -2((x_{ix} - x_{jx}) + (x_{iy} - x_{jy}) + (x_{iz} - x_{jz}))\big[\lVert \mathbf{x}_i - \mathbf{x}_j \rVert < y(i,j)\big]\\
+  + 2((x_{ix} - x_{jx}) + (x_{iy} - x_{jy}) + (x_{iz} - x_{jz}))\big[\lVert \mathbf{x}_i - \mathbf{x}_j \rVert > z(i,j)\big]
+\end{multline}
+
+\begin{multline}
+  \frac{\partial p}{\partial x_i}
+  =  \sum_{j:e_(i,j) \in E}
+  \big((x_{ix} - x_{jx}) + (x_{iy} - x_{jy}) + (x_{iz} - x_{jz})\big) \big(-2\big[\lVert \mathbf{x}_i - \mathbf{x}_j \rVert < y(i,j)\big]
+  + 2\big[\lVert \mathbf{x}_i - \mathbf{x}_j \rVert > z(i,j)\big]\big)
+\end{multline}
+
+where the square brackets represent Iverson notation, which evalutes to $1$ if the condition
+inside the brackets is true and $0$ if false.
+
+It seems likely that we can compute the derivatives of these functions in code relatively easily.
+My plan is to complete that and then try to work this into the existing actoptmin framework.
+
+We must decide whether to treat the x,y,z coordinates as a vector or as independent variables in
+this system. I believe mathematically, it is 100\% possible to treat them as independent variables.
 
 \section{First Algorithm}
 
@@ -331,7 +429,10 @@ Major TODOs at this point are:
 The problem should be recursively reducible. For example, A triangle can
 be reducde to a linear segment with an apex at one end and the midpoint of the
 other side at the other end.  In principle, this allows a 3-fold reduction
-in the complexity of the problem.
+in the complexity of the problem.  It also may lead to more symmetric solutions,
+even based on the intersection-point only algorithm.  In small examples this seems
+to work.
+
 
 
 \section{References}
