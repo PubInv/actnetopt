@@ -127,6 +127,8 @@ module.exports.simple_triangle_problem = function() {
     var goals = [];
     goals[0] = { nd: 'c',
 		 pos: new THREE.Vector2(4,4),
+		 //		 pos: new THREE.Vector2(9,6),
+//		 pos: new THREE.Vector2(0,6),		 		 
 		 wt: 3 };
 
     var nodes = {};
@@ -751,6 +753,7 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 		// One idea is to draw a line to the centroid of the free area,
 		// or to the closest point to y in in the free area of y (assuming that
 		// we don't count x). Then try to get
+		// NOTE: I think now that maybe this is the place for Powell's method
 		var g = this.copy_vector(C[y]);
 		g.sub(C[x]);
 		// Now g is a vector from C[x] to C[y].

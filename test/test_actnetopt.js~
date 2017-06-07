@@ -1,0 +1,28 @@
+var assert = require('assert');
+
+var tm = require('./tetrahelix_math.js')
+
+
+Math.distance3 = function(p0,p1) {
+    x = p0[0] - p1[0];
+    y = p0[1] - p1[1];
+    z = p0[2] - p1[2];        
+    return Math.sqrt(x*x + y*y + z*z);
+}
+
+
+describe('Array', function() {
+    describe('#indexOf()', function() {
+	it('should return -1 when the value is not present', function() {
+	    assert.equal(-1, [1,2,3].indexOf(4));
+	});
+    });
+});
+
+describe('actoptnet_math', function() {
+    describe('first_test', function() {
+	it('has a variable that is true', function() {
+	    assert.equal(TRUE,true);
+	});
+    });
+});
