@@ -9,6 +9,9 @@ var THREE = require('../javascripts/three.js');
 // console.log(fmin);
 
 var SMALL = 1e-5;
+var SMALL_DIFF = function(a,b) {
+    return (Math.abs(a - b) < SMALL);
+}
 
 var valueOfNode = function(name,X,F,V) {
     var obj = V[name];
@@ -133,39 +136,36 @@ var p = function(F,X,stm,Y,Z,V,names) {
 }
 
 
-describe('fmin', function() {
-    // describe('zero function', function() {
-    // 	var params = {'maxIterations' : 500, 'history' : []};
+describe('optimization', function() {
+    it('zero function', function() {
+	var params = {'maxIterations' : 500, 'history' : []};
 
-    // 	var initial = [13,4];
-    // 	var fq = function(X,fxprime) {
-    // 	    var x = X[0], y = X[1];	    	    
-    // 	    fxprime = fxprime || [0, 0];	    
-    // 	    fxprime[0] = 2*(x-3);
-    // 	    fxprime[1] = 2*y
-    // 	    return (x - 3)*(x- 3) + y*y + 60;
-    // 	}
-    // 	var grd = function(X) {
-    // 	    var n = X.length;
-    // 	    var fxprime = Array.apply(null, Array(n)).map(Number.prototype.valueOf,0);
-    // 	    fq(X,fxprime);
-    // 	    return fxprime;
-    // 	}
-    // 	//      var solution = opt.minimize_Powell(f, initial);
-    // 	var solution = opt.minimize_L_BFGS(f,grd, initial);	
-    // 	console.log(solution);
-    // });
+	var initial = [13,4];
+	var f = function(X,fxprime) {
+	    var x = X[0], y = X[1];	    	    
+	    fxprime = fxprime || [0, 0];	    
+	    fxprime[0] = 2*(x-3);
+	    fxprime[1] = 2*y
+	    return (x - 3)*(x- 3) + y*y;
+	}
+	var fd = function(X) {
+	    var n = X.length;
+	    var fxprime = Array.apply(null, Array(n)).map(Number.prototype.valueOf,0);
+	    f(X,fxprime);
+	    return fxprime;
+	}
+	var solution0 = opt.minimize_Powell(f,initial);
+	var solution1 = opt.minimize_L_BFGS(f,fd,initial);	
+	for(var i = 0; i < solution0.length; i++) {
+	    assert(SMALL_DIFF(solution0[i] - solution1[i]));
+	}
+    });
+    
 
-    describe('I am computing the derivative correctly', function() {
+    it('I am computing the derivative correctly', function() {
 
     	var stm = ANO.simple_triangle_problem();
 	
-	// Now I will attempt to integrate the mathematical approaches here...
-	
-	//	var H = [0,0,0,1,0.6,1.1]; // Goal positions.
-
-	// Nodes are partitioned into three classes:
-	// fixed, free, and goals.
 	var X = [];
 	var X0 = [];
 	var N = []; // Node
@@ -233,22 +233,17 @@ describe('fmin', function() {
 	}
 
 	var grd_r0 = function(X) {
-//	    var n = X.length;
-//	    var fxprime = Array.apply(null, Array(n)).map(Number.prototype.valueOf,0);
 	    var v = rd(X);
 	    return v;
 	}
 
-	console.log("computing r0");
 	var initial_copy = initial.slice();
 	const r0v = grd_r0(initial);
 	const r1v = opt.numerical_gradient(rv,initial_copy);
 	
-	console.log("r0v,r1v",r0v,r1v);
-	
-	console.log("i","r comp","r numer","==");
 	for(var i = 0; i < r0v.length; i++) {
-	    console.log(i,r0v[i],r1v[i],r0v[i] == r1v[i]);
+//	    console.log(i,r0v[i],r1v[i],r0v[i] == r1v[i]);
+	    assert(SMALL_DIFF(r0v[i],r1v[i]));	    	    
 	};
 
 	
@@ -260,33 +255,24 @@ describe('fmin', function() {
 	}
 
 	var grd_p0 = function(X) {
-//	    var n = X.length;
-//	    var fxprime = Array.apply(null, Array(n)).map(Number.prototype.valueOf,0);
 	    var v = pd(X);
 	    return v;
 	}
 	
-	console.log("computing p0");
+
 	var initial_copy = initial.slice();
 	const p0v = grd_p0(initial);
 	const p1v = opt.numerical_gradient(pv,initial_copy);
 	
-	console.log("p0v,p1v",p0v,p1v);
-	
-	console.log("i","r comp","r numer","==");
 	
 	for(var i = 0; i < p0v.length; i++) {
-	    console.log(i,p0v[i],p1v[i],p0v[i] == p1v[i]);
+//	    console.log(i,p0v[i],p1v[i],p0v[i] == p1v[i]);
+	    assert(SMALL_DIFF(p0v[i],p1v[i]));	    
 	};
 
 
-	console.log("XXXXXXXXXXXXXXXXXXXXXXXXXX");
+//	console.log("XXXXXXXXXXXXXXXXXXXXXXXXXX");
 
-/*	var fd = function(X,fxprime) {
-	    return f(X,fxprime,stm,Y,Z,names,V,F)[1];	    
-	}
-*/
-	
 	var fv = function(X) {
 	    var n = X.length;
 	    var fxprime = Array.apply(null, Array(n)).map(Number.prototype.valueOf,0);
@@ -302,41 +288,25 @@ describe('fmin', function() {
 	var grd0 = function(X) {
 	    var n = X.length;
 	    var fxprime = Array.apply(null, Array(n)).map(Number.prototype.valueOf,0);
-	    console.log("FV FXPRIME",fxprime);	    
 	    var v = fd(X,fxprime);
 	    return v;
 	}
 	
-	console.log("Computing GRD");
 	const grd0v = grd0(initial);
 	const grd1v =  opt.numerical_gradient(fv,initial);
-	console.log("grd0v",grd0v);
-	console.log("grd1v",grd1v);
-	console.log("i","comp","numer","==");
 	for(var i = 0; i < grd0v.length; i++) {
-	    console.log(i,grd0v[i],grd1v[i], grd0v[i] == grd1v[i]);
+//	    console.log(i,grd0v[i],grd1v[i], grd0v[i] == grd1v[i]);
+	    assert(SMALL_DIFF(grd0v[i],grd1v[i]));
 	};
 	
     }
 	    );
 
-    describe('fmin used directoly for simple problem', function() {
+    it('optimization for simple problem', function() {
 	var params = {'maxIterations' : 5, 'history' : []};
-
-	/* An attempt to set up the simplest triangle we can 
-for the purpose of testing fmin and our ability to define the gradient 
-satisfactorily. In this model "X" will be a six vector (3 x 2), representing
-3 x,y variables. G[0] = <0,0>, G[1] = <0,1>, G[2] = < 0.5, sqrt(3)/2>.
-	*/
 
     	var stm = ANO.simple_triangle_problem();
 
-	// Now I will attempt to integrate the mathematical approaches here...
-	
-	//	var H = [0,0,0,1,0.6,1.1]; // Goal positions.
-
-	// Nodes are partitioned into three classes:
-	// fixed, free, and goals.
 	var X = [];
 	var X0 = [];
 	var N = []; // Node
@@ -410,9 +380,7 @@ satisfactorily. In this model "X" will be a six vector (3 x 2), representing
 	}
 	
 	var grd = function(X) {
-	    console.log("grd0",grd0(X));
 	    const grd1 =  opt.numerical_gradient(f0,X);
-	    console.log("grd1",grd1);
 	    return grd1;
 	}
 
@@ -422,7 +390,7 @@ satisfactorily. In this model "X" will be a six vector (3 x 2), representing
 //        var solution = fmin.conjugateGradient(f, initial, params);
 	//	var solution = opt.minimize_Powell(f,initial);
 	var solution = opt.minimize_L_BFGS(fv,fd,initial);	
-	console.log("solution",solution);
+//	console.log("solution",solution);
 ///	console.log(params.history);
 	// now for the purpose of checking, we copy our answer back into the model....
 	var C = [];
@@ -432,7 +400,9 @@ satisfactorily. In this model "X" will be a six vector (3 x 2), representing
 	Object.keys(stm.fixed).forEach(function (n,ix) {
 	    C[n] = new THREE.Vector2(stm.coords[n].x,stm.coords[n].y);
 	});
-	console.log(ANO.legal_configp(stm.model,C));	
+//	console.log(ANO.legal_configp(stm.model,C));
+//	console.log(ANO.max_non_compliant(stm.model,C));
+	assert(ANO.max_non_compliant(stm.model,C) < 0.05);
     });
     
 

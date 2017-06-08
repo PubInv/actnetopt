@@ -448,6 +448,38 @@ module.exports.legal_configp = function(model,config) {
     return (string == "") ? true : string;
 }
 
+module.exports.max_non_compliant = function(model,config) {
+    var string = "";
+    var epsilon = 0.00000000000001;
+    var max_non_compliance = 0;
+    model.g.vertices.forEach(
+	v0 =>
+	    model.g.neighbors(v0).forEach(
+		v1 =>
+		    {
+			var c0 = config[v0];
+			var c1 = config[v1];
+			var d = c0.distanceTo(c1);
+			var ename = (v0 < v1) ? v0 + ' ' + v1
+			    : v1 + ' ' + v0;
+			if (d < model.lbs[ename]) {
+			    max_non_compliance = Math.max(max_non_compliance,
+							  Math.abs(model.lbs[ename] - d));
+			    string += "lower bound not met: " + ename + " " + d + " \n";
+//			    return ename;
+			}
+			if (d > model.ubs[ename]) {
+			    string += "upper bound not met: " + ename +  " " + d  + " \n";
+			    max_non_compliance = Math.max(max_non_compliance,
+							  Math.abs(model.ubs[ename] - d));
+//			    return ename;
+			}
+		    }
+	    )
+    );
+    return max_non_compliance;
+}
+
 
 // I believe I need an array comparison to implement my own heap.
 // basically I want to just to lexicographic sorting of an array in
