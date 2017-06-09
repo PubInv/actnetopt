@@ -211,7 +211,7 @@ module.exports.medium_triangle_problem = function() {
 
     var goals = [];
     goals[0] = { nd: 'd',
-		 pos: new THREE.Vector2(3.9,-2),
+		 pos: new THREE.Vector2(3.9,2),
 		 wt: 3 };
 
     var nodes = {};
@@ -256,7 +256,7 @@ module.exports.medium_triangle_problem2 = function() {
 	      defub: 2,
 	      fixed: {}
 	    };
-    const nodeset = gen_nodeset(10);
+    const nodeset = gen_nodeset(5);
     nodeset.forEach(nd => m.g.addVertex(nd));
     gen_regular_2d_net(m,nodeset);
 
@@ -267,7 +267,7 @@ module.exports.medium_triangle_problem2 = function() {
     m.fixed = fixed;
 
     var goals = [];
-    goals[0] = { nd: 'd',
+    goals[0] = { nd: 'e',
 		 pos: new THREE.Vector2(3.9,-2),
 		 wt: 3 };
 
@@ -466,13 +466,11 @@ module.exports.max_non_compliant = function(model,config) {
 			    max_non_compliance = Math.max(max_non_compliance,
 							  Math.abs(model.lbs[ename] - d));
 			    string += "lower bound not met: " + ename + " " + d + " \n";
-//			    return ename;
 			}
 			if (d > model.ubs[ename]) {
 			    string += "upper bound not met: " + ename +  " " + d  + " \n";
 			    max_non_compliance = Math.max(max_non_compliance,
 							  Math.abs(model.ubs[ename] - d));
-//			    return ename;
 			}
 		    }
 	    )
