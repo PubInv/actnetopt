@@ -28,7 +28,8 @@ var valueOfNode = function(name,X,F,V) {
     }
 };
 
-
+var PENALTY_WEIGHTING_EXP = 2.0;
+    
 var f = function(X,fxprime,stm,Y,Z,names,V,F) {
     // We define f to be the sum or the reward function and penalty function
     // Although we could operate on fxprime, I prefer pure functions,
@@ -36,14 +37,14 @@ var f = function(X,fxprime,stm,Y,Z,names,V,F) {
     // Note that f(X) is a scalar, and f'(X) is a vector in the same shape as X.
     //	    console.log("========================");
     var rv = r(X,stm,names,V);
-    var pv = p(F,X,stm,Y,Z,V,names);
+    var pv = p(F,X,stm,Y,Z,V,names,PENALTY_WEIGHTING_EXP);
     // against my preferred style, the fmin system requires us to modify the fxprime parameter
     //	    console.log("rv",rv);
     //	    console.log("pv",pv);	    
     for(var i = 0; i < rv[1].length; i++) {
 	fxprime[i] = rv[1][i] + pv[1][i];
     }
-    console.log("f,fxprime",rv[0]+pv[0],fxprime);
+//    console.log("f,fxprime",rv[0] + pv[0],fxprime);
     return [rv[0]+pv[0],fxprime];
 }
 
@@ -83,7 +84,7 @@ var r = function(X,stm,names,V) {
     return [v,d];
 }
 
-var p = function(F,X,stm,Y,Z,V,names) {
+var p = function(F,X,stm,Y,Z,V,names,p_exp) {
     const w = 1.0;
     var v = 0;
     var nlen = X.length;
@@ -91,49 +92,56 @@ var p = function(F,X,stm,Y,Z,V,names) {
 //    console.log("X",X);
     // This is wrong because I wrote it as if it was iterating
     // over nodes, but it is currently iterationg over variables!
+//    console.log("names", names);
+    // This is wrong, because we have to include the fixed nodes as well!!!
+
+    var scratch_off = {};
     names.forEach(function (n,ix) {
 	var sx = 0;
 	var sy = 0;
 	const name = n;
 	stm.model.g.neighbors(name).forEach(m => {
 	    // Note: I am taking some inspiration from mdsGradient in fmin_vis.js
-	    if (name < m) {
-	    var A = valueOfNode(name,X,F,V);
-	    var B = valueOfNode(m,X,F,V);
-	    		    console.log("name,m,A,B",name,m,A,B);
-	    var xi = A.x;
-	    var xj = B.x;
-	    var yi = A.y;
-	    var yj = B.y;
-	    var len = A.distanceTo(B);
-	    var lensq = len * len;
-	    		    console.log("len,lensq,Y,Z",len,lensq,Y,Z);
-	    var q = false;
-	    var qsign = 0;n
-	    if (lensq < Y) {
-		v += (Y - lensq);
-		q = true;
-		qsign = 1;
-	    }
-	    if (lensq > Z) {
-		v += (lensq - Z);
-		q = true;
-		qsign = -1;
-	    }
-	    console.log("q,v",q,v);
-	    if (q) {
-		var tempx = (A.x - B.x);
-		var tempy = (A.y - B.y);
-		sx += qsign * 2 * tempx;
-		sy += qsign * 2 * tempy;			    
-	    }
+//	    console.log("name,m",name,m);
+	    var pair = (name < m) ? name + m : m+name;
+	    if (!scratch_off[pair]) {
+		scratch_off[pair] = 1;
+		var A = valueOfNode(name,X,F,V);
+		var B = valueOfNode(m,X,F,V);
+		//	    		    console.log("name,m,A,B",name,m,A,B);
+		var xi = A.x;
+		var xj = B.x;
+		var yi = A.y;
+		var yj = B.y;
+		var len = A.distanceTo(B);
+		var lensq = len * len;
+		//	    	console.log("len,lensq,Y,Z",len,lensq,Y,Z);
+		var q = false;
+		var qsign = 0;
+		if (lensq < Y) {
+		    v += (Y - lensq);
+		    q = true;
+		    qsign = 1;
+		}
+		if (lensq > Z) {
+		    v += (lensq - Z);
+		    q = true;
+		    qsign = -1;
+		}
+		//	    console.log("q,v",q,v);
+		if (q) {
+		    var tempx = (A.x - B.x);
+		    var tempy = (A.y - B.y);
+		    sx += -qsign * 2 * tempx;
+		    sy += -qsign * 2 * tempy;			    
+		}
 	    }
 	});
-	console.log("sx,sy",sx,sy);		
+//	console.log("sx,sy",sx,sy);		
 	d[ix*2] = sx;
 	d[ix*2+1] = sy;		
     });
-    console.log("p,d",v,d);
+//    console.log("p,d",v,d);
     return [v,d];	    
 }
 
@@ -155,18 +163,24 @@ var construct_optimization_model_from_ANO = function(stm) {
 	var v = stm.coords[n];
 	var isAGoal = false;
 	var isFixed = n in stm.fixed;
+	console.log("v[n] = ",v);
+	var gpos = null;
 	stm.goals.forEach(g =>
 			  { if (g.nd == n) {
-			      v = g.pos;
+//			      v = g.pos;
+			      gpos = g.pos;
 			      isAGoal = true;
 			  }
 			  });
+
 	assert(!(isAGoal && isFixed));
 	var type = isFixed ? "fixed" : (isAGoal ? "goal" : "free");
 	var idx = isFixed ? fixed : goal + free;
 	V[n] = { "type": type,
 		 "index": idx
 	       };
+	console.log("type",type);
+	console.log("v = ,gpos",v,gpos);	
 	if (type == "fixed") {
 	    fixed++;
 	    F.push(v.x);
@@ -176,10 +190,12 @@ var construct_optimization_model_from_ANO = function(stm) {
 	    // from the index into X.		
 	    names[goal+free] = n;		
 	    goal++;
-	    X.push(v.x);
-	    X.push(v.y);
+	    X.push(gpos.x);
+	    X.push(gpos.y);
 	    initial.push(v.x);
 	    initial.push(v.y);
+//	    initial.push(gpos.x);
+//	    initial.push(gpos.y);
 	} else if (type == "free") {
 	    // Set up a reverse map so se can get back to a node name
 	    // from the index into X.		
@@ -191,6 +207,7 @@ var construct_optimization_model_from_ANO = function(stm) {
 	    initial.push(v.y);
 	}
     });
+    console.log("X,initial",X,initial);
     assert(initial.length == X.length);
     assert((free+goal+fixed) == Object.keys(stm.coords).length);
     assert((F.length + X.length) == 2*Object.keys(stm.coords).length);	
@@ -372,7 +389,7 @@ describe('optimization', function() {
 	
 	var F = om[0];
 	var V = om[1];
-	var X = om[2];
+//	var X = om[2];
 	var Y = om[3];
 	var Z = om[4];
 	var initial = om[5];

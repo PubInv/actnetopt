@@ -211,7 +211,7 @@ module.exports.medium_triangle_problem = function() {
 
     var goals = [];
     goals[0] = { nd: 'd',
-		 pos: new THREE.Vector2(3.9,2),
+		 pos: new THREE.Vector2(3,1),
 		 wt: 3 };
 
     var nodes = {};
