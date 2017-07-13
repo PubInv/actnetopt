@@ -26,8 +26,10 @@
 var algols = require('algorithms').DataStructures;
 var heap = require('algorithms').DataStructures.Heap;
 var dijkstra = require('algorithms').Graph.dijkstra;
-
 var THREE = require('./javascripts/three.js');
+var opt = require('./javascripts/optimization.js');
+var algols = require('algorithms').DataStructures;
+
 var assert = require('assert');
 
 // Let's see if we can just do a good job computing
@@ -35,6 +37,8 @@ var assert = require('assert');
 
 module.exports.dim2 = 2;
 module.exports.DEBUG_LEVEL = 1;
+
+module.exports.opt = opt;
 
 module.exports.score1 = function(coords,g) {
     var c = coords[g.nd];
@@ -90,6 +94,18 @@ function gen_regular_2d_net(m,nodeset) {
 }
 
 
+function gen_simple_3d_net(m,nodeset) {
+    assert(nodeset.length >= 3);
+    m.g.addEdge('a','b');
+    m.g.addEdge('b','c');
+    m.g.addEdge('c','a');
+    m.g.addEdge('a','d');
+    m.g.addEdge('b','d');
+    m.g.addEdge('c','d');
+    
+}
+
+
 // MAJOR CONCEPTUAL PROBLEM: my algorithm is pretty much assuming
 // that all the lowerbounds and upper bounds are the same.
 module.exports.simple_triangle_problem = function() {
@@ -116,6 +132,8 @@ module.exports.simple_triangle_problem = function() {
     var goals = [];
     goals[0] = { nd: 'c',
 		 pos: new THREE.Vector2(4,4),
+		 //		 pos: new THREE.Vector2(9,6),
+//		 pos: new THREE.Vector2(0,6),		 		 
 		 wt: 3 };
 
     var nodes = {};
@@ -125,6 +143,51 @@ module.exports.simple_triangle_problem = function() {
     nodes['a'] = a;
     nodes['b'] = b;
     nodes['c'] = c;
+    
+    return { dim: dim,
+	     coords: nodes,
+	     model: m,
+	     goals: goals,
+	     fixed: fixed};
+}
+
+
+module.exports.simple_tetrahedron_problem = function() {
+    var dim = this.dim2;
+    var m = { g: new algols.Graph(false),
+	      lbs: {},
+	      ubs: {},
+	      deflb: 1.1,
+	      defub: 2,
+	      fixed: {}
+	    };
+
+    const nodeset = gen_nodeset(4);
+    nodeset.forEach(nd => m.g.addVertex(nd));
+
+    construct_bounds(m,nodeset,m.deflb,m.defub);
+    
+    gen_simple_3d_net(m,nodeset);
+
+    var fixed = {};
+    fixed['a'] = true;
+    fixed['b'] = true;
+    m.fixed = fixed;
+
+    var goals = [];
+    goals[0] = { nd: 'c',
+		 pos: new THREE.Vector3(4,4),
+		 wt: 3 };
+
+    var nodes = {};
+    var a = new THREE.Vector3(0,0,0);
+    var b = new THREE.Vector3(0,1.5,0);
+    var c = new THREE.Vector3(1,1,0);
+    var d = new THREE.Vector3(0.5,0.5,1);    
+    nodes['a'] = a;
+    nodes['b'] = b;
+    nodes['c'] = c;
+    nodes['d'] = d;    
     
     return { dim: dim,
 	     coords: nodes,
@@ -153,7 +216,7 @@ module.exports.medium_triangle_problem = function() {
 
     var goals = [];
     goals[0] = { nd: 'd',
-		 pos: new THREE.Vector2(3.9,-2),
+		 pos: new THREE.Vector2(3,3),
 		 wt: 3 };
 
     var nodes = {};
@@ -173,6 +236,22 @@ module.exports.medium_triangle_problem = function() {
 	     fixed: fixed};
 }
 
+function gen_regular_2d_coords(m,nodeset) {
+    var med = (m.deflb + m.defub)/2;
+    var h = (Math.sqrt(3))/2* med;
+    var nodes = {};
+    
+    for(var i = 0; i < nodeset.length; i++) {
+	var nd = nodeset[i];
+	var x = (i % 2) * h;
+	var y = i*(med/2)
+	var p = new THREE.Vector2(x,y);
+	console.log("NODE",i,nd,x,y,p);	
+	nodes[nd] = p;
+    }
+    return nodes;
+}
+
 module.exports.medium_triangle_problem2 = function() {
     var dim = this.dim2;
     var m = { g: new algols.Graph(false),
@@ -182,7 +261,7 @@ module.exports.medium_triangle_problem2 = function() {
 	      defub: 2,
 	      fixed: {}
 	    };
-    const nodeset = gen_nodeset(10);
+    const nodeset = gen_nodeset(5);
     nodeset.forEach(nd => m.g.addVertex(nd));
     gen_regular_2d_net(m,nodeset);
 
@@ -193,36 +272,14 @@ module.exports.medium_triangle_problem2 = function() {
     m.fixed = fixed;
 
     var goals = [];
-    goals[0] = { nd: 'd',
+    goals[0] = { nd: 'e',
 		 pos: new THREE.Vector2(3.9,-2),
 		 wt: 3 };
 
-    var nodes = {};
+    const nodes = gen_regular_2d_coords(m,nodeset);
 
-    var med = (m.deflb + m.defub)/2;
-    var h = (Math.sqrt(3))/2* med;
-    
-    for(var i = 0; i < nodeset.length; i++) {
-	var nd = nodeset[i];
-	var x = (i % 2) * h;
-	var y = i*(med/2)
-	var p = new THREE.Vector2(x,y);
-	console.log("NODE",i,nd,x,y,p);	
-	nodes[nd] = p;
-    }
+
     console.log("NODES",nodes);
-/*    var a = new THREE.Vector2(0,0);
-    var b = new THREE.Vector2(0,1.5);
-    var c = new THREE.Vector2(1,1);
-    var d = new THREE.Vector2(1.5,2);
-    var e = new THREE.Vector2(2.5,1);        
-
-    nodes['a'] = a;
-    nodes['b'] = b;
-    nodes['c'] = c;
-    nodes['d'] = d;
-    nodes['e'] = e;        
-*/
     
     return { dim: dim,
 	     coords: nodes,
@@ -394,6 +451,36 @@ module.exports.legal_configp = function(model,config) {
 	    )
     );
     return (string == "") ? true : string;
+}
+
+module.exports.max_non_compliant = function(model,config) {
+    var string = "";
+    var epsilon = 0.00000000000001;
+    var max_non_compliance = 0;
+    model.g.vertices.forEach(
+	v0 =>
+	    model.g.neighbors(v0).forEach(
+		v1 =>
+		    {
+			var c0 = config[v0];
+			var c1 = config[v1];
+			var d = c0.distanceTo(c1);
+			var ename = (v0 < v1) ? v0 + ' ' + v1
+			    : v1 + ' ' + v0;
+			if (d < model.lbs[ename]) {
+			    max_non_compliance = Math.max(max_non_compliance,
+							  Math.abs(model.lbs[ename] - d));
+			    string += "lower bound not met: " + ename + " " + d + " \n";
+			}
+			if (d > model.ubs[ename]) {
+			    string += "upper bound not met: " + ename +  " " + d  + " \n";
+			    max_non_compliance = Math.max(max_non_compliance,
+							  Math.abs(model.ubs[ename] - d));
+			}
+		    }
+	    )
+    );
+    return max_non_compliance;
 }
 
 
@@ -701,6 +788,7 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 		// One idea is to draw a line to the centroid of the free area,
 		// or to the closest point to y in in the free area of y (assuming that
 		// we don't count x). Then try to get
+		// NOTE: I think now that maybe this is the place for Powell's method
 		var g = this.copy_vector(C[y]);
 		g.sub(C[x]);
 		// Now g is a vector from C[x] to C[y].
@@ -864,13 +952,615 @@ module.exports.strainfront = function(d,M,C,a,v,anim) {
     return S.cur;
 }
 
-const ANO = require("./actnetopt.js");
+module.exports.dijkstra = dijkstra;
 
-},{"./actnetopt.js":1,"./javascripts/three.js":3,"algorithms":67,"assert":73}],2:[function(require,module,exports){
+var SMALL = 1e-5;
+var SMALL_DIFF = function(a,b) {
+    return (Math.abs(a - b) < SMALL);
+}
+
+var valueOfNode = function(name,X,F,V) {
+    var obj = V[name];
+    var type = obj.type;
+    var n = obj.index;
+    if (type == "fixed") {
+	return new THREE.Vector2(F[n*2],F[n*2+1]);
+    } else if (type == "goal") {
+	return new THREE.Vector2(X[n*2],X[n*2+1]);		
+    } else if (type == "free") {
+	return new THREE.Vector2(X[n*2],X[n*2+1]);
+    } else {
+	assert(false);
+    }
+};
+
+var PENALTY_WEIGHTING_EXP = 2.0;
+var LINEAR_PENALTY_WT = 3;
+    
+module.exports.f = function(X,fxprime,stm,Y,Z,names,V,F) {
+    // We define f to be the sum or the reward function and penalty function
+    // Although we could operate on fxprime, I prefer pure functions,
+    // so I will define r and p to be pure functions that return the pair [f(X),f'(X)].
+    // Note that f(X) is a scalar, and f'(X) is a vector in the same shape as X.
+    //	    console.log("========================");
+    var rv = r(X,stm,names,V);
+    var pv = p(F,X,stm,Y,Z,V,names,PENALTY_WEIGHTING_EXP,LINEAR_PENALTY_WT);
+    // against my preferred style, the fmin system requires us to modify the fxprime parameter
+    //	    console.log("rv",rv);
+    //	    console.log("pv",pv);	    
+    for(var i = 0; i < rv[1].length; i++) {
+	fxprime[i] = rv[1][i] + pv[1][i];
+    }
+    console.log("f,fxprime",rv[0] + pv[0],fxprime);
+    return [rv[0]+pv[0],fxprime];
+}
+
+var r = function(X,stm,names,V) {
+    var v = 0;
+    // For each X we need to compute the square of the distance to goals...
+    // so we need to know if it is a goal or not.
+    // This is incorect; I can't use i for H here.
+
+    var n = X.length;
+    var d = Array.apply(null, Array(n)).map(Number.prototype.valueOf,0);
+    
+    X.forEach(function(x,i) {
+	var name = names[Math.floor(i/2)];
+	// is it a goal?
+	var obj = V[name];
+	if (obj.type == "goal") {
+	    // if so we need to process, it contributes to r
+	    var gl = null;
+	    stm.goals.forEach(g =>
+			      {
+				  if (g.nd == name) {
+				      gl = g.pos;
+				  }
+			      });
+
+	    assert(gl);
+	    var vv = ((i % 2) == 0) ? gl.x : gl.y;
+	    v += (X[i] - vv)*(X[i] - vv);
+	    d[i] = 2*(X[i] - vv);
+	}  else {
+	    d[i] = 0; // r does not change as we change this variable
+	    v += 0;
+	}
+
+    });
+    return [v,d];
+}
+
+var p = function(F,X,stm,Y,Z,V,names,p_exp,linear_wt) {
+    const w = 1.0;
+    var v = 0;
+    var nlen = X.length;
+    var d = Array.apply(null, Array(nlen)).map(Number.prototype.valueOf,0);
+    console.log("X",X);
+    // This is wrong because I wrote it as if it was iterating
+    // over nodes, but it is currently iterationg over variables!
+//    console.log("names", names);
+    // This is wrong, because we have to include the fixed nodes as well!!!
+
+    var scratch_off = {};
+    names.forEach(function (n,ix) {
+	var sx = 0;
+	var sy = 0;
+	const name = n;
+	stm.model.g.neighbors(name).forEach(m => {
+	    // Note: I am taking some inspiration from mdsGradient in fmin_vis.js
+//	    console.log("name,m",name,m);
+	    var pair = (name < m) ? name + m : m+name;
+	    if (!scratch_off[pair]) {
+		scratch_off[pair] = 1;
+		var A = valueOfNode(name,X,F,V);
+		var B = valueOfNode(m,X,F,V);
+		//	    		    console.log("name,m,A,B",name,m,A,B);
+		var xi = A.x;
+		var xj = B.x;
+		var yi = A.y;
+		var yj = B.y;
+		var len = A.distanceTo(B);
+		var lensq = len * len;
+		//	    	console.log("len,lensq,Y,Z",len,lensq,Y,Z);
+		var q = false;
+		var qsign = 0;
+		if (lensq < Y) {
+		    v += linear_wt * (Y - lensq);
+		    q = true;
+		    qsign = 1;
+		}
+		if (lensq > Z) {
+		    v += linear_wt * (lensq - Z);
+		    q = true;
+		    qsign = -1;
+		}
+		//	    console.log("q,v",q,v);
+		if (q) {
+		    var tempx = (A.x - B.x);
+		    var tempy = (A.y - B.y);
+		    sx += -qsign * 2 * linear_wt * tempx;
+		    sy += -qsign * 2 * linear_wt * tempy;			    
+		}
+	    }
+	});
+//	console.log("sx,sy",sx,sy);		
+	d[ix*2] = sx;
+	d[ix*2+1] = sy;		
+    });
+//    console.log("p,d",v,d);
+    return [v,d];	    
+}
+
+var construct_optimization_model_from_ANO = function(stm) {
+    var X = [];
+    var initial = [];
+    var V = {};
+    var fixed = 0,
+	free = 0,
+	goal = 0;
+    var F = [];
+    var X = [];
+    var names = [];
+    var fixed = 0,
+	free = 0,
+	goal = 0;
+    
+    Object.keys(stm.coords).forEach(function(n,i) {
+	var v = stm.coords[n];
+	var isAGoal = false;
+	var isFixed = n in stm.fixed;
+	console.log("v[n] = ",v);
+	var gpos = null;
+	stm.goals.forEach(g =>
+			  { if (g.nd == n) {
+//			      v = g.pos;
+			      gpos = g.pos;
+			      isAGoal = true;
+			  }
+			  });
+
+	assert(!(isAGoal && isFixed));
+	var type = isFixed ? "fixed" : (isAGoal ? "goal" : "free");
+	var idx = isFixed ? fixed : goal + free;
+	V[n] = { "type": type,
+		 "index": idx
+	       };
+	console.log("type",type);
+	console.log("v = ,gpos",v,gpos);	
+	if (type == "fixed") {
+	    fixed++;
+	    F.push(v.x);
+	    F.push(v.y);
+	} else if (type == "goal") {
+	    // Set up a reverse map so se can get back to a node name
+	    // from the index into X.		
+	    names[goal+free] = n;		
+	    goal++;
+	    X.push(gpos.x);
+	    X.push(gpos.y);
+	    initial.push(v.x);
+	    initial.push(v.y);
+//	    initial.push(gpos.x);
+//	    initial.push(gpos.y);
+	} else if (type == "free") {
+	    // Set up a reverse map so se can get back to a node name
+	    // from the index into X.		
+	    names[goal+free] = n;
+	    free++;
+	    X.push(v.x);
+	    X.push(v.y);
+	    initial.push(v.x);
+	    initial.push(v.y);
+	}
+    });
+    console.log("X,initial",X,initial);
+    assert(initial.length == X.length);
+    assert((free+goal+fixed) == Object.keys(stm.coords).length);
+    assert((F.length + X.length) == 2*Object.keys(stm.coords).length);	
+
+    var Y = stm.model.deflb * stm.model.deflb;
+    var Z = stm.model.defub * stm.model.defub;
+    return [F,V,X,Y,Z,initial,names,fixed,goal,free];
+}
+
+module.exports.construct_optimization_model_from_ANO = construct_optimization_model_from_ANO;
+module.exports.spud = 4;
+
+},{"./javascripts/optimization.js":3,"./javascripts/three.js":4,"algorithms":68,"assert":74}],2:[function(require,module,exports){
 var tm = require("./actnetopt.js");
 UGLY_GLOBAL_SINCE_I_CANT_GET_MY_MODULE_INTO_THE_BROWSER = tm;
 
 },{"./actnetopt.js":1}],3:[function(require,module,exports){
+var optimjs = (function (exports) {
+
+    // export public members
+    exports = exports || {};
+
+    exports.minimize_Powell = function (fnc, x0) {
+        // fnc: function which takes array of size N as an input
+        // x0: array or real numbers of size N; 
+        // serves as initialization of algorithm.
+
+        // solution is a struct, with fields:
+        // argument: solution argument
+        // fncvalue: function value at optimum
+
+        // maximum absolute gradient magnitude
+        var eps = 1e-2;
+
+        var convergence = false;
+        var x = x0.slice(); // make copy of initialization
+        var alpha = 0.001; // scaling factor
+
+        var pfx = Math.exp(10);
+        var fx = fnc(x);
+        var pidx = 1;
+        while (!convergence) {
+
+            var indicies = optimjs.shuffleIndiciesOf(x);
+
+            convergence = true;
+
+            // Perform update over all of the variables in random order
+            for (var i = 0; i < indicies.length; i++) {
+
+                x[indicies[i]] += 1e-6;
+                var fxi = fnc(x);
+                x[indicies[i]] -= 1e-6;
+                var dx = (fxi - fx) / 1e-6;
+
+                if (Math.abs(dx) > eps) {
+                    convergence = false;
+                }
+
+                x[indicies[i]] = x[indicies[i]] - alpha * dx;
+                fx = fnc(x);
+
+            }
+
+            // a simple step size selection rule. Near x function acts linear 
+            // (this is assumed at least) and thus very small values of alpha
+            // should lead to (small) improvement. Increasing alpha would
+            // yield better improvement up to certain alpha size.
+            
+            alpha = pfx > fx ? alpha * 1.1 : alpha * 0.7;
+            pfx = fx;
+
+            pidx--;
+            if (pidx === 0) {
+                pidx = 1;
+                console.log(fx);
+            }
+
+        }
+
+        var solution = {};
+        solution.argument = x;
+        solution.fncvalue = fx;
+
+        return solution;
+
+    };
+
+    exports.minimize_GradientDescent = function (fnc, grd, x0) {
+        // fnc: function which takes array of size N as an input
+        // grd: gradient (array of size N) of function for some input
+        // x0: array or real numbers of size N; 
+        // serves as initialization of algorithm.
+
+        // solution is a struct, with fields:
+        // argument: solution argument
+        // fncvalue: function value at found optimum
+        var x = x0.slice();
+
+        var convergence = false;
+        var eps = 1e-3;
+        var alpha = 0.01;
+
+        var pfx = fnc(x);
+
+        while (!convergence) {
+            var g = grd(x);
+            convergence = optimjs.vect_max_abs_x_less_eps(g, eps);
+
+            if (convergence) {
+                break;
+            }
+
+            var repeat = true;
+
+            // a simple step size selection rule. Near x function acts linear 
+            // (this is assumed at least) and thus very small values of alpha
+            // should lead to (small) improvement. Increasing alpha would
+            // yield better improvement up to certain alpha size.
+            
+            while (repeat) {
+                var xn = x.slice();
+                optimjs.vect_x_pluseq_ag(xn, -alpha, g); // perform step
+                var fx = fnc(xn);
+
+                repeat = pfx < fx;
+                // this automatically selects step size 
+                alpha = repeat ? alpha * 0.7 : alpha * 1.1;
+            }
+
+            x = xn;
+            pfx = fx;
+
+        }
+
+        var solution = {};
+        solution.argument = x;
+        solution.fncvalue = fx;
+        return solution;
+
+    };
+
+    exports.minimize_L_BFGS = function (fnc, grd, x0) {
+        // fnc: function which takes array of size N as an input
+        // grd: gradient (array of size N) of function for some input
+        // x0: array or real numbers of size N; 
+        // serves as initialization of algorithm.
+
+        // solution is a struct, with fields:
+        // argument: solution argument
+        // fncvalue: function value at found optimum
+        var x = x0.slice();
+
+        var eps = 1e-3; // max abs value of gradient component for termination
+        var alpha = 0.001; // initial step size
+        var m = 5; // history size to keep for Hessian approximation
+
+        var pfx = fnc(x);
+        var s = []; // this is needed for lbfgs procedure
+        var y = [];
+        var ro = [];
+
+        var g = grd(x);
+        var direction = g.slice();
+        var convergence = false;
+        while (!convergence) {
+
+            var xn = x.slice();
+            optimjs.vect_x_pluseq_ag(xn, alpha, direction); // perform step
+            var fx = fnc(xn);
+            alpha = pfx < fx ? alpha * 0.5 : alpha * 1.2; // magic!
+
+            //  < ================= apply limited memory BFGS procedure ================= >
+            var gn = grd(xn);
+
+            if (optimjs.vect_max_abs_x_less_eps(gn, eps)) {
+                break;
+            }
+
+            var dx = optimjs.vect_a_minus_b(xn, x);
+            var dg = optimjs.vect_a_minus_b(gn, g);
+
+            s.unshift(dx);
+            y.unshift(dg);
+            var tmp = 1 / (optimjs.dot(dx, dg));
+            ro.unshift(tmp);
+
+            if (s.length > m) {
+                s.pop();
+                y.pop();
+                ro.pop();
+            }
+
+            var r = g.slice();
+            var a = new Array(s.length);
+
+            for (var i = 0; i < s.length; i++) {
+                var pi = 1 / (optimjs.dot(s[i], y[i]));
+                a[i] = pi * optimjs.dot(s[i], r);
+                optimjs.vect_x_pluseq_ag(r, -a[i], y[i]);
+            }
+
+            // perform Hessian scaling
+            var scale = optimjs.dot(dx, dg) / optimjs.dot(dg, dg);
+            for (var i = 0; i < r.length; i++) {
+                r[i] = r[i] * scale;
+            }
+
+            for (var i = 0; i < s.length; i++) {
+                var j = s.length - i - 1;
+                var pj = 1 / (optimjs.dot(s[j], y[j]));
+                var beta = pj * optimjs.dot(y[j], r);
+                optimjs.vect_x_pluseq_ag(r, (a[j] - beta), s[j]);
+            }
+            direction = r.slice();
+
+            for (var i = 0; i < direction.length; i++) {
+                if (isNaN(direction[i])) {
+                    convergence = true; // something went wrong. Stop now
+                }
+            }
+
+            //  < ================= apply limited memory BFGS procedure ================= >
+            
+            for (var i = 0; i < direction.length; i++) {
+                direction[i] = -direction[i];
+            }
+
+            pfx = fx;
+            x = xn;
+            g = gn;
+            
+//            console.log("fv = " + fx);
+
+        }
+
+        var solution = {};
+        solution.argument = x;
+        solution.fncvalue = fx;
+        return solution;
+
+    };
+
+    exports.minimize_SGD = function (I, fnc, grd, W0){
+        // This routine assumes that objective can be written as 
+        //          f(W) = \sum_{i \in [n]} g(W)
+        // and using this poperty gradient is updated for every separate i, which results in speedups.
+        //
+        // inputs:
+        // I: array of indicies of all of points in the dataset (e.g. 1 ... 1000)
+        // fnc: function which takes as input parameter W and index of point with index i
+        // grd: gradient over parameter W of fnc for point with index i
+        // W0: initial value of parameters of fnc
+
+        // solution is a struct, with fields:
+        // argument: solution argument
+        // fncvalue: function value at optimum
+        
+        var splitp = Math.floor(I.length*0.7); // 70 % is used for training , rest for validation
+        
+        var Iv = I.slice(splitp+1);
+        var I = I.slice(0, splitp);
+        
+        var W = W0.slice();
+        
+        var alpha = 0.00001; // initial alpha guess
+        var checks = 5; // validation checks until stopping
+        var fmin = Math.exp(30); // initial minimum value (something big)
+        var maxiternum = 70; // maximum number of iterations
+        
+        var Wbest = W.slice();
+        var idx = 0;
+        
+        while(checks > 0){
+            idx ++;
+            // perform gradient update
+            for (var i = 0; i < I.length; i++) {
+                var gr = grd(W,I[i]);
+                optimjs.vect_x_pluseq_ag(W, -alpha, gr);
+            }
+            
+            var floc = 0;
+            
+            // perform cross - validation
+            for (var i = 0; i < Iv.length; i++) {
+                var fv = fnc(W,Iv[i]);
+                floc += fv;
+            }
+            
+            if (floc < fmin) {
+                fmin = floc;
+                Wbest = W.slice();
+                alpha *= 1.1;
+                checks = 10;
+            }
+            else
+            {
+                checks -= 1;
+                alpha *= 0.5;
+            }
+            
+            // log the current state
+            console.log("epoch with fv = " + fmin + " alpha= " + alpha);
+            if (idx > maxiternum) {
+                break;
+            }
+        }
+        
+        var solution = {};
+        solution.argument = Wbest.slice();
+        solution.fncvalue = fmin;
+        return solution;
+        
+    };
+
+    exports.numerical_gradient = function (fnc, x) {
+        // can be used as for gradient check or its substitute. Gradient is approx. via forward difference
+        var grad = x.slice();
+        var fx = fnc(x);
+        var h = 1e-6; // step size
+
+        for (var i = 0; i < x.length; i++) {
+
+            // approximation using simple forward difference
+            x[i] += h;
+            var fxi = fnc(x);
+            x[i] -= h;
+
+            grad[i] = (fxi - fx) / h;
+        }
+        return grad;
+    };
+
+    // some vector operations used in all of the optimization procedures above
+
+
+    exports.shuffleIndiciesOf = function (array) {
+        // returns shuffled indicies of arrray
+        var idx = [];
+        for (var i = 0; i < array.length; i++) {
+            idx.push(i);
+        }
+        for (var i = 0; i < array.length; i++) {
+            var j = Math.floor(Math.random() * i);
+            var tmp = idx[i];
+            idx[i] = idx[j];
+            idx[j] = tmp;
+        }
+        return idx;
+    };
+
+    exports.dot = function (a, b) {
+        // computes dot product
+        var result = 0;
+        for (var i = 0; i < a.length; i++) {
+            result += a[i] * b[i];
+        }
+        return result;
+
+    };
+
+    exports.vect_x_times_c = function (x, c) {
+        // vector times constant
+        var r = x.slice();
+        for (var i = 0; i < x.length; i++) {
+            r[i]  = r[i] * c;
+        }
+        return r;
+
+    };
+
+    exports.vect_a_minus_b = function (a, b) {
+        // vector difference
+        var result = new Array(a.length);
+        for (var i = 0; i < a.length; i++) {
+            result[i] = a[i] - b[i];
+        }
+        return result;
+
+    };
+
+    exports.vect_x_pluseq_ag = function (x, a, g) {
+        // used for fixed step size updating value of x
+        for (var i = 0; i < x.length; i++) {
+            x[i] = x[i] + a * g[i];
+        }
+
+        return x;
+
+    };
+
+    exports.vect_max_abs_x_less_eps = function (x, eps) {
+        // this procedure is used for stopping criterion check
+        for (var i = 0; i < x.length; i++) {
+            if (Math.abs(x[i]) >= eps) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    return exports;
+
+})(typeof module != 'undefined' && module.exports);  // add exports to module.exports if in node.js
+
+},{}],4:[function(require,module,exports){
 // File:src/Three.js
 
 /**
@@ -42379,7 +43069,7 @@ THREE.MorphBlendMesh.prototype.update = function ( delta ) {
 };
 
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 'use strict';
 
 /**
@@ -42438,7 +43128,7 @@ BezierCurve.prototype.get = function (t) {
 
 module.exports = BezierCurve;
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 'use strict';
 
 /**
@@ -42504,7 +43194,7 @@ function spfa(graph, s) {
 
 module.exports = spfa;
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 'use strict';
 
 /**
@@ -42583,7 +43273,7 @@ var bellmanFord = function (graph, startNode) {
 
 module.exports = bellmanFord;
 
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 'use strict';
 
 var breadthFirstSearch = require('./breadth_first_search');
@@ -42619,7 +43309,7 @@ var bfsShortestPath = function (graph, source) {
 
 module.exports = bfsShortestPath;
 
-},{"./breadth_first_search":8}],8:[function(require,module,exports){
+},{"./breadth_first_search":9}],9:[function(require,module,exports){
 'use strict';
 
 var Queue = require('../../data_structures/queue');
@@ -42706,7 +43396,7 @@ var breadthFirstSearch = function (graph, startVertex, callbacks) {
 
 module.exports = breadthFirstSearch;
 
-},{"../../data_structures/queue":61}],9:[function(require,module,exports){
+},{"../../data_structures/queue":62}],10:[function(require,module,exports){
 'use strict';
 
 
@@ -42792,7 +43482,7 @@ var dfsLoop = function dfsLoop(graph, vertex, callbacks) {
 
 module.exports = depthFirstSearch;
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 'use strict';
 
 var PriorityQueue = require('../../data_structures/priority_queue');
@@ -42839,7 +43529,7 @@ function dijkstra(graph, s) {
 
 module.exports = dijkstra;
 
-},{"../../data_structures/priority_queue":60}],11:[function(require,module,exports){
+},{"../../data_structures/priority_queue":61}],12:[function(require,module,exports){
 'use strict';
 
 
@@ -42960,7 +43650,7 @@ var eulerPath = function (graph) {
 
 module.exports = eulerPath;
 
-},{"../../algorithms/graph/depth_first_search":9,"../../data_structures/graph":56}],12:[function(require,module,exports){
+},{"../../algorithms/graph/depth_first_search":10,"../../data_structures/graph":57}],13:[function(require,module,exports){
 'use strict';
 
 
@@ -43059,7 +43749,7 @@ var floydWarshall = function (graph) {
 
 module.exports = floydWarshall;
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 'use strict';
 
 var DisjointSetForest = require('../../data_structures/disjoint_set_forest'),
@@ -43111,7 +43801,7 @@ var kruskal = function (graph) {
 
 module.exports = kruskal;
 
-},{"../../data_structures/disjoint_set_forest":54,"../../data_structures/graph":56}],14:[function(require,module,exports){
+},{"../../data_structures/disjoint_set_forest":55,"../../data_structures/graph":57}],15:[function(require,module,exports){
 'use strict';
 
 var PriorityQueue = require('../../data_structures/priority_queue'),
@@ -43168,7 +43858,7 @@ var prim = function (graph) {
 
 module.exports = prim;
 
-},{"../../data_structures/graph":56,"../../data_structures/priority_queue":60}],15:[function(require,module,exports){
+},{"../../data_structures/graph":57,"../../data_structures/priority_queue":61}],16:[function(require,module,exports){
 'use strict';
 
 var Stack = require('../../data_structures/stack'),
@@ -43214,7 +43904,7 @@ var topologicalSort = function (graph) {
 
 module.exports = topologicalSort;
 
-},{"../../algorithms/graph/depth_first_search":9,"../../data_structures/stack":63}],16:[function(require,module,exports){
+},{"../../algorithms/graph/depth_first_search":10,"../../data_structures/stack":64}],17:[function(require,module,exports){
 'use strict';
 
 // cache algorithm results
@@ -43258,7 +43948,7 @@ module.exports = {
   calculate: calculateCollatzConjecture,
 };
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 'use strict';
 
 /**
@@ -43300,7 +43990,7 @@ var extEuclid = function (a, b) {
 
 module.exports = extEuclid;
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 'use strict';
 
 
@@ -43355,7 +44045,7 @@ var fastPower = function (base, power, mul, identity) {
 
 module.exports = fastPower;
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 'use strict';
 
 /**
@@ -43459,7 +44149,7 @@ fibLinear.direct = fibDirect;
 fibLinear.logarithmic = fibLogarithmic;
 module.exports = fibLinear;
 
-},{"./fast_power":18}],20:[function(require,module,exports){
+},{"./fast_power":19}],21:[function(require,module,exports){
 'use strict';
 
 /**
@@ -43477,7 +44167,7 @@ var fisherYates = function (a) {
 
 module.exports = fisherYates;
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 'use strict';
 
 /**
@@ -43565,7 +44255,7 @@ var gcdBinaryIterative = function (a, b) {
 gcdDivisionBased.binary = gcdBinaryIterative;
 module.exports = gcdDivisionBased;
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 'use strict';
 
 /**
@@ -43595,7 +44285,7 @@ var greatestDifference = function (numbers) {
 
 module.exports = greatestDifference;
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 'use strict';
 
 var gcd = require('./gcd.js');
@@ -43645,7 +44335,7 @@ var lcm = lcmDivisionBased;
 lcm.binary = lcmBinaryIterative;
 module.exports = lcm;
 
-},{"./gcd.js":21}],24:[function(require,module,exports){
+},{"./gcd.js":22}],25:[function(require,module,exports){
 'use strict';
 
 /**
@@ -43681,7 +44371,7 @@ var sqrt = function (n, tolerance, maxIterations) {
 
 module.exports = sqrt;
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 'use strict';
 
 var Comparator = require('../../util/comparator');
@@ -43734,7 +44424,7 @@ var nextPermutation = function (array, compareFn) {
 
 module.exports = nextPermutation;
 
-},{"../../util/comparator":72}],26:[function(require,module,exports){
+},{"../../util/comparator":73}],27:[function(require,module,exports){
 /**
  * Iterative and recursive implementations of power set
  */
@@ -43808,7 +44498,7 @@ var powerSet = powerSetIterative;
 powerSet.recursive = powerSetRecursive;
 module.exports = powerSet;
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 'use strict';
 
 /**
@@ -43864,7 +44554,7 @@ module.exports = {
   trialDivisionTest: genericPrimalityTest.bind(null, trialDivisionTest)
 };
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 'use strict';
 
 
@@ -43892,7 +44582,7 @@ var reservoirSampling = function (array, sampleSize) {
 
 module.exports = reservoirSampling;
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 'use strict';
 
 /**
@@ -43921,7 +44611,7 @@ var shannonEntropy = function (arr) {
 
 module.exports = shannonEntropy;
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 'use strict';
 var Queue = require('../../data_structures/queue.js');
 
@@ -43942,7 +44632,7 @@ var bfs = function (root, callback) {
 
 module.exports = bfs;
 
-},{"../../data_structures/queue.js":61}],31:[function(require,module,exports){
+},{"../../data_structures/queue.js":62}],32:[function(require,module,exports){
 'use strict';
 
 /**
@@ -43971,7 +44661,7 @@ var binarySearch = function (sortedArray, element) {
 
 module.exports = binarySearch;
 
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 'use strict';
 
 /**
@@ -44013,7 +44703,7 @@ inOrder.preOrder = preOrder;
 inOrder.postOrder = postOrder;
 module.exports = inOrder;
 
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 'use strict';
 
 /**
@@ -44036,7 +44726,7 @@ var ternarySearch = function (fn, left, right, precision) {
 
 module.exports = ternarySearch;
 
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 'use strict';
 var Comparator = require('../../util/comparator');
 
@@ -44068,7 +44758,7 @@ var bubbleSort = function (a, comparatorFn) {
 
 module.exports = bubbleSort;
 
-},{"../../util/comparator":72}],35:[function(require,module,exports){
+},{"../../util/comparator":73}],36:[function(require,module,exports){
 'use strict';
 
 /**
@@ -44137,7 +44827,7 @@ var maximumKey = function (array) {
 
 module.exports = countingSort;
 
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 'use strict';
 var MinHeap = require('../../data_structures/heap').MinHeap;
 
@@ -44160,7 +44850,7 @@ var heapsort = function (array, comparatorFn) {
 
 module.exports = heapsort;
 
-},{"../../data_structures/heap":58}],37:[function(require,module,exports){
+},{"../../data_structures/heap":59}],38:[function(require,module,exports){
 'use strict';
 var Comparator = require('../../util/comparator');
 
@@ -44187,7 +44877,7 @@ var insertionSort = function (vector, comparatorFn) {
 
 module.exports = insertionSort;
 
-},{"../../util/comparator":72}],38:[function(require,module,exports){
+},{"../../util/comparator":73}],39:[function(require,module,exports){
 'use strict';
 var Comparator = require('../../util/comparator');
 
@@ -44226,7 +44916,7 @@ var merge = function (a, b, comparator) {
 
 module.exports = mergeSortInit;
 
-},{"../../util/comparator":72}],39:[function(require,module,exports){
+},{"../../util/comparator":73}],40:[function(require,module,exports){
 'use strict';
 var Comparator = require('../../util/comparator');
 
@@ -44294,7 +44984,7 @@ var swap = function (array, x, y) {
 
 module.exports = quicksortInit;
 
-},{"../../util/comparator":72}],40:[function(require,module,exports){
+},{"../../util/comparator":73}],41:[function(require,module,exports){
 'use strict';
 
 /**
@@ -44382,7 +45072,7 @@ var maximumKey = function (a) {
 
 module.exports = radixSort;
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 'use strict';
 var Comparator = require('../../util/comparator');
 /**
@@ -44410,7 +45100,7 @@ var selectionSort = function (a, comparatorFn) {
 
 module.exports = selectionSort;
 
-},{"../../util/comparator":72}],42:[function(require,module,exports){
+},{"../../util/comparator":73}],43:[function(require,module,exports){
 'use strict';
 var Comparator = require('../../util/comparator');
 /**
@@ -44441,7 +45131,7 @@ var shellSort = function (array, comparatorFn) {
 
 module.exports = shellSort;
 
-},{"../../util/comparator":72}],43:[function(require,module,exports){
+},{"../../util/comparator":73}],44:[function(require,module,exports){
 'use strict';
 
 var Comparator = require('../../util/comparator');
@@ -44479,7 +45169,7 @@ function shortBubbleSort(array, comparatorFn) {
 
 module.exports = shortBubbleSort;
 
-},{"../../util/comparator":72}],44:[function(require,module,exports){
+},{"../../util/comparator":73}],45:[function(require,module,exports){
 /**
  *
  * "Hamming distance between two strings of equal length is the number of
@@ -44508,7 +45198,7 @@ var hamming = function (a, b) {
 
 module.exports = hamming;
 
-},{}],45:[function(require,module,exports){
+},{}],46:[function(require,module,exports){
 'use strict';
 
 
@@ -44716,7 +45406,7 @@ huffman.decode = function (encoding, encodedString) {
 
 module.exports = huffman;
 
-},{}],46:[function(require,module,exports){
+},{}],47:[function(require,module,exports){
 'use strict';
 
 /**
@@ -44802,7 +45492,7 @@ var buildTable = function (pattern) {
 
 module.exports = knuthMorrisPratt;
 
-},{}],47:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 'use strict';
 
 /**
@@ -44853,7 +45543,7 @@ var levenshtein = function (a, b) {
 
 module.exports = levenshtein;
 
-},{}],48:[function(require,module,exports){
+},{}],49:[function(require,module,exports){
 /**
  * Implementation of longest common subsequence
  */
@@ -44906,7 +45596,7 @@ var longestCommonSubsequence = function (s1, s2) {
 
 module.exports = longestCommonSubsequence;
 
-},{}],49:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 /**
  * Implementation of longest common substring
  */
@@ -44955,7 +45645,7 @@ var longestCommonSubstring = function (s1, s2) {
 
 module.exports = longestCommonSubstring;
 
-},{}],50:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 'use strict';
 
 /**
@@ -45030,7 +45720,7 @@ var hash = function (word) {
 
 module.exports = rabinKarp;
 
-},{}],51:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 'use strict';
 
 // Data Structures
@@ -45050,7 +45740,7 @@ module.exports = {
   FenwickTree: require('./data_structures/fenwick_tree')
 };
 
-},{"./data_structures/avl_tree":52,"./data_structures/bst":53,"./data_structures/disjoint_set_forest":54,"./data_structures/fenwick_tree":55,"./data_structures/graph":56,"./data_structures/hash_table":57,"./data_structures/heap":58,"./data_structures/linked_list":59,"./data_structures/priority_queue":60,"./data_structures/queue":61,"./data_structures/set":62,"./data_structures/stack":63,"./data_structures/treap":64}],52:[function(require,module,exports){
+},{"./data_structures/avl_tree":53,"./data_structures/bst":54,"./data_structures/disjoint_set_forest":55,"./data_structures/fenwick_tree":56,"./data_structures/graph":57,"./data_structures/hash_table":58,"./data_structures/heap":59,"./data_structures/linked_list":60,"./data_structures/priority_queue":61,"./data_structures/queue":62,"./data_structures/set":63,"./data_structures/stack":64,"./data_structures/treap":65}],53:[function(require,module,exports){
 'use strict';
 
 /**
@@ -45574,7 +46264,7 @@ AVLTree.prototype.getTreeHeight = function () {
 
 module.exports = AVLTree;
 
-},{}],53:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 'use strict';
 var Comparator = require('../util/comparator');
 
@@ -45711,7 +46401,7 @@ BST.prototype.remove = function (e) {
 
 module.exports = BST;
 
-},{"../util/comparator":72}],54:[function(require,module,exports){
+},{"../util/comparator":73}],55:[function(require,module,exports){
 'use strict';
 
 /**
@@ -45821,7 +46511,7 @@ DisjointSetForest.prototype.merge = function merge(element1, element2) {
 
 module.exports = DisjointSetForest;
 
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 'use strict';
 
 /**
@@ -45910,7 +46600,7 @@ FenwickTree.prototype.rangeSum = function (fromIndex, toIndex) {
 
 module.exports = FenwickTree;
 
-},{}],56:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 'use strict';
 
 var HashSet = require('./set');
@@ -45968,7 +46658,7 @@ Graph.prototype.edge = function (a, b) {
 
 module.exports = Graph;
 
-},{"./set":62}],57:[function(require,module,exports){
+},{"./set":63}],58:[function(require,module,exports){
 'use strict';
 
 var LinkedList = require('./linked_list');
@@ -46089,7 +46779,7 @@ HashTable.prototype.forEach = function (fn) {
 
 module.exports = HashTable;
 
-},{"./linked_list":59}],58:[function(require,module,exports){
+},{"./linked_list":60}],59:[function(require,module,exports){
 'use strict';
 var Comparator = require('../util/comparator');
 
@@ -46218,7 +46908,7 @@ module.exports = {
   MaxHeap: MaxHeap
 };
 
-},{"../util/comparator":72}],59:[function(require,module,exports){
+},{"../util/comparator":73}],60:[function(require,module,exports){
 'use strict';
 
 /**
@@ -46371,7 +47061,7 @@ LinkedList.prototype.forEach = function (fn) {
 
 module.exports = LinkedList;
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 'use strict';
 
 var MinHeap = require('./heap').MinHeap;
@@ -46424,7 +47114,7 @@ PriorityQueue.prototype.changePriority = function (item, priority) {
 
 module.exports = PriorityQueue;
 
-},{"./heap":58}],61:[function(require,module,exports){
+},{"./heap":59}],62:[function(require,module,exports){
 'use strict';
 
 var LinkedList = require('./linked_list');
@@ -46479,7 +47169,7 @@ Queue.prototype.forEach = function (fn) {
 
 module.exports = Queue;
 
-},{"./linked_list":59}],62:[function(require,module,exports){
+},{"./linked_list":60}],63:[function(require,module,exports){
 'use strict';
 
 var HashTable = require('./hash_table');
@@ -46524,7 +47214,7 @@ HashSet.prototype.forEach = function (fn) {
 
 module.exports = HashSet;
 
-},{"./hash_table":57}],63:[function(require,module,exports){
+},{"./hash_table":58}],64:[function(require,module,exports){
 'use strict';
 
 var Queue = require('./queue');
@@ -46552,7 +47242,7 @@ Stack.prototype.push = function (e) {
 
 module.exports = Stack;
 
-},{"./queue":61}],64:[function(require,module,exports){
+},{"./queue":62}],65:[function(require,module,exports){
 'use strict';
 
 /**
@@ -46709,7 +47399,7 @@ Treap.prototype.height = function () {
 
 module.exports = Treap;
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 'use strict';
 
 // Geometry algorithms
@@ -46717,7 +47407,7 @@ module.exports = {
   BezierCurve: require('./algorithms/geometry/bezier_curve')
 };
 
-},{"./algorithms/geometry/bezier_curve":4}],66:[function(require,module,exports){
+},{"./algorithms/geometry/bezier_curve":5}],67:[function(require,module,exports){
 'use strict';
 
 // Graph algorithms
@@ -46735,7 +47425,7 @@ module.exports = {
   floydWarshall: require('./algorithms/graph/floyd_warshall')
 };
 
-},{"./algorithms/graph/SPFA":5,"./algorithms/graph/bellman_ford":6,"./algorithms/graph/bfs_shortest_path":7,"./algorithms/graph/breadth_first_search":8,"./algorithms/graph/depth_first_search":9,"./algorithms/graph/dijkstra":10,"./algorithms/graph/euler_path":11,"./algorithms/graph/floyd_warshall":12,"./algorithms/graph/kruskal":13,"./algorithms/graph/prim":14,"./algorithms/graph/topological_sort":15}],67:[function(require,module,exports){
+},{"./algorithms/graph/SPFA":6,"./algorithms/graph/bellman_ford":7,"./algorithms/graph/bfs_shortest_path":8,"./algorithms/graph/breadth_first_search":9,"./algorithms/graph/depth_first_search":10,"./algorithms/graph/dijkstra":11,"./algorithms/graph/euler_path":12,"./algorithms/graph/floyd_warshall":13,"./algorithms/graph/kruskal":14,"./algorithms/graph/prim":15,"./algorithms/graph/topological_sort":16}],68:[function(require,module,exports){
 'use strict';
 
 var lib = {
@@ -46750,7 +47440,7 @@ var lib = {
 
 module.exports = lib;
 
-},{"./data_structures":51,"./geometry":65,"./graph":66,"./math":68,"./search":69,"./sorting":70,"./string":71}],68:[function(require,module,exports){
+},{"./data_structures":52,"./geometry":66,"./graph":67,"./math":69,"./search":70,"./sorting":71,"./string":72}],69:[function(require,module,exports){
 'use strict';
 
 // Math algorithms
@@ -46771,7 +47461,7 @@ module.exports = {
   greatestDifference: require('./algorithms/math/greatest_difference')
 };
 
-},{"./algorithms/math/collatz_conjecture":16,"./algorithms/math/extended_euclidean":17,"./algorithms/math/fast_power":18,"./algorithms/math/fibonacci":19,"./algorithms/math/fisher_yates":20,"./algorithms/math/gcd":21,"./algorithms/math/greatest_difference":22,"./algorithms/math/lcm":23,"./algorithms/math/newton_sqrt":24,"./algorithms/math/next_permutation":25,"./algorithms/math/power_set":26,"./algorithms/math/primality_tests":27,"./algorithms/math/reservoir_sampling":28,"./algorithms/math/shannon_entropy":29}],69:[function(require,module,exports){
+},{"./algorithms/math/collatz_conjecture":17,"./algorithms/math/extended_euclidean":18,"./algorithms/math/fast_power":19,"./algorithms/math/fibonacci":20,"./algorithms/math/fisher_yates":21,"./algorithms/math/gcd":22,"./algorithms/math/greatest_difference":23,"./algorithms/math/lcm":24,"./algorithms/math/newton_sqrt":25,"./algorithms/math/next_permutation":26,"./algorithms/math/power_set":27,"./algorithms/math/primality_tests":28,"./algorithms/math/reservoir_sampling":29,"./algorithms/math/shannon_entropy":30}],70:[function(require,module,exports){
 'use strict';
 
 // Search algorithms
@@ -46782,7 +47472,7 @@ module.exports = {
   dfs: require('./algorithms/search/dfs')
 };
 
-},{"./algorithms/search/bfs":30,"./algorithms/search/binarysearch":31,"./algorithms/search/dfs":32,"./algorithms/search/ternary_search":33}],70:[function(require,module,exports){
+},{"./algorithms/search/bfs":31,"./algorithms/search/binarysearch":32,"./algorithms/search/dfs":33,"./algorithms/search/ternary_search":34}],71:[function(require,module,exports){
 'use strict';
 
 // Sorting algorithms
@@ -46799,7 +47489,7 @@ module.exports = {
   shellSort: require('./algorithms/sorting/shell_sort')
 };
 
-},{"./algorithms/sorting/bubble_sort":34,"./algorithms/sorting/counting_sort":35,"./algorithms/sorting/heap_sort":36,"./algorithms/sorting/insertion_sort":37,"./algorithms/sorting/merge_sort":38,"./algorithms/sorting/quicksort":39,"./algorithms/sorting/radix_sort":40,"./algorithms/sorting/selection_sort":41,"./algorithms/sorting/shell_sort":42,"./algorithms/sorting/short_bubble_sort":43}],71:[function(require,module,exports){
+},{"./algorithms/sorting/bubble_sort":35,"./algorithms/sorting/counting_sort":36,"./algorithms/sorting/heap_sort":37,"./algorithms/sorting/insertion_sort":38,"./algorithms/sorting/merge_sort":39,"./algorithms/sorting/quicksort":40,"./algorithms/sorting/radix_sort":41,"./algorithms/sorting/selection_sort":42,"./algorithms/sorting/shell_sort":43,"./algorithms/sorting/short_bubble_sort":44}],72:[function(require,module,exports){
 'use strict';
 
 // String algorithms
@@ -46815,7 +47505,7 @@ module.exports = {
       './algorithms/string/longest_common_substring')
 };
 
-},{"./algorithms/string/hamming":44,"./algorithms/string/huffman":45,"./algorithms/string/knuth_morris_pratt":46,"./algorithms/string/levenshtein":47,"./algorithms/string/longest_common_subsequence":48,"./algorithms/string/longest_common_substring":49,"./algorithms/string/rabin_karp":50}],72:[function(require,module,exports){
+},{"./algorithms/string/hamming":45,"./algorithms/string/huffman":46,"./algorithms/string/knuth_morris_pratt":47,"./algorithms/string/levenshtein":48,"./algorithms/string/longest_common_subsequence":49,"./algorithms/string/longest_common_substring":50,"./algorithms/string/rabin_karp":51}],73:[function(require,module,exports){
 'use strict';
 
 /**
@@ -46875,7 +47565,7 @@ Comparator.prototype.reverse = function () {
 
 module.exports = Comparator;
 
-},{}],73:[function(require,module,exports){
+},{}],74:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -47369,7 +48059,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"util/":77}],74:[function(require,module,exports){
+},{"util/":78}],75:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -47551,7 +48241,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],75:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -47576,14 +48266,14 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],76:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],77:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -48173,4 +48863,4 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":76,"_process":74,"inherits":75}]},{},[2]);
+},{"./support/isBuffer":77,"_process":75,"inherits":76}]},{},[2]);
