@@ -990,7 +990,7 @@ module.exports.f = function(X,fxprime,stm,Y,Z,names,V,F) {
     for(var i = 0; i < rv[1].length; i++) {
 	fxprime[i] = rv[1][i] + pv[1][i];
     }
-    console.log("f,fxprime",rv[0] + pv[0],fxprime);
+//    console.log("f,fxprime",rv[0] + pv[0],fxprime);
     return [rv[0]+pv[0],fxprime];
 }
 
@@ -1035,7 +1035,7 @@ var p = function(F,X,stm,Y,Z,V,names,p_exp,linear_wt) {
     var v = 0;
     var nlen = X.length;
     var d = Array.apply(null, Array(nlen)).map(Number.prototype.valueOf,0);
-    console.log("X",X);
+//    console.log("X",X);
     // This is wrong because I wrote it as if it was iterating
     // over nodes, but it is currently iterationg over variables!
 //    console.log("names", names);
@@ -1109,7 +1109,7 @@ var construct_optimization_model_from_ANO = function(stm) {
 	var v = stm.coords[n];
 	var isAGoal = false;
 	var isFixed = n in stm.fixed;
-	console.log("v[n] = ",v);
+//	console.log("v[n] = ",v);
 	var gpos = null;
 	stm.goals.forEach(g =>
 			  { if (g.nd == n) {
@@ -1125,8 +1125,8 @@ var construct_optimization_model_from_ANO = function(stm) {
 	V[n] = { "type": type,
 		 "index": idx
 	       };
-	console.log("type",type);
-	console.log("v = ,gpos",v,gpos);	
+//	console.log("type",type);
+//	console.log("v = ,gpos",v,gpos);	
 	if (type == "fixed") {
 	    fixed++;
 	    F.push(v.x);
@@ -1153,7 +1153,7 @@ var construct_optimization_model_from_ANO = function(stm) {
 	    initial.push(v.y);
 	}
     });
-    console.log("X,initial",X,initial);
+//    console.log("X,initial",X,initial);
     assert(initial.length == X.length);
     assert((free+goal+fixed) == Object.keys(stm.coords).length);
     assert((F.length + X.length) == 2*Object.keys(stm.coords).length);	

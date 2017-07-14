@@ -179,7 +179,6 @@ function render_graph(M,C,color,trans) {
 	       {
 		   var pnt0 = C[e[0]];
 		   var pnt1 = C[e[1]];
-		   console.log("e",e,pnt0,pnt1);
 		   var tpnt0 = transform_to_viewport(trans(pnt0));
 		   var tpnt1 = transform_to_viewport(trans(pnt1));
 
@@ -187,11 +186,11 @@ function render_graph(M,C,color,trans) {
 		   line.fill = '#FF0000';
 		   line.stroke = color; // Accepts all valid css color
 		   line.linewidth = 3;
-		   console.log("XXX",tpnt0,tpnt1);
 	       });
 }
 
 createGrid(params.width / (2 * 10.0));
+render_origin();
 
 var stm = ANO.medium_triangle_problem2();
 
@@ -282,14 +281,11 @@ function do_one_optimization() {
 	    names.forEach(function (n,ix) {
 		C[n] = new THREE.Vector2(X[ix*2],X[ix*2+1]);
 	    });
-	    console.log("C",C);
 	    render_graph(stm.model,C,
 			 color[lstep % color.length],
 			 ( x => {
-			     console.log("x =",x);
 			     var p = ANO.copy_vector(x);
 			     p.add(new THREE.Vector2((xcnt-(ALGS_PER_ROW/2))*6,10*((-ycnt+1))));
-			     console.log("spud",p);
 			     return p;
 			 })
 			);
@@ -323,7 +319,7 @@ function do_one_optimization() {
     var mc = ANO.max_non_compliant(stm.model,C);
 }
 
-    $(window)
+$(window)
     .bind('click', function(e) {
 	two.clear();
 
@@ -333,17 +329,19 @@ function do_one_optimization() {
 
 	step = 0;
 	
-	createGrid(params.width / (2 * 10.0));	
-		console.log("e",e);
-		var x = e.clientX / 200;
-		var y = e.clientY / 200;
-		console.log("x,y",x,y);
-		steps = 0;
-		stm.goals[0] = { nd: 'e',
-				 pos: new THREE.Vector2(x,y),
-				 wt: 3 };
-		do_one_optimization();		
-            });
+	createGrid(params.width / (2 * 10.0));
+	render_origin();
+	console.log("e",e);
+	var p = transform_from_viewport(e.clientX,e.clientY)
+	var x = p[0];
+	var y = p[1];
+	console.log("QQQQ",x,y);
+	steps = 0;
+	stm.goals[0] = { nd: 'e',
+			 pos: new THREE.Vector2(x,y),
+			 wt: 3 };
+	do_one_optimization();		
+    });
 
 
 // render_loop();
