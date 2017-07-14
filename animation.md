@@ -101,9 +101,40 @@ function transform_to_viewport(pnt) {
     y = (-y) + params.height/2;
 
     // These adjust our weird grid background to the origin...
-    y = y + params.height / (2 *(2 * h));
-    x = x + params.width / (2 * (2 * w)) ;
+//    y = y + params.height / (2 *(2 * h));
+//    x = x + params.width / (2 * (2 * w)) ;
     return [x,y];
+}
+
+function transform_from_viewport(x,y) {
+
+        // now move to origin...
+    x = x - (params.width)/2;
+    y = y - (params.height)/2;
+
+    
+    // then unscale..
+    x = x / (params.width / (2*w));
+    y = - y / (params.height / (2*h));    
+
+
+    
+    return [x,y];
+}
+
+function test_transforms() {
+    for(var x = -10; x < 10; x++) {
+	for(var y = -10; y < 10; y++) {
+	    var p = transform_from_viewport(x,y);
+	    var v = new THREE.Vector2(p[0],p[1]);
+	    var r = transform_to_viewport(v);
+	    console.log(x,y);
+	    console.log(r);
+	    
+//	    assert(r.x == x);
+//	    assert(r.y == y);
+	}
+    }
 }
 
 // return a list of all edges in the graph....
@@ -162,10 +193,10 @@ function render_graph(M,C,color,trans) {
 
 createGrid(params.width / (2 * 10.0));
 
-var stm = ANO.medium_triangle_problem();
+var stm = ANO.medium_triangle_problem2();
 
-stm.goals[0] = { nd: 'd',
-	     pos: new THREE.Vector2(3,4),
+stm.goals[0] = { nd: 'e',
+	     pos: new THREE.Vector2(2,5),
 	     wt: 3 };
 
 
@@ -218,30 +249,10 @@ var step = 0;
 
 console.log("S.cur",S.cur);
 
-// function render_loop() {
-//     for(var i = 0; i < 3; i++) {
-// 	var lstep = step / 1;
-// 	step++;
-// 	xcnt = lstep  % ALGS_PER_ROW;
-// 	ycnt = Math.floor(lstep / ALGS_PER_ROW);
-	
-// 	render_graph(mtp.model,S.cur,
-// 	     color[lstep % color.length],
-// 	     ( x => {
-// 		 var p = ANO.copy_vector(x);
-// 		 p.add(new THREE.Vector2((xcnt-(ALGS_PER_ROW/2))*6,10*((-ycnt+1))));
-// 		 console.log("spud",p);
-// 		 return p;
-// 	     })
-// 	    );
-// 	two.update();
-//     };
-// }
-
 function do_one_optimization() {
     var params = {'maxIterations' : 5, 'history' : []};
 
-    var stm = ANO.medium_triangle_problem();
+//    var stm = ANO.medium_triangle_problem();
     var om = ANO.construct_optimization_model_from_ANO(stm);
     
     var F = om[0];
@@ -256,13 +267,11 @@ function do_one_optimization() {
     var free = om[9];
 
     console.log(stm);
-    console.log("om",om);
 
     var fvn = function(X,n) {
 	var fxprime = Array.apply(null, Array(X.length)).map(Number.prototype.valueOf,0);
-	console.log("step",step);
-	if ((step % 100) == 0) {
-	    var lstep = step / 100;
+	if ((step % 50) == 0) {
+	    var lstep = step / 50;
 	    xcnt = lstep  % ALGS_PER_ROW;
 	    ycnt = Math.floor(lstep / ALGS_PER_ROW);
 
@@ -314,7 +323,28 @@ function do_one_optimization() {
     var mc = ANO.max_non_compliant(stm.model,C);
 }
 
-do_one_optimization();
+    $(window)
+    .bind('click', function(e) {
+	two.clear();
+
+	ycnt = 0;
+	xcnt = 0;
+	limit = 40;
+
+	step = 0;
+	
+	createGrid(params.width / (2 * 10.0));	
+		console.log("e",e);
+		var x = e.clientX / 200;
+		var y = e.clientY / 200;
+		console.log("x,y",x,y);
+		steps = 0;
+		stm.goals[0] = { nd: 'e',
+				 pos: new THREE.Vector2(x,y),
+				 wt: 3 };
+		do_one_optimization();		
+            });
+
 
 // render_loop();
 
