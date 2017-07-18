@@ -243,6 +243,34 @@ My plan is to complete that and then try to work this into the existing actoptmi
 We must decide whether to treat the x,y,z coordinates as a vector or as independent variables in
 this system. I believe mathematically, it is 100\% possible to treat them as independent variables.
 
+The functions as I have defined them here appear to violate the ``Wolfe Condition''. Fmin doesn't seem to work.
+I switched to using ``optimiize.js'' and have been able to obtain solutions.  However, it is a little
+tricky to develop weighting funcitons that correctly penalize the bounds being broken.
+
+After switching to optimize.js, this is working somewhat better. However my attempts to increase
+the penalty for violating a constraint seem to fail pretty badly, even if I just do a linear increase.
+I suspect this means that it would be best to use optimize.js locally inside the STRAINFRONT algorithm
+to find good solutions, which was my original intention. I would like to understand better why it fails.
+Possibly the problem is that the derivative makes jumps which are too drastic---that appears to be
+the case. I could possibly solve this problem by examining each iteration.
+
+\subsection{Evaluation}
+
+Well, I could not get optimize.js to work very well either.  It is possible that I am not using it correctly.
+Possibly I should talk to Martin about this.  However, it seems to fail completely to find a good global
+solution.
+
+I vaguely remember when I first started the numerical approaches that I was going to use them to improve the
+``intersection only'' algorithm in strainfront.  I think that still may be possible.
+
+I also must consider if I should try to integrate strainfront into the interactive animation part.
+
+Now I see that indeed the intersection algorithm is potentially a problem.
+
+I would like to put it into the interactive mode.  Not sure I can.
+
+
+
 \section{First Algorithm}
 
 Although this problem is a quadratic constraint problem,

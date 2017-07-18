@@ -287,6 +287,42 @@ module.exports.medium_triangle_problem2 = function() {
 	     fixed: fixed};
 }
 
+module.exports.big_triangle_problem = function() {
+    var dim = this.dim2;
+    var m = { g: new algols.Graph(false),
+	      lbs: {},
+	      ubs: {},
+	      deflb: 1.1,
+	      defub: 2,
+	      fixed: {}
+	    };
+    const nodeset = gen_nodeset(15);
+    nodeset.forEach(nd => m.g.addVertex(nd));
+    gen_regular_2d_net(m,nodeset);
+
+
+    construct_bounds(m,nodeset,m.deflb,m.defub);
+    var fixed = {};
+    fixed['a'] = true;
+    m.fixed = fixed;
+
+    var goals = [];
+    goals[0] = { nd: 'e',
+		 pos: new THREE.Vector2(7,7),
+		 wt: 3 };
+
+    const nodes = gen_regular_2d_coords(m,nodeset);
+
+
+    console.log("NODES",nodes);
+    
+    return { dim: dim,
+	     coords: nodes,
+	     model: m,
+	     goals: goals,
+	     fixed: fixed};
+}
+
 
 // This is from Algorithm.js ...
 // I am forced to include here because it doesn't provide
@@ -974,7 +1010,7 @@ var valueOfNode = function(name,X,F,V) {
 };
 
 var PENALTY_WEIGHTING_EXP = 2.0;
-var LINEAR_PENALTY_WT = 3;
+var LINEAR_PENALTY_WT = 1;
     
 module.exports.f = function(X,fxprime,stm,Y,Z,names,V,F) {
     // We define f to be the sum or the reward function and penalty function

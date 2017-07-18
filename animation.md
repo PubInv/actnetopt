@@ -10,6 +10,13 @@ title: Actuator Net Optimization
         <section id="main-content">
     <section id="visualsection" style="{border: red;}" class="xscrollable">
     </section>
+
+<p>
+    <label for="animation_val">Animation Slider</label>
+  <input type="text" id="animation_val" readonly style="border:0; color:#f6931f; font-weight:bold;">
+    <div id="animation_pos"></div>
+</p>    
+
     <section id="textsection" style="{border: red;}">
     <h1> Actuator Net Optimization </h1>
     This is an attempt to formulate and solve a problem that arises in the Gluss Project.
@@ -35,8 +42,11 @@ title: Actuator Net Optimization
         </section>
 
     <script src="./javascripts/two.min.js"></script>
-    <script src="./javascripts/three.js"></script>    
-<script src="./bundle.js"></script>    
+    <script src="./javascripts/three.js"></script>
+
+
+    <script src="./bundle.js"></script>
+
 
     <script>
 
@@ -48,11 +58,20 @@ title: Actuator Net Optimization
 
 const ANO = UGLY_GLOBAL_SINCE_I_CANT_GET_MY_MODULE_INTO_THE_BROWSER;
 
+
+var ALL_SOLUTIONS = [];
+
+
+
+var TARGET_X = 0;
+var TARGET_Y = 0;
+
+
 // Make an instance of two and place it on the page.
 var elem = document.getElementById('visualsection');
 
 
-var params = { width: 1600, height: 1600 };
+var params = { width: 1000, height: 1000 };
 var two = new Two(params).appendTo(elem);
 
 // Don't forget to tell two to render everything
@@ -154,6 +173,7 @@ function edges(g) {
 }
 
 function render_graph(M,C,color,trans) {
+    if (C) {
     Object.keys(C).forEach(c => {
 	var pnt = C[c];
 	var tpnt = transform_to_viewport(trans(pnt));
@@ -187,12 +207,13 @@ function render_graph(M,C,color,trans) {
 		   line.stroke = color; // Accepts all valid css color
 		   line.linewidth = 3;
 	       });
+    }
 }
 
 createGrid(params.width / (2 * 10.0));
 render_origin();
 
-var stm = ANO.medium_triangle_problem2();
+var stm = ANO.medium_triangle_problem();
 
 stm.goals[0] = { nd: 'e',
 	     pos: new THREE.Vector2(2,5),
@@ -202,10 +223,17 @@ stm.goals[0] = { nd: 'e',
 function render_origin() {
     var origin = transform_to_viewport(new THREE.Vector2(0,0));
     var circle = two.makeCircle(origin[0], origin[1], 2);
-    console.log(origin);
     circle.fill = '#000000';
     circle.stroke = 'black'; // Accepts all valid css color
     circle.linewidth = 2;
+}
+
+function render_spot(x,y) {
+    var pnt = transform_to_viewport(new THREE.Vector2(x,y));
+    var circle = two.makeCircle(pnt[0], pnt[1], 3);
+    circle.fill = 'blue';
+    circle.stroke = 'blue'; // Accepts all valid css color
+    circle.linewidth = 3;
 }
 
 function translate(C,v) {
@@ -218,18 +246,6 @@ render_origin();
 
 
 var targ = new THREE.Vector2(0,4);
-var step = 0;
-var color = ['red','blue','green','purple','gray'];
-var ycnt = 0;
-var xcnt = 0;
-var limit = 40;
-
-step = 0;
-
-// var D = ANO.strainfront(mtp.d,mtp.model,C,'d',new THREE.Vector2(4,4),animate);
-// console.log("D = ",D);
-
-var lstep = 0;
 var origin = transform_to_viewport(new THREE.Vector2(0,0));
 
 const cur = {};
@@ -238,7 +254,9 @@ var C = stm.coords;
 
 Object.keys(C).forEach( nd => cur[nd] = ANO.copy_vector(C[nd]));
 
-var shortestPath = ANO.dijkstra(stm.model.g, 'd');
+var NODE = 'd';
+
+var shortestPath = ANO.dijkstra(stm.model.g, NODE);
 
 var S = { s: [], used: [], cur: cur, fixed: {}, perturbed: {} , dsp: shortestPath};
 
@@ -248,11 +266,84 @@ var step = 0;
 
 console.log("S.cur",S.cur);
 
-function do_one_optimization() {
-    var params = {'maxIterations' : 5, 'history' : []};
+var N = 2;
+
+// In order to be able to understand this, I want to store an array of solutions
+// so that I can animate them after the fact!
+
+var step = 0;
+var color = ['red','blue','green','purple','gray'];
+var ycnt = 0;
+var xcnt = 0;
+var limit = 40;
+
+step = 0;
+
+// var D = ANO.strainfront(stm.d,stm.model,C,'d',new THREE.Vector2(4,4),animate);
+// console.log("D = ",D);
+
+var lstep = 0;
+
+function animate(s) {
+    //    console.log(s);
+    var ALGS_PER_ROW = 6;
+    if ((step % 2) == 0) {
+	var lstep = step / 2;
+    xcnt = lstep  % ALGS_PER_ROW;
+    ycnt = Math.floor(lstep / ALGS_PER_ROW);
+
+	render_graph(stm.model,s.cur,
+		     color[lstep % color.length],
+		     ( x => {
+			 var p = ANO.copy_vector(x);
+			 p.add(new THREE.Vector2((xcnt-(ALGS_PER_ROW/2))*6,10*((-ycnt+1))));
+			 console.log("spud",p);			 
+			 return p;
+		     }));
+    }
+	step++;
+    console.log(step,s.s.length);
+    console.log(step,s.s);    
+
+    //    alert();
+    two.update();
+    return (step < limit);
+}
+
+render_one = function(C,x,y,xcnt,ycnt) {
+	two.clear();
+	createGrid(params.width / (2 * 10.0));
+	render_origin();
+	// I don't know why I have to do this!!
+//	var p = transform_from_viewport(x,y);
+//	var x = p[0];
+//	var y = p[1];
+         render_spot(x,y);
+	    render_graph(stm.model,C,
+			 color[lstep % color.length],
+			 ( x => {
+			     var p = ANO.copy_vector(x);
+			     p.add(new THREE.Vector2((xcnt-(ALGS_PER_ROW/2))*6,10*((-ycnt+1))));
+			     return p;
+			 })
+			);
+    two.update();
+
+    steps = 0;
+}
+
+var MAX_STEP_NUM = 500;
+function do_one_numerical_optimization(nd,x,y) {
+    TARGET_X = x;
+    TARGET_Y = y;
+//    var params = {'maxIterations' : 5, 'history' : []};
 
 //    var stm = ANO.medium_triangle_problem();
     var om = ANO.construct_optimization_model_from_ANO(stm);
+
+	stm.goals[0] = { nd: nd,
+			 pos: new THREE.Vector2(x,y),
+			 wt: 3 };
     
     var F = om[0];
     var V = om[1];
@@ -266,32 +357,11 @@ function do_one_optimization() {
     var free = om[9];
 
     console.log(stm);
+    ALL_SOLUTIONS = ALL_SOLUTIONS.slice(0,0);
 
     var fvn = function(X,n) {
 	var fxprime = Array.apply(null, Array(X.length)).map(Number.prototype.valueOf,0);
-	if ((step % 50) == 0) {
-	    var lstep = step / 50;
-	    xcnt = lstep  % ALGS_PER_ROW;
-	    ycnt = Math.floor(lstep / ALGS_PER_ROW);
 
-	    var C = [];
-	    Object.keys(stm.fixed).forEach(function (n,ix) {
-		C[n] = new THREE.Vector2(stm.coords[n].x,stm.coords[n].y);
-	    });
-	    names.forEach(function (n,ix) {
-		C[n] = new THREE.Vector2(X[ix*2],X[ix*2+1]);
-	    });
-	    render_graph(stm.model,C,
-			 color[lstep % color.length],
-			 ( x => {
-			     var p = ANO.copy_vector(x);
-			     p.add(new THREE.Vector2((xcnt-(ALGS_PER_ROW/2))*6,10*((-ycnt+1))));
-			     return p;
-			 })
-			);
-	    two.update();
-	}
-	step++;
 	return ANO.f(X,fxprime,stm,Y,Z,names,V,F)[n];	    
     }
 
@@ -299,6 +369,31 @@ function do_one_optimization() {
 	return fvn(X,0);
     }
     var fd = function(X) {
+	if ((step % N) == 0) {
+	    var lstep = step / N;
+//	    xcnt = lstep  % ALGS_PER_ROW;
+	    //	    ycnt = Math.floor(lstep / ALGS_PER_ROW);
+
+	    xcnt = 2;
+	    ycnt = 1;
+
+	    
+	    var C = [];
+	    Object.keys(stm.fixed).forEach(function (n,ix) {
+		C[n] = new THREE.Vector2(stm.coords[n].x,stm.coords[n].y);
+	    });
+	    names.forEach(function (n,ix) {
+		C[n] = new THREE.Vector2(X[ix*2],X[ix*2+1]);
+	    });
+
+	    ALL_SOLUTIONS.push(C);	    
+	    render_one(C,x,y,xcnt,ycnt,color[lstep % color.length]);
+
+	}
+	step++;
+	if (step > MAX_STEP_NUM) {
+	    throw new Error("MAX STEPS EXCEEDED!");
+	}
 	return fvn(X,1);
     }
 
@@ -314,12 +409,37 @@ function do_one_optimization() {
     names.forEach(function (n,ix) {
 	C[n] = new THREE.Vector2(solution.argument[ix*2],solution.argument[ix*2+1]);
     });
+
+    console.log("MAX LEN", ALL_SOLUTIONS.length);
+    $( "#animation_pos" ).slider( "option", "max", ALL_SOLUTIONS.length );
+
     console.log("C",C);
     console.log(ANO.max_non_compliant(stm.model,C));
     var mc = ANO.max_non_compliant(stm.model,C);
 }
 
-$(window)
+function do_one_strainfront_optimization(nd,x,y) {
+    TARGET_X = x;
+    TARGET_Y = y;
+    stm.goals[0] = { nd: nd,
+			 pos: new THREE.Vector2(x,y),
+			 wt: 3 };
+    
+
+    console.log(stm);
+    ALL_SOLUTIONS = ALL_SOLUTIONS.slice(0,0);
+
+    var D = ANO.strainfront(stm.dim,stm.model,stm.coords,nd,stm.goals[0].pos,animate);
+    console.log("D = ",D);
+    console.log("Penalty:",ANO.max_non_compliant(stm.model,D));
+
+    console.log("MAX LEN", ALL_SOLUTIONS.length);
+    $( "#animation_pos" ).slider( "option", "max", ALL_SOLUTIONS.length );
+
+}
+
+var USE_STRAINFRONT = 1;
+$("#visualsection")
     .bind('click', function(e) {
 	two.clear();
 
@@ -331,19 +451,41 @@ $(window)
 	
 	createGrid(params.width / (2 * 10.0));
 	render_origin();
-	console.log("e",e);
-	var p = transform_from_viewport(e.clientX,e.clientY)
+	// I don't know why I have to do this!!
+	var p = transform_from_viewport(e.offsetX,e.offsetY);
 	var x = p[0];
 	var y = p[1];
+	render_spot(x,y);
 	console.log("QQQQ",x,y);
 	steps = 0;
-	stm.goals[0] = { nd: 'e',
-			 pos: new THREE.Vector2(x,y),
-			 wt: 3 };
-	do_one_optimization();		
-    });
+	if (USE_STRAINFRONT) {
+	    do_one_strainfront_optimization(NODE,x,y);
+	} else {
+	    do_one_numerical_optimization(NODE,x,y);
+	}
+	});
 
 
 // render_loop();
+
+$(window).ready( function() {
+    $( "#animation_pos" ).slider(
+       	{
+	    range: "max",
+	    min: 0,
+	    max: 80,
+	    value: 0,
+	    change: function( event, ui ) {
+		var n = ui.value;
+		console.log("n =", n);
+       		$( "#animation_val" ).val( n );
+		render_one(ALL_SOLUTIONS[n],TARGET_X,TARGET_Y,xcnt,ycnt,color[n % color.length]);
+		console.log("NON_COMPLIANCE",ANO.max_non_compliant(stm.model,ALL_SOLUTIONS[n]));
+	    }
+
+       	}
+    );
+    $( "#animation_val" ).val( $( "#animation_pos" ).slider( "value" ) );
+  });
 
     </script>

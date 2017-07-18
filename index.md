@@ -160,7 +160,7 @@ function render_graph(M,C,color,trans) {
 
 createGrid(params.width / (2 * 10.0));
 
-var mtp = ANO.medium_triangle_problem2();
+var mtp = ANO.medium_triangle_problem();
 
 function render_origin() {
 var origin = transform_to_viewport(new THREE.Vector2(0,0));
@@ -189,8 +189,8 @@ var limit = 40;
 function animate(s) {
     //    console.log(s);
     var ALGS_PER_ROW = 6;
-    if ((step % 1) == 0) {
-	var lstep = step / 1;
+    if ((step % 2) == 0) {
+	var lstep = step / 2;
     xcnt = lstep  % ALGS_PER_ROW;
     ycnt = Math.floor(lstep / ALGS_PER_ROW);
 
@@ -211,15 +211,18 @@ function animate(s) {
     two.update();
     return (step < limit);
 }
-// var C = ANO.strainfront(mtp.d,mtp.model,mtp.coords,'c',new THREE.Vector2(0,4),animate);
+// var C = ANO.strainfront(mtp.dim,mtp.model,mtp.coords,'c',new THREE.Vector2(2,2),animate);
 
-var C = ANO.strainfront(mtp.d,mtp.model,mtp.coords,'j',new THREE.Vector2(6,4),animate);
-console.log("C = ",C);
+//var C = ANO.strainfront(mtp.dim,mtp.model,mtp.coords,'j',new THREE.Vector2(6,4),animate);
+//console.log("C = ",C);
 step = 0;
+mtp.goals[0] = { nd: 'd',
+		 pos: new THREE.Vector2(4,10),
+		 wt: 3 };
 
-// var D = ANO.strainfront(mtp.d,mtp.model,C,'d',new THREE.Vector2(4,4),animate);
-// console.log("D = ",D);
-
+var D = ANO.strainfront(mtp.dim,mtp.model,mtp.coords,'d',mtp.goals[0].pos,animate);
+console.log("D = ",D);
+console.log("Penalty:",ANO.max_non_compliant(mtp.model,D));
 
     </script>
 
