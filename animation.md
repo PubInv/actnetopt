@@ -59,6 +59,9 @@ title: Actuator Net Optimization
 const ANO = UGLY_GLOBAL_SINCE_I_CANT_GET_MY_MODULE_INTO_THE_BROWSER;
 
 
+// We need to decide if this constains an array of points
+// or an object model.  I think the object model is better (that is, and object named by nodeds.)
+// So I will now repair that...
 var ALL_SOLUTIONS = [];
 
 
@@ -174,7 +177,8 @@ function edges(g) {
 
 function render_graph(M,C,color,trans) {
     if (C) {
-    Object.keys(C).forEach(c => {
+	for(var c in C) {
+//    Object.keys(C).forEach(c => {
 	var pnt = C[c];
 	var tpnt = transform_to_viewport(trans(pnt));
 	var circle = two.makeCircle(tpnt[0], tpnt[1], 4);
@@ -193,7 +197,7 @@ function render_graph(M,C,color,trans) {
 	var circle1 = two.makeCircle(tpnt[0], tpnt[1], s1);
 	circle1.stroke = 'blue'; // Accepts all valid css color
 	circle1.noFill();	
-    });
+    };
     var es = edges(M.g);
     es.forEach(e =>
 	       {
@@ -213,11 +217,13 @@ function render_graph(M,C,color,trans) {
 createGrid(params.width / (2 * 10.0));
 render_origin();
 
-var stm = ANO.medium_triangle_problem();
+var stm = ANO.big_triangle_problem();
 
-stm.goals[0] = { nd: 'e',
+var NODE = 'j';
+stm.goals[0] = { nd: NODE,
 	     pos: new THREE.Vector2(2,5),
-	     wt: 3 };
+		 wt: 3 };
+
 
 
 function render_origin() {
@@ -254,7 +260,7 @@ var C = stm.coords;
 
 Object.keys(C).forEach( nd => cur[nd] = ANO.copy_vector(C[nd]));
 
-var NODE = 'd';
+
 
 var shortestPath = ANO.dijkstra(stm.model.g, NODE);
 
@@ -292,12 +298,17 @@ function animate(s) {
     xcnt = lstep  % ALGS_PER_ROW;
     ycnt = Math.floor(lstep / ALGS_PER_ROW);
 
+	var c = {};
+	for(var k in s.cur) {
+	    c[k] = ANO.copy_vector(s.cur[k]);
+	}
+	ALL_SOLUTIONS.push(c);	    
+
 	render_graph(stm.model,s.cur,
 		     color[lstep % color.length],
 		     ( x => {
 			 var p = ANO.copy_vector(x);
 			 p.add(new THREE.Vector2((xcnt-(ALGS_PER_ROW/2))*6,10*((-ycnt+1))));
-			 console.log("spud",p);			 
 			 return p;
 		     }));
     }
@@ -378,12 +389,24 @@ function do_one_numerical_optimization(nd,x,y) {
 	    ycnt = 1;
 
 	    
-	    var C = [];
-	    Object.keys(stm.fixed).forEach(function (n,ix) {
+	    var C = {};
+/*	    Object.keys(stm.fixed).forEach(function (n,ix) {
 		C[n] = new THREE.Vector2(stm.coords[n].x,stm.coords[n].y);
 	    });
 	    names.forEach(function (n,ix) {
 		C[n] = new THREE.Vector2(X[ix*2],X[ix*2+1]);
+	    });
+
+	    ALL_SOLUTIONS.push(C);	    
+	    render_one(C,x,y,xcnt,ycnt,color[lstep % color.length]);
+*/
+	    Object.keys(stm.fixed).forEach(function (n,ix) {
+		var k = Object.keys(stm.fixed)[ix];
+		C[k] = new THREE.Vector2(stm.coords[n].x,stm.coords[n].y);
+	    });
+	    names.forEach(function (n,ix) {
+		var k = names[ix];
+		C[k] = new THREE.Vector2(X[ix*2],X[ix*2+1]);
 	    });
 
 	    ALL_SOLUTIONS.push(C);	    
@@ -433,8 +456,8 @@ function do_one_strainfront_optimization(nd,x,y) {
     console.log("D = ",D);
     console.log("Penalty:",ANO.max_non_compliant(stm.model,D));
 
-    console.log("MAX LEN", ALL_SOLUTIONS.length);
-    $( "#animation_pos" ).slider( "option", "max", ALL_SOLUTIONS.length );
+    console.log("MAX LEN", ALL_SOLUTIONS.length-1);
+    $( "#animation_pos" ).slider( "option", "max", ALL_SOLUTIONS.length-1 );
 
 }
 
@@ -479,8 +502,15 @@ $(window).ready( function() {
 		var n = ui.value;
 		console.log("n =", n);
        		$( "#animation_val" ).val( n );
-		render_one(ALL_SOLUTIONS[n],TARGET_X,TARGET_Y,xcnt,ycnt,color[n % color.length]);
-		console.log("NON_COMPLIANCE",ANO.max_non_compliant(stm.model,ALL_SOLUTIONS[n]));
+		var sol = ALL_SOLUTIONS[n];
+		console.log("sol",sol);
+		// This needs to be regularized to be the center in some way
+		if (sol) {
+		xcnt = 2;
+		ycnt = 1;
+		render_one(sol,TARGET_X,TARGET_Y,xcnt,ycnt,color[n % color.length]);
+		    console.log("NON_COMPLIANCE",ANO.max_non_compliant(stm.model,ALL_SOLUTIONS[n]));
+		}
 	    }
 
        	}
