@@ -250,7 +250,7 @@ var construct_optimization_model_from_ANO = function(stm) {
 describe('inverse', function() {
     it('simply can find inverse', function() {
 
-    	var stm = ANO.simple_triangle_observation();
+    	var stm = ANO.create_standard_observation(12);
 
 	console.log(stm);
 
@@ -283,6 +283,7 @@ describe('inverse', function() {
 	
 	var test_fnc = function (stm,v) {
 	    var result = 0.0;
+//	    console.log("v = ", v);
 
 	    // now we need to iterate over the vector, but also
 	    // find all of the connections, which will require to check
@@ -296,18 +297,20 @@ describe('inverse', function() {
 	    // We will create a map of the postions from v....
 	    var p = {};
 	    var n = 0;
-	    variables.forEach(nd =>
+	    variables.forEach((nd,ix) =>
 			      {
-				  var c = new THREE.Vector2(v[n],v[n+1]);
+				  var c = new THREE.Vector2(v[ix],v[ix+1]);
 				  p[nd] = c;
 			      });
 	    names.forEach(nd =>
 			  {
 			      if (!(nd in p)) {
+//				  console.log("nd,stm.coords[nd]",nd,stm.coords[nd]);
 				  var c = ANO.copy_vector(stm.coords[nd]);
 				  p[nd] = c;
 			      } 
 			  });
+//	    console.log("p =",p);
 	    
 
 	    stm.variables.forEach(
@@ -323,6 +326,7 @@ describe('inverse', function() {
 				var c0 = p[v0];
 				var c1 = p[v1];
 				var d = c0.distanceTo(c1);
+//				console.log("root of distance",ename,(stm.d[ename] - d),c0,c1);
 				result = result + (stm.d[ename] - d)*(stm.d[ename] - d);
 			    }
 		    )
@@ -330,10 +334,13 @@ describe('inverse', function() {
 //	    console.log("result",result);
 	    return result;
 	};
+	console.log("variables", variables);
 
-	//	var solution = opt.minimize_Powell( v => test_fnc(stm,v), X0);
+//	var solution = opt.minimize_Powell( v => test_fnc(stm,v), X0);
 	var grad = function(x) {
-	    return ANO.opt.numerical_gradient(v => test_fnc(stm,v),x);
+	    var g = ANO.opt.numerical_gradient(v => test_fnc(stm,v),x);
+//	    console.log("g == ",x,g);
+	    return g;
 	}
 
 	var solution = ANO.opt.minimize_L_BFGS(v => test_fnc(stm,v),
