@@ -250,7 +250,7 @@ var construct_optimization_model_from_ANO = function(stm) {
 describe('inverse', function() {
     it('simply can find inverse', function() {
 
-    	var stm = ANO.create_standard_observation(12);
+    	var stm = ANO.create_standard_observation(10);
 
 	console.log(stm);
 
@@ -299,7 +299,7 @@ describe('inverse', function() {
 	    var n = 0;
 	    variables.forEach((nd,ix) =>
 			      {
-				  var c = new THREE.Vector2(v[ix],v[ix+1]);
+				  var c = new THREE.Vector2(v[ix*2],v[ix*2+1]);
 				  p[nd] = c;
 			      });
 	    names.forEach(nd =>
@@ -326,7 +326,8 @@ describe('inverse', function() {
 				var c0 = p[v0];
 				var c1 = p[v1];
 				var d = c0.distanceTo(c1);
-//				console.log("root of distance",ename,(stm.d[ename] - d),c0,c1);
+//				console.log("ename,desired,actual",ename,stm.d[ename],d);
+//				console.log("root of distance",ename,(stm.d[ename] - d)*(stm.d[ename] - d),c0,c1);
 				result = result + (stm.d[ename] - d)*(stm.d[ename] - d);
 			    }
 		    )
@@ -360,7 +361,7 @@ describe('inverse', function() {
 	});
 	console.log("C",C);
 
-	console.log(ANO.max_non_compliant(stm.model,C));
+	console.log(ANO.max_non_compliant_debug(stm.model,C));
 	var mc = ANO.max_non_compliant(stm.model,C);
 	assert(mc < 0.05,"non_compliance: "+mc);
     });
