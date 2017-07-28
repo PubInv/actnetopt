@@ -109,6 +109,23 @@ function gen_simple_3d_net(m,nodeset) {
     
 }
 
+module.exports.create_lengths_object = function(m,nodeset,init_len) {
+    var d = {}; // d maps an edge name to an observed length...
+    var standard_length = 1.3;
+    console.log("interior nodeset",nodeset);
+    nodeset.forEach(nda => {
+	console.log("nda",nda);
+	m.g.neighbors(nda).forEach(ndb => {
+	    if (nda < ndb) {
+		var en = ename(nda,ndb);
+		d[en] = init_len;
+	    }
+	})
+    }
+		   );
+    return d;
+}
+    
 
 module.exports.create_standard_observation = function(n) {
     var dim = this.dim2;
@@ -146,6 +163,7 @@ module.exports.create_standard_observation = function(n) {
 		    })
 		   );
 
+    var d = create_lengths_object(m,nodeset,standard_length);
 
 
 // However, we need to have coordinates for the "fixed" nodes!
@@ -167,6 +185,7 @@ module.exports.create_standard_observation = function(n) {
     return { dim: dim,
 	     coords: nodes,
 	     model: m,
+	     nodeset: nodeset,	     
 	     d: d,
 //	     goals: goals,
 	     fixed: fixed};
@@ -213,6 +232,7 @@ module.exports.simple_triangle_problem = function() {
     return { dim: dim,
 	     coords: nodes,
 	     model: m,
+	     nodeset: nodeset,
 	     goals: goals,
 	     fixed: fixed};
 }
@@ -258,6 +278,7 @@ module.exports.simple_tetrahedron_problem = function() {
     return { dim: dim,
 	     coords: nodes,
 	     model: m,
+	     nodeset: nodeset,	     
 	     goals: goals,
 	     fixed: fixed};
 }
@@ -298,6 +319,7 @@ module.exports.medium_triangle_problem = function() {
     return { dim: dim,
 	     coords: nodes,
 	     model: m,
+	     nodeset: nodeset,	     
 	     goals: goals,
 	     fixed: fixed};
 }
@@ -350,6 +372,7 @@ module.exports.medium_triangle_problem2 = function() {
     return { dim: dim,
 	     coords: nodes,
 	     model: m,
+	     nodeset: nodeset,	     
 	     goals: goals,
 	     fixed: fixed};
 }
@@ -386,6 +409,7 @@ module.exports.big_triangle_problem = function() {
     return { dim: dim,
 	     coords: nodes,
 	     model: m,
+	     nodeset: nodeset,	     
 	     goals: goals,
 	     fixed: fixed};
 }
