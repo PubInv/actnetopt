@@ -192,7 +192,7 @@ var construct_optimization_model_from_ANO = function(stm) {
 	var v = stm.coords[n];
 	var isAGoal = false;
 	var isFixed = n in stm.fixed;
-	console.log("v[n] = ",v);
+//	console.log("v[n] = ",v);
 	var gpos = null;
 	stm.goals.forEach(g =>
 			  { if (g.nd == n) {
@@ -208,8 +208,8 @@ var construct_optimization_model_from_ANO = function(stm) {
 	V[n] = { "type": type,
 		 "index": idx
 	       };
-	console.log("type",type);
-	console.log("v = ,gpos",v,gpos);	
+//	console.log("type",type);
+//	console.log("v = ,gpos",v,gpos);	
 	if (type == "fixed") {
 	    fixed++;
 	    F.push(v.x);
@@ -246,10 +246,60 @@ var construct_optimization_model_from_ANO = function(stm) {
     return [F,V,X,Y,Z,initial,names,fixed,goal,free];
 }
 
+function cartesian_fnc(stm,v) {
+    var result = 0.0;
+    var names = Object.keys(stm.coords);
+
+    var variables = [];
+    names.forEach(nd =>
+		  {
+		      if (!(nd in stm.fixed)) {
+			  variables.push(nd);
+		      }
+		  });
+
+    // what we really want here is a way to iterate over all edges.
+    // We will create a map of the postions from v....
+    var p = {};
+    var n = 0;
+    variables.forEach((nd,ix) =>
+		      {
+			  var c = new THREE.Vector2(v[ix*2],v[ix*2+1]);
+			  p[nd] = c;
+		      });
+    names.forEach(nd =>
+		  {
+		      if (!(nd in p)) {
+			  var c = ANO.copy_vector(stm.coords[nd]);
+			  p[nd] = c;
+		      } 
+		  });
+
+    stm.cvariables.forEach(
+	v0 =>
+	    stm.model.g.neighbors(v0).forEach(
+		v1 =>
+		    {
+			var ename = (v0 < v1) ? v0 + ' ' + v1
+			    : v1 + ' ' + v0;
+			// we need to c0 and c1 corresponding to the positions
+			// of these nodes (as definde by the vector v.
+
+			var c0 = p[v0];
+			var c1 = p[v1];
+			var d = c0.distanceTo(c1);
+			result = result + (stm.d[ename] - d)*(stm.d[ename] - d);
+		    }
+	    )
+    );
+//    console.log("cartesian_fnc v,result",result,v);
+    return result;
+}
+
 // Return the coordinates that closely match the model and lengths provided by v
 // stm is a model, v is a set of edgelengths corresponding to the d array.
 function invert(stm,v) {
-    console.log(stm,v);
+//    console.log(stm,v);
 
     var X0 = [];
     var names = Object.keys(stm.coords);
@@ -272,65 +322,32 @@ function invert(stm,v) {
     stm.cvariables = variables;
 
     // now loop over the vector v setting the lengths (d) into the model....
-    Object.keys(v).forEach(k => {
-	stm.d[k] = v[k];
+    Object.keys(stm.d).forEach((k,ix) => {
+	stm.d[k] = v[ix];
+//	console.log("stm.d[k],v[ix]",stm.d[k],v[ix]);
     });
-    
-    var test_fnc = function (stm,v) {
-	var result = 0.0;
+//    console.log("constructed model",stm);
 
-	// what we really want here is a way to iterate over all edges.
-	// We will create a map of the postions from v....
-	var p = {};
-	var n = 0;
-	variables.forEach((nd,ix) =>
-			  {
-			      var c = new THREE.Vector2(v[ix*2],v[ix*2+1]);
-			      p[nd] = c;
-			  });
-	names.forEach(nd =>
-		      {
-			  if (!(nd in p)) {
-			      var c = ANO.copy_vector(stm.coords[nd]);
-			      p[nd] = c;
-			  } 
-		      });
+//    console.log("variables", variables);
 
-	stm.cvariables.forEach(
-	    v0 =>
-		stm.model.g.neighbors(v0).forEach(
-		    v1 =>
-			{
-			    var ename = (v0 < v1) ? v0 + ' ' + v1
-				: v1 + ' ' + v0;
-			    // we need to c0 and c1 corresponding to the positions
-			    // of these nodes (as definde by the vector v.
-
-			    var c0 = p[v0];
-			    var c1 = p[v1];
-			    var d = c0.distanceTo(c1);
-			    result = result + (stm.d[ename] - d)*(stm.d[ename] - d);
-			}
-		)
-	);
-	//	    console.log("result",result);
-	return result;
-    };
-    console.log("variables", variables);
-
-    //	var solution = opt.minimize_Powell( v => test_fnc(stm,v), X0);
+    //	var solution = opt.minimize_Powell( v => cartesian_fnc(stm,v), X0);
     var grad = function(x) {
-	var g = ANO.opt.numerical_gradient(v => test_fnc(stm,v),x);
-	//	    console.log("g == ",x,g);
+	var g = ANO.opt.numerical_gradient(v => cartesian_fnc(stm,v),x);
+//	console.log("g == ",x,g);
 	return g;
     }
 
-    var solution = ANO.opt.minimize_L_BFGS(v => test_fnc(stm,v),
-					   grad,
-					   X0);	
+//    var solution = ANO.opt.minimize_L_BFGS(v => cartesian_fnc(stm,v),
+//					   grad,
+//					   X0);
+//    var solution = ANO.opt.minimize_GradientDescent(v => cartesian_fnc(stm,v),
+//					   grad,
+//					   X0);
+    
+    var solution = opt.minimize_Powell(v => cartesian_fnc(stm,v),X0);
 
-    console.log("stm",stm);
-    console.log("solution",solution);
+//    console.log("stm",stm);
+//    console.log("coodinate solution",solution);
 
     // now for the purpose of checking, we copy our answer back into the model....
     var C = [];
@@ -340,7 +357,7 @@ function invert(stm,v) {
     variables.forEach(function (n,ix) {
 	C[n] = new THREE.Vector2(solution.argument[ix*2],solution.argument[ix*2+1]);
     });
-    console.log("C",C);
+//    console.log("C",C);
     // C is a set of cartesian coordinates!
     return C;
 }
@@ -369,82 +386,34 @@ function invert(stm,v) {
 // 			      variables.push(nd);
 // 			  }
 // 		      });
-	
+
 // 	variables.forEach(nd =>
 // 			  {
 // 			      var p = stm.coords[nd];
 // 			      X0.push(p.x);
 // 			      X0.push(p.y);
 // 			  });
-	
+
 // 	stm.variables = variables;
-	
-// 	var test_fnc = function (stm,v) {
-// 	    var result = 0.0;
-// 	    //	    console.log("v = ", v);
 
-// 	    // now we need to iterate over the vector, but also
-// 	    // find all of the connections, which will require to check
-// 	    // the graph.
-// 	    //	    var testv = 3; // this will try to drive the values to 3...just a test!
-// 	    //	    for (var i = 0; i < v.length; i++){
-// 	    //		result = result + (v[i] - testv) * (v[i] - testv);
-// 	    //	    }
-
-// 	    // what we really want here is a way to iterate over all edges.
-// 	    // We will create a map of the postions from v....
-// 	    var p = {};
-// 	    var n = 0;
-// 	    variables.forEach((nd,ix) =>
-// 			      {
-// 				  var c = new THREE.Vector2(v[ix*2],v[ix*2+1]);
-// 				  p[nd] = c;
-// 			      });
-// 	    names.forEach(nd =>
-// 			  {
-// 			      if (!(nd in p)) {
-// 				  //				  console.log("nd,stm.coords[nd]",nd,stm.coords[nd]);
-// 				  var c = ANO.copy_vector(stm.coords[nd]);
-// 				  p[nd] = c;
-// 			      } 
-// 			  });
-// 	    //	    console.log("p =",p);
-	    
-
-// 	    stm.variables.forEach(
-// 		v0 =>
-// 		    stm.model.g.neighbors(v0).forEach(
-// 			v1 =>
-// 			    {
-// 				var ename = (v0 < v1) ? v0 + ' ' + v1
-// 				    : v1 + ' ' + v0;
-// 				// we need to c0 and c1 corresponding to the positions
-// 				// of these nodes (as definde by the vector v.
-
-// 				var c0 = p[v0];
-// 				var c1 = p[v1];
-// 				var d = c0.distanceTo(c1);
-// 				//				console.log("ename,desired,actual",ename,stm.d[ename],d);
-// 				//				console.log("root of distance",ename,(stm.d[ename] - d)*(stm.d[ename] - d),c0,c1);
-// 				result = result + (stm.d[ename] - d)*(stm.d[ename] - d);
-// 			    }
-// 		    )
-// 	    );
-// 	    //	    console.log("result",result);
-// 	    return result;
-// 	};
+// 	stm.cvariables = variables;	
 // 	console.log("variables", variables);
 
 // 	//	var solution = opt.minimize_Powell( v => test_fnc(stm,v), X0);
 // 	var grad = function(x) {
-// 	    var g = ANO.opt.numerical_gradient(v => test_fnc(stm,v),x);
+// 	    var g = ANO.opt.numerical_gradient(v => cartesian_fnc(stm,v),x);
 // 	    //	    console.log("g == ",x,g);
 // 	    return g;
 // 	}
 
-// 	var solution = ANO.opt.minimize_L_BFGS(v => test_fnc(stm,v),
-// 					       grad,
-// 					       X0);	
+// 	// var solution = ANO.opt.minimize_L_BFGS(v => cartesian_fnc(stm,v),
+// 	// 				       grad,
+// 	// 				       X0);
+// 	var solution = ANO.opt.minimize_GradientDescent(v => cartesian_fnc(stm,v),
+// 							grad,
+// 							X0);
+
+// //	var solution = opt.minimize_Powell(v => cartesian_fnc(stm,v),X0);
 
 // 	console.log("stm",stm);
 // 	console.log("solution",solution);
@@ -463,7 +432,7 @@ function invert(stm,v) {
 // 	var mc = ANO.max_non_compliant(stm.model,C);
 // 	assert(mc < 0.05,"non_compliance: "+mc);
 //     });
-    
+
 
 // });
 
@@ -476,6 +445,7 @@ function compute_goal_penalty_square(m,coords) {
 	    var c1 = v0.pos;
 	    var d = c0.distanceTo(c1);
 	    penalty += d*d;
+//	    console.log("XXX c0,c1, penalty",v0,c0,c1,penalty);
 	}
     );
     return penalty;
@@ -508,6 +478,73 @@ function compute_constraint_penalty_square(model,coords) {
 }
 
 describe('optimize', function() {
+    it('goal_penalty goes down as we lengthen towards far goal',function() {
+	var m = ANO.simple_triangle_problem();
+
+	var X0 = [];
+	var variables = [];
+	var vnames = [];
+
+	m.goals[0] = { nd: 'c',
+		       pos: new THREE.Vector2(10.0,10.0),
+		       wt: 3 };
+
+	function set_to_x(x) {
+	    m.d = ANO.create_lengths_object(m.model,m.nodeset,x);
+	}
+	for(var x = 3.0; x < 5.0; x++) {
+	    set_to_x(x);
+	    variables = [];
+	    vnames = [];
+	    Object.keys(m.d).forEach(e =>
+				     {
+					 vnames.push(e);
+					 variables.push(m.d[e]);
+				     });
+	    var coords = invert(m,variables);
+	    var goal = compute_goal_penalty_square(m,coords);
+	    console.log("GOAL =",x,coords,variables,goal);
+	}
+
+    });
+
+//     // This test shows that the coords are not very sensitive to the lengths,
+//     // so in computing gradients we can't take steps that are too tiny.
+//     it('we can observe small differences in inversion',function() {
+// 	var m = ANO.simple_triangle_problem();
+
+// 	var X0 = [];
+// 	var variables = [];
+// 	var vnames = [];
+
+// 	m.goals[0] = { nd: 'c',
+// 		       pos: new THREE.Vector2(2,2),
+// 		       wt: 3 };
+
+// 	m.d = ANO.create_lengths_object(m.model,m.nodeset,1.7);
+// 	Object.keys(m.d).forEach(e =>
+// 		      {
+// 			  vnames.push(e);
+// 			  variables.push(m.d[e]);
+// 		      });
+// 	var coords0 = invert(m,variables);
+	
+// 	m.d = ANO.create_lengths_object(m.model,m.nodeset,1.7001);
+// 	variables = [];
+// 	vnames = [];
+// 	Object.keys(m.d).forEach(e =>
+// 		      {
+// 			  vnames.push(e);
+// 			  variables.push(m.d[e]);
+// 		      });
+// 	var coords1 = invert(m,variables);
+// //	console.log("inverted coords0",coords0);
+// //	console.log("inverted coords1",coords1);
+// //	console.log(Math.abs(coords0['c'].x - coords1['c'].x));
+// 	assert(Math.abs(coords0['c'].x - coords1['c'].x) > 0.0001)
+
+//     });
+    
     it('we can optimize based on inversion', function() {
 
 	var m = ANO.simple_triangle_problem();
@@ -517,7 +554,8 @@ describe('optimize', function() {
 	var vnames = [];
 
 	m.goals[0] = { nd: 'c',
-		       pos: new THREE.Vector2(6,3),
+		       // Note: 3,3 fails!
+		       pos: new THREE.Vector2(3,3),
 		       wt: 3 };
 
 	m.d = ANO.create_lengths_object(m.model,m.nodeset,1.7);
@@ -527,36 +565,61 @@ describe('optimize', function() {
 			  vnames.push(e);
 			  variables.push(m.d[e]);
 			  });
-	m.lvariables = variables;
+//	m.lvariables = variables;
 	
 	var optimize_goals = function (stm,v) {
 	    var result = 0.0;
-	    //	    console.log("v = ", v);
+//	    console.log("v = ", v);
+	    var sgn = v.reduce((a,x) => x < 0 || a,false);
+	    if (sgn) return 9e4;
 	    // first, we need to Cartesian coordinates by calling an inversion function...
 	    // (note: this is a costly act, as it is currently implemented numerically)
 	    var coords = invert(stm,v);
+//	    console.log("inverted coords",coords);
 	    // Now we score the coordinates based on reaching the goal...
 	    var goal_penalty = compute_goal_penalty_square(stm,coords);
+//	    console.log("goal_penalty",goal_penalty,coords);
 
 	    // finally, we score based on constraints.....
 	    var constraint_penalty = compute_constraint_penalty_square(stm.model,coords);
-
-//	    console.log("result",result);
+//	    console.log("constraint_penalty",constraint_penalty);	    
+	    
+	    //	    result = goal_penalty + constraint_penalty;
+	    result = goal_penalty;
+//	    console.log("optimize score",result);
 	    return result;
 	};
-	console.log("variables", variables);
 
-	var grad = function(x) {
+	
+	console.log("variables", variables);
+ 	m.cvariables = variables;		
+
+	var grad_opt = function(x) {
 	    var g = ANO.opt.numerical_gradient(v => optimize_goals(m,v),x);
 	    return g;
 	}
 
-	var solution = ANO.opt.minimize_L_BFGS(v => optimize_goals(m,v),
-					       grad,
-					       variables);	
-	console.log("variables",variables);
-	console.log("m",m);	
+//	var solution = ANO.opt.minimize_L_BFGS(v => optimize_goals(m,v),
+//				       grad_opt,
+//    					       variables);
+
+//    var solution = ANO.opt.minimize_GradientDescent(v => optimize_goals(m,v),
+//						    grad_opt,
+//						    variables);
+    
+  var solution = opt.minimize_Powell(v => optimize_goals(m,v),variables);
+    
+	console.log("FINAL solution",solution);
+	console.log("FINAL m",m.d);
+	variables = [];
+	vnames = [];
+	Object.keys(m.d).forEach(e =>
+		      {
+			  vnames.push(e);
+			  variables.push(m.d[e]);
+			  });
 	var final_c = invert(m,variables)
+	console.log("final coords",final_c);
 	console.log(ANO.max_non_compliant_debug(m.model,final_c));
     });
     
