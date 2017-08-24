@@ -146,6 +146,37 @@ problem to do well.  Since most of the quadratic constraint
 programming packages are commercial, there is a strong
 incentive to develop a specific algorithm.
 
+\section{Formulation as Inverse Problem}
+
+In some ways it may be helpful to formulate our problem as an inverse modelling problem.
+
+Let a ``model'' be a Cartesian position of nodes. Let ``observed data'' be the lengthe
+between connected nodes as defined in the graph. Then the ``forward problem'' is
+to compute lengths from node positions, which is computationally easy. The ``inverse
+problem'' is to compute a model that is close to a set of lengths. In otherwords,
+given a set of lengths $d$ compute a model $m$ that satisfies:
+\[
+ d = G(m)
+ \]
+ where $G$ is an operator that just computes the Euclidean distance between connected nodes.
+
+ It would be nice to be able to instantly solve the forward and the inverse problem.
+
+ However, our deeper problem (as formulated as a QCQP problem above) is to
+ find a model that minimizes a somewhat arbitrary penalty function.  This function
+ is conveniently thought of as operating both on positions (e.g., we want a node
+ to move as far to the North as possible) and on lengths (e.g., we want all constraints
+ met and for actuators to be close to the same lengths.)
+
+ Because generally speaking every set of lengths produces a positional model, we
+ conjecture that it will be easier to search the space of lengths than to search
+ the space of positions.
+
+ In fact, we can imagine a brute-force technique: compute the penalty for
+ every actuator position at $10\%$ length increments, and find the one with
+ the lowest penalty.  Such a method requires $11^n$ evaluations, where $n$ is
+ the number of actuators.
+
 \section{Why we may use Powell's Method}
 
 This is fundatmentally a constraint optimization problem. However, we can model it as a continuous
@@ -157,7 +188,7 @@ system, such as Powell's Method, might work just fine for what we are trying to 
 I do not anticipate the space to have many local minima. Although using Powell's method
 is probably wasteful from a scientific point of view, coding it has a number of advantages:
 \begin{itemize}
-\item This will be a contribution to open source systems in general.
+\item This will be a contribution to open source systems in general. (This is no longer true, as fmin appares to implement it!)
 \item It can be used as a subroutine in the Strainfront algorithm below.
   \item It may simply solve our problem without much additional effort.
 \end{itemize}
@@ -450,8 +481,28 @@ Major TODOs at this point are:
 \item MAKE WORK WITH 3D vectors!
 \item develop more awesome test cases.
   \item develop a highly over constrained network.
-  \item develop interactive work.
-  \end{itemize}
+  \item develop interactive work. (this is done-ish).
+\end{itemize}
+
+Having come back to this after a month of travel and other work, it seems to be
+working modestly well, worth continuing. However, a number of major points remain.
+I believe in developing test cases I found that I did not like this algorithm,
+although now I am not sure why.
+
+\begin{itemize}
+\item The current insistence on intersections creates sub-optimal micro-solutions. We need to use the off-the shelf solutions to solve that problem. We must reach all points on small problems; it is not acceptable not to. Tha
+  can be considered a major point. This is something we should be able to go back to testing with an automated test!
+  
+\item The current algorithm does not penalize crossings. It would be a major goal to work on that.
+\item It is worth exploring what happens if you run the algorith several times.
+ \item It is worth exploring what happens if you try to ``equalize'' energy in the system somehow.
+ \item Why did I think it was failing based on test cases?  From animation it is sort of okay.
+ \item What really would be a true success criterion for the operation?
+ \item I thought that intersections were a problem -- can I now use the other optimize function
+   to do a better job with that?
+\end{itemize}
+
+
 
 \section{A Key Idea}
 
@@ -462,6 +513,39 @@ in the complexity of the problem.  It also may lead to more symmetric solutions,
 even based on the intersection-point only algorithm.  In small examples this seems
 to work.
 
+\section{August 23: Coming back to Inverse}
+
+Coming back to this on August 23rd, after unfortunate business took me away, I am now
+attempting to summarize the situation as I remember it:
+\begin{itemize}
+\item I completely mistrust the software exercised by test\_inverse.js. I believe
+  the test basically show the opt.minimize\_Powell, nor any of the other software,
+  does a good job finding a solution when we are not close to the correct solution.
+\item This is a particular problem because the problem posed appears (in my thought)
+  to be smooth and simple.  I would expect any gradient solution to correct solve it.
+\item Altough the physics engine works, I would rather have a non-physical solution
+  for something so simple---or so it seems to me to be simple.
+\item If I can't solve this simplest of problems numerically, I have no
+  hope nor right to move forward.
+\end{itemize}
+
+Note: I may have discovered a signficant isse. When the distance are great,
+my inversion routine fails.  If I can't invert the distances correctly into
+coords, then all hope is loss for the further optimization.  This is
+a major insight which may explain part of the problem with the instability
+of the off-the-shelf routines.  I need to address this next.
+
+Note: I have now written a way to test just that the invert works,
+but I haven't turned it into a test.  INVERT fails whenever you start
+to far away, no matter which version I try to use.  I need to turn this
+into a formal test, and figure out why the heck it fails.
+
+6:33 I finally developed a funcation test of only the recovery of
+coordinates from distance.  It partially works with Powell's method
+and seems to generally fail with the ``BFGS'' algorithm.  I need
+to look to see if this is a bug in that algorithm, or possibly in
+my code (in the gradient?)  If we can't use BFGS, we may have
+to code our own somehow.
 
 
 \section{References}
