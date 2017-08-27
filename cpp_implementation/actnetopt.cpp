@@ -22,6 +22,58 @@
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 
 using namespace boost;
+
+// Okay, we now attempt to develope a model.
+
+class ActNet {
+public:
+  typedef adjacency_list<vecS, vecS, bidirectionalS> Graph;
+  // Make convenient labels for the vertices
+  enum { A, B, C, D, E, N };
+  const int num_vertices = N;
+  const char* name = "ABCDE";
+
+  // writing out the edges in the graph
+  typedef std::pair<int, int> Edge;
+
+  Graph g;
+  Edge e;
+  Edge edge_array[7];  
+  
+  typedef property_map<Graph, vertex_index_t>::type IndexMap;
+  
+  typedef graph_traits<Graph>::vertex_iterator vertex_iter;
+  
+  ActNet() {
+   // Edge ea[] = 
+   //    { Edge(A,B), Edge(A,D), Edge(C,A), Edge(D,C),
+   // 	Edge(C,E), Edge(B,D), Edge(D,E) };
+   edge_array[0] = Edge(A,B);
+    
+    const int num_edges = sizeof(edge_array)/sizeof(edge_array[0]);
+
+    // declare a graph object
+    Graph gg(num_vertices);
+    g = gg;
+
+    // add the edges to the graph object
+    for (int i = 0; i < num_edges; ++i)
+      add_edge(edge_array[i].first, edge_array[i].second, g);
+
+
+    IndexMap index = get(vertex_index, g);
+    
+    typedef property_map<Graph, vertex_index_t>::type IndexMap;
+    
+    std::cout << "vertices(g) = ";
+    typedef graph_traits<Graph>::vertex_iterator vertex_iter;
+    std::pair<vertex_iter, vertex_iter> vp;
+    for (vp = vertices(g); vp.first != vp.second; ++vp.first)
+      std::cout << index[*vp.first] <<  " ";
+    std::cout << std::endl;
+  }
+  
+};
   
 int pretend_to_create_a_graph()
 {
@@ -107,6 +159,7 @@ int main(int argc, char const *argv[]) {
     typedef FindCoords<double> TFindCoords;
     TFindCoords f;
 
+    ActNet an = ActNet();
 
     // choose a starting point
     Eigen::VectorXd x(4); x << 1, 2, 3, 4;
