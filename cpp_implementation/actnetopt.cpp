@@ -43,6 +43,9 @@ public:
   typedef property_map<Graph, vertex_index_t>::type IndexMap;
   
   typedef graph_traits<Graph>::vertex_iterator vertex_iter;
+
+  
+  IndexMap index;
   
   ActNet() {
    // Edge ea[] = 
@@ -60,17 +63,7 @@ public:
     for (int i = 0; i < num_edges; ++i)
       add_edge(edge_array[i].first, edge_array[i].second, g);
 
-
-    IndexMap index = get(vertex_index, g);
-    
-    typedef property_map<Graph, vertex_index_t>::type IndexMap;
-    
-    std::cout << "vertices(g) = ";
-    typedef graph_traits<Graph>::vertex_iterator vertex_iter;
-    std::pair<vertex_iter, vertex_iter> vp;
-    for (vp = vertices(g); vp.first != vp.second; ++vp.first)
-      std::cout << index[*vp.first] <<  " ";
-    std::cout << std::endl;
+    index = get(vertex_index, g);
   }
   
 };
@@ -103,8 +96,8 @@ int pretend_to_create_a_graph()
   IndexMap index = get(vertex_index, g);
 
   std::cout << "vertices(g) = ";
-  typedef graph_traits<Graph>::vertex_iterator vertex_iter;
-  std::pair<vertex_iter, vertex_iter> vp;
+
+  std::pair<ActNet::vertex_iter, ActNet::vertex_iter> vp;
   for (vp = vertices(g); vp.first != vp.second; ++vp.first)
     std::cout << index[*vp.first] <<  " ";
   std::cout << std::endl;
@@ -160,6 +153,13 @@ int main(int argc, char const *argv[]) {
     TFindCoords f;
 
     ActNet an = ActNet();
+    std::cout << "vertices(g) = ";
+
+    std::pair<ActNet::vertex_iter, ActNet::vertex_iter> vp;
+    for (vp = vertices(an.g); vp.first != vp.second; ++vp.first)
+      std::cout << an.index[*vp.first] <<  " ";
+    std::cout << std::endl;
+    
 
     // choose a starting point
     Eigen::VectorXd x(4); x << 1, 2, 3, 4;
@@ -186,7 +186,7 @@ int main(int argc, char const *argv[]) {
     std::cout << "f(x) " << f(x) << std::endl;
 
 
-    pretend_to_create_a_graph();
+    //    pretend_to_create_a_graph();
     
     return 0;
 }
