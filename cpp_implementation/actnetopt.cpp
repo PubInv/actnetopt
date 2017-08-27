@@ -99,7 +99,9 @@ public:
     index = get(vertex_index, g);
   }
 };
-  
+
+typedef enum { CC, CCW } Chirality;
+
 // we define a new problem for optimizing the rosenbrock function
 // we use a templated-class rather than "auto"-lambda function for a clean architecture
 template<typename T>
@@ -110,6 +112,12 @@ public:
   
   Eigen::VectorXd a;
   Eigen::VectorXd b;
+
+  
+  // Should the third point cc or ccw from a to b?
+  // In other words, we use this to disambiguate the two distance based solutions.
+  Chirality chi;
+
   //     const double dab = 1.5; // This is in fact a constant in our frame
   const double dac = 1.5; // these are in fact inputs to the problem
   const double dbc = 1.5;
@@ -133,6 +141,10 @@ public:
     Eigen::VectorXd ac(2);
     ac = y - a;
     // We actually need to add some sort of "being on the right side test here".
+
+
+      
+	
     return
       pow(ac.norm() - dac,2) +
       pow(bc.norm() - dbc,2);
@@ -177,23 +189,70 @@ void find_all_coords(ActNet an) {
       f.a[0] = an.coords[i-fs][0];
       f.a[1] = an.coords[i-fs][1];      
       f.b[0] = an.coords[i-(fs-1)][0];
-      f.b[1] = an.coords[i-(fs-1)][1];      
+      f.b[1] = an.coords[i-(fs-1)][1];
+      
+      f.chi = CC;
 
       // and minimize the function
       std::cout << "f.a " << f.a << std::endl;
       std::cout << "f.b " << f.b << std::endl;      
       
       solver.minimize(f, x);
+
+      // If x is not in the correct clock-sense, then we need to reflect it across
+      // the vector a,b:
+      // https://stackoverflow.com/questions/3306838/algorithm-for-reflecting-a-point-across-a-line
+
+      // https://math.stackexchange.com/questions/1324179/how-to-tell-if-3-connected-points-are-connected-clockwise-or-counter-clockwise
+      Eigen::Matrix3d ma;
+      ma << f.a[0], f.a[1], 1,
+	f.b[0], f.b[1], 1,
+	x[0], x[1], 1;
+
+      double det = ma.determinant();
+      // d > 0 => ccw, d < 0 => cw.
+      // now how do we make this penalize for going the wrong way?
+      bool ccw = (det > 0);
+
+
+      std::cout << "node processed" << i << std::endl;
+      
+      std::cout << ma << std::endl;
+
+      std::cout << "det " << det << std::endl;
+      std::cout << "ccw " << ccw << std::endl;            
+
+      Eigen::VectorXd r(2);
+      
+      // first we obtain the y = mx + b form..
+
+
+      if ( (a[0]-b[0]) == 0) {
+	// In this case, we have a vertical line, we can tell based on
+	// just where it is based on the x value of x and whether a is above
+
+	std::cout << " SLOPE ZERO "  << std::endl;
+      } else {
+	const double m = (a[1]-b[1]) / (a[0]-b[0]);
+	const double b = a[1] - m * a[0];
+	const double d = (x[0] + (x[1] - b)*m)/(1+m*m);
+	const double xp = 2*d - x[0];
+	const double yp = 2*d*m - x[1] + 2 * b;
+	r << xp, yp;
+      }
+
+      std::cout << " x " << x.transpose() << std::endl;
+      std::cout << " r " <<  r.transpose()  << std::endl;
+
       an.coords[i][0] = x[0];
       an.coords[i][1] = x[1];
-
+      
       // print argmin
       // Now take x and make it the first coord...
       
-      std::cout << "argmin " << x.transpose() << std::endl;
       std::cout << "f(x) " << f(x) << std::endl;
       
-      std::cout << "node processed" << i << std::endl;
+
     }
 };
 
