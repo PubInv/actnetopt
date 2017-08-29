@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-    // Copyright 2017, Robert L. Read
+   // Copyright 2017, Robert L. Read
 
     // This file is part of ActNetOpt.
 
@@ -68,13 +68,18 @@ function gen_nodeset(n) {
     }
     return nodeset;
 }
+function ename(x,y) {
+    return (x < y) ? x + ' ' + y
+	: y + ' ' + x;
+}
+
 function  construct_bounds(m,ns,lb,ub) {
     for(var i in ns) {
 	for(var j in ns) {
 	    if (i != j) {
-		const ename = ANO.ename(ns[i],ns[j]);
-		m.lbs[ename] = m.deflb;
-		m.ubs[ename] = m.defub;
+		const en = ename(ns[i],ns[j]);
+		m.lbs[en] = m.deflb;
+		m.ubs[en] = m.defub;
 	    }
 	}
     }
@@ -105,6 +110,85 @@ function gen_simple_3d_net(m,nodeset) {
     
 }
 
+module.exports.create_lengths_object = function(m,nodeset,init_len) {
+    var d = {}; // d maps an edge name to an observed length...
+    var standard_length = 1.3;
+    nodeset.forEach(nda => {
+	m.g.neighbors(nda).forEach(ndb => {
+	    if (nda < ndb) {
+		var en = ename(nda,ndb);
+		d[en] = init_len;
+	    }
+	})
+    }
+		   );
+    return d;
+}
+    
+
+module.exports.create_standard_observation = function(n) {
+    var dim = this.dim2;
+    var m = { g: new algols.Graph(false),
+	      lbs: {},
+	      ubs: {},
+	      deflb: 1.1,
+	      defub: 2,
+	      fixed: {}
+	    };
+
+    const nodeset = gen_nodeset(n);
+    nodeset.forEach(nd => m.g.addVertex(nd));
+
+    construct_bounds(m,nodeset,m.deflb,m.defub);
+    gen_regular_2d_net(m,nodeset);
+
+    var fixed = {};
+    fixed['a'] = true;
+    fixed['b'] = true;
+    m.fixed = fixed;
+
+    // Because this is an observation, we don't have
+    // goals and node coordinates, but rather observed
+    // distantces, which I will call "d".
+
+    var d = {}; // d maps an edge name to an observed length...
+    var standard_length = 1.3;
+    nodeset.forEach(nda =>
+		    m.g.neighbors(nda).forEach(ndb => {
+			if (nda < ndb) {
+			    var en = ename(nda,ndb);
+			    d[en] = standard_length;
+			}
+		    })
+		   );
+
+    var d = this.create_lengths_object(m,nodeset,standard_length);
+
+
+// However, we need to have coordinates for the "fixed" nodes!
+    // The first two nodes are on the y axis!
+    var nodes = {};
+    // in fact a and b are fixed, but we will still use this
+    // as the initial position of our use of optimize.js
+    nodeset.forEach((nd,ix) => nodes[nd]
+		    = new THREE.Vector2(Math.floor(ix/2),
+					((ix % 2) == 0) ? 0 : 1.6));
+/*    var a = ;
+    var b = new THREE.Vector2(0,1.5);
+    var c = new THREE.Vector2(0.5,0.5);
+    nodes['a'] = a;
+    nodes['b'] = b;
+    nodes['c'] = c;
+*/
+    
+    return { dim: dim,
+	     coords: nodes,
+	     model: m,
+	     nodeset: nodeset,	     
+	     d: d,
+//	     goals: goals,
+	     fixed: fixed};
+}
 
 // MAJOR CONCEPTUAL PROBLEM: my algorithm is pretty much assuming
 // that all the lowerbounds and upper bounds are the same.
@@ -147,6 +231,7 @@ module.exports.simple_triangle_problem = function() {
     return { dim: dim,
 	     coords: nodes,
 	     model: m,
+	     nodeset: nodeset,
 	     goals: goals,
 	     fixed: fixed};
 }
@@ -192,6 +277,7 @@ module.exports.simple_tetrahedron_problem = function() {
     return { dim: dim,
 	     coords: nodes,
 	     model: m,
+	     nodeset: nodeset,	     
 	     goals: goals,
 	     fixed: fixed};
 }
@@ -232,6 +318,7 @@ module.exports.medium_triangle_problem = function() {
     return { dim: dim,
 	     coords: nodes,
 	     model: m,
+	     nodeset: nodeset,	     
 	     goals: goals,
 	     fixed: fixed};
 }
@@ -246,7 +333,7 @@ function gen_regular_2d_coords(m,nodeset) {
 	var x = (i % 2) * h;
 	var y = i*(med/2)
 	var p = new THREE.Vector2(x,y);
-	console.log("NODE",i,nd,x,y,p);	
+//	console.log("NODE",i,nd,x,y,p);	
 	nodes[nd] = p;
     }
     return nodes;
@@ -284,6 +371,44 @@ module.exports.medium_triangle_problem2 = function() {
     return { dim: dim,
 	     coords: nodes,
 	     model: m,
+	     nodeset: nodeset,	     
+	     goals: goals,
+	     fixed: fixed};
+}
+
+module.exports.big_triangle_problem = function() {
+    var dim = this.dim2;
+    var m = { g: new algols.Graph(false),
+	      lbs: {},
+	      ubs: {},
+	      deflb: 1.1,
+	      defub: 2,
+	      fixed: {}
+	    };
+    const nodeset = gen_nodeset(15);
+    nodeset.forEach(nd => m.g.addVertex(nd));
+    gen_regular_2d_net(m,nodeset);
+
+
+    construct_bounds(m,nodeset,m.deflb,m.defub);
+    var fixed = {};
+    fixed['a'] = true;
+    m.fixed = fixed;
+
+    var goals = [];
+    goals[0] = { nd: 'o',
+		 pos: new THREE.Vector2(7,7),
+		 wt: 3 };
+
+    const nodes = gen_regular_2d_coords(m,nodeset);
+
+
+//    console.log("NODES",nodes);
+    
+    return { dim: dim,
+	     coords: nodes,
+	     model: m,
+	     nodeset: nodeset,	     
 	     goals: goals,
 	     fixed: fixed};
 }
@@ -480,6 +605,33 @@ module.exports.max_non_compliant = function(model,config) {
 		    }
 	    )
     );
+    console.log("NON_COMPLIANCE",string);
+    return max_non_compliance;
+}
+
+module.exports.max_non_compliant_debug = function(model,config) {
+    var string = "";
+    var epsilon = 0.00000000000001;
+    var max_non_compliance = 0;
+    string += "\n";
+    model.g.vertices.forEach(
+	v0 =>
+	    model.g.neighbors(v0).forEach(
+		v1 =>
+		    {
+			if (v0 < v1) {
+			var c0 = config[v0];
+			var c1 = config[v1];
+			var d = c0.distanceTo(c1);
+			var ename = (v0 < v1) ? v0 + ' ' + v1
+			    : v1 + ' ' + v0;
+			    string += "distance: " + ename + " " + d + " \n";
+			}
+		    }
+	    )
+    );
+    string += "\n";
+    console.log("NON_COMPLIANCE",string);
     return max_non_compliance;
 }
 
@@ -500,11 +652,7 @@ function compare_arr(arra,arrb) {
     return 0;
 }
 
-
-module.exports.ename = function(x,y) {
-    return (x < y) ? x + ' ' + y
-	: y + ' ' + x;
-}
+module.exports.ename = ename;
 
 // d is the dimension (2 or 3)
 // M is the connectivity graph
@@ -689,6 +837,10 @@ module.exports.max_strain_on_point = function(d,M,C,x,p) {
 // x is the tail of the strainfront vector
 // y is the head of the strainfront vector
 // return z, the position of y which completely eases x->y strain.
+// This needs to be rewritten to use x and y more effectively.
+// We cannot be constrained to intersections only.  Instead, we really want
+// to dry a straight line which is still a legal line.
+// I think we can use optimize.js to find a legal point in this limited space.
 module.exports.zero_x_strain = function(d,M,C,x,y) {
 //    console.log("x :",x, "y :", y, "C[x] :",C[x]);
 //    console.log("C :",C);    
@@ -803,10 +955,12 @@ module.exports.zero_x_strain = function(d,M,C,x,y) {
 	    }
 	}
     }
-//    console.log("retval",retval);
+    //    console.log("retval",retval);
+
+    // note: this is failing in some cases!
     if (this.DEBUG_LEVEL > 0)
 	assert(
-	    this.strain_points(d,M,x,y,C[x],retval) == 0,
+	    this.strain_points(d,M,x,y,C[x],retval) < SMALL,
 	    `${x} = (${C[x].toArray()}), ${y} = (${C[y].toArray()}) `);
     
     return retval;
@@ -975,7 +1129,7 @@ var valueOfNode = function(name,X,F,V) {
 };
 
 var PENALTY_WEIGHTING_EXP = 2.0;
-var LINEAR_PENALTY_WT = 3;
+var LINEAR_PENALTY_WT = 1;
     
 module.exports.f = function(X,fxprime,stm,Y,Z,names,V,F) {
     // We define f to be the sum or the reward function and penalty function
@@ -991,7 +1145,7 @@ module.exports.f = function(X,fxprime,stm,Y,Z,names,V,F) {
     for(var i = 0; i < rv[1].length; i++) {
 	fxprime[i] = rv[1][i] + pv[1][i];
     }
-    console.log("f,fxprime",rv[0] + pv[0],fxprime);
+//    console.log("f,fxprime",rv[0] + pv[0],fxprime);
     return [rv[0]+pv[0],fxprime];
 }
 
@@ -1036,7 +1190,7 @@ var p = function(F,X,stm,Y,Z,V,names,p_exp,linear_wt) {
     var v = 0;
     var nlen = X.length;
     var d = Array.apply(null, Array(nlen)).map(Number.prototype.valueOf,0);
-    console.log("X",X);
+//    console.log("X",X);
     // This is wrong because I wrote it as if it was iterating
     // over nodes, but it is currently iterationg over variables!
 //    console.log("names", names);
@@ -1110,7 +1264,7 @@ var construct_optimization_model_from_ANO = function(stm) {
 	var v = stm.coords[n];
 	var isAGoal = false;
 	var isFixed = n in stm.fixed;
-	console.log("v[n] = ",v);
+//	console.log("v[n] = ",v);
 	var gpos = null;
 	stm.goals.forEach(g =>
 			  { if (g.nd == n) {
@@ -1126,8 +1280,8 @@ var construct_optimization_model_from_ANO = function(stm) {
 	V[n] = { "type": type,
 		 "index": idx
 	       };
-	console.log("type",type);
-	console.log("v = ,gpos",v,gpos);	
+//	console.log("type",type);
+//	console.log("v = ,gpos",v,gpos);	
 	if (type == "fixed") {
 	    fixed++;
 	    F.push(v.x);
@@ -1154,7 +1308,7 @@ var construct_optimization_model_from_ANO = function(stm) {
 	    initial.push(v.y);
 	}
     });
-    console.log("X,initial",X,initial);
+//    console.log("X,initial",X,initial);
     assert(initial.length == X.length);
     assert((free+goal+fixed) == Object.keys(stm.coords).length);
     assert((F.length + X.length) == 2*Object.keys(stm.coords).length);	
@@ -1215,6 +1369,10 @@ var optimjs = (function (exports) {
                 }
 
                 x[indicies[i]] = x[indicies[i]] - alpha * dx;
+		if (x[indicies[i]] < 0) {
+		    console.log("LOCAL FAILURE",x,alpha,dx);
+		    x[indicies[i]] = 0.1;
+		}
                 fx = fnc(x);
 
             }
@@ -1227,10 +1385,12 @@ var optimjs = (function (exports) {
             alpha = pfx > fx ? alpha * 1.1 : alpha * 0.7;
             pfx = fx;
 
+//	    console.log(convergence,alpha,pfx);
+
             pidx--;
             if (pidx === 0) {
                 pidx = 1;
-                console.log(fx);
+//                console.log("pidx = 1",fx);
             }
 
         }
@@ -1318,6 +1478,7 @@ var optimjs = (function (exports) {
         var ro = [];
 
         var g = grd(x);
+//	console.log("interior g =",g);
         var direction = g.slice();
         var convergence = false;
         while (!convergence) {
@@ -1329,6 +1490,7 @@ var optimjs = (function (exports) {
 
             //  < ================= apply limited memory BFGS procedure ================= >
             var gn = grd(xn);
+//	    console.log("interior g =",gn,xn);	    
 
             if (optimjs.vect_max_abs_x_less_eps(gn, eps)) {
                 break;
@@ -1474,7 +1636,9 @@ var optimjs = (function (exports) {
         // can be used as for gradient check or its substitute. Gradient is approx. via forward difference
         var grad = x.slice();
         var fx = fnc(x);
-        var h = 1e-6; // step size
+	// Rob is trying a large step size here...
+//	var h = 1e-6; // step size
+	var h = 1e-6; // step size
 
         for (var i = 0; i < x.length; i++) {
 
