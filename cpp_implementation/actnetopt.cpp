@@ -38,11 +38,29 @@ using namespace cppoptlib;
 //    cppoptlib::LbfgsSolver<TFindCoords> solver;
 // cppoptlib::CMAesSolver<TFindCoords> solver;
 
-const bool debug_find = false;
-const bool debug = false;
+const bool debug_find = true;
+const bool debug = true;
 
 
-class ActNet {
+
+// situation where only have to objective function
+template<typename Scalar>
+class RosenbrockValue : public BoundedProblem<Scalar, 7> {
+  public:
+    using Super = BoundedProblem<Scalar, 2>;
+    using BoundedProblem<Scalar, 2>::BoundedProblem;
+    using typename Super::TVector;
+    
+    Scalar value(const TVector &x) {
+        const Scalar t1 = (1 - x[0]);
+        const Scalar t2 = (x[1] - x[0] * x[0]);
+        return   t1 * t1 + 100 * t2 * t2;
+    }
+
+};
+
+#define LADDER_NODES 6
+class TriLadder {
 public:
 
   // I know this is poor C++, I am not a very good C++ coder
@@ -51,7 +69,10 @@ public:
   enum { A, B, C, D, E, F };
   // Making this a const seems to destry to the implicit
   // copy assignment; I have no idea why
-  int num_vertices = 6;
+  static const int num_nodes = LADDER_NODES;
+  static const int num_edges = (num_nodes-3)*2 + 3;
+  static const int var_edges = num_edges-1;    
+
   const char* name = "ABCDE";
 
   // writing out the edges in the graph
@@ -59,13 +80,15 @@ public:
 
   Graph g;
   Edge e;
-  Edge edge_array[7];
+
+  //  static const int num_edges = 3;  
+  Edge edge_array[num_edges];
   std::vector<int> fixed_nodes;
-  int node_fixing_order[6];
+  int node_fixing_order[num_nodes];
   typedef property_map<Graph, vertex_index_t>::type IndexMap;
   typedef graph_traits<Graph>::vertex_iterator vertex_iter;
   IndexMap index;
-  Eigen::VectorXd coords[6];
+  Eigen::VectorXd coords[num_nodes];
   Eigen::VectorXd goals[1];
 
   std::vector<double> distance;
@@ -79,36 +102,36 @@ public:
   // This is a map into the goal position for each goal.
   // goal_nodes[a] = b => goals[a] should be considered node b.
   std::vector<int> goal_nodes;
-  int num_edges;
-  ActNet() {
 
-    edge_array[0] = Edge(A,B);
-    edge_array[1] = Edge(B,C);
-    edge_array[2] = Edge(A,C);      
-    edge_array[3] = Edge(D,C);
-    edge_array[4] = Edge(C,E);
-    edge_array[5] = Edge(B,D);
-    edge_array[6] = Edge(D,E);
+  TriLadder() {
+
+    // edge_array[0] = Edge(A,B);
+    // edge_array[1] = Edge(B,C);
+    // edge_array[2] = Edge(A,C);      
+    // edge_array[3] = Edge(D,C);
+    // edge_array[4] = Edge(C,E);
+    // edge_array[5] = Edge(B,D);
+    // edge_array[6] = Edge(D,E);
 
     fixed_nodes.push_back(A);
     fixed_nodes.push_back(B);
 
-    node_fixing_order[0] = A;
-    node_fixing_order[1] = B;
-    node_fixing_order[2] = C;
-    node_fixing_order[3] = D;
-    node_fixing_order[4] = E;
-    node_fixing_order[5] = F;
+    // node_fixing_order[0] = A;
+    // node_fixing_order[1] = B;
+    // node_fixing_order[2] = C;
+    // node_fixing_order[3] = D;
+    // node_fixing_order[4] = E;
+    // node_fixing_order[5] = F;
     
-    num_edges = sizeof(edge_array)/sizeof(edge_array[0]);
+    //    num_edges = sizeof(edge_array)/sizeof(edge_array[0]);
     
     // declare a graph object
-    Graph gg(num_vertices);
+    Graph gg(num_nodes);
     g = gg;
 
     // add the edges to the graph object
     for (int i = 0; i < num_edges; ++i) {
-      add_edge(edge_array[i].first, edge_array[i].second, g);
+      //      add_edge(edge_array[i].first, edge_array[i].second, g);
       //      lower_bound[i] = 1.2;
       //      upper_bound[i] = 2.0;
       lower_bound.push_back(1.2);
@@ -117,10 +140,15 @@ public:
       distance.push_back(1.5);
     }
 
-    Eigen::VectorXd gl(2); gl << 3.0, 4.0;
+    double bx = ((num_nodes % 2) == 1) ? 0.0 : 1.3;
+    double by = 0.75 *num_nodes;
+    // modify the relaxed position by this amount...
+    double mx = 0.0;
+    double my = 0.0;
+    Eigen::VectorXd gl(2); gl << bx+mx, by+my;
     goals[0] = gl;
 
-    goal_nodes.push_back(5);
+    goal_nodes.push_back(num_nodes-1);
     
     index = get(vertex_index, g);
   }
@@ -139,7 +167,7 @@ public:
   Eigen::VectorXd a;
   Eigen::VectorXd b;
 
-  ActNet *an;
+  TriLadder *an;
 
   
   // Should the third point cc or ccw from a to b?
@@ -175,13 +203,11 @@ public:
 };
 
 // This is an attempt to use FindCoords in the correct order to find all of the things
-void find_all_coords(ActNet *an) {
+void find_all_coords(TriLadder *an) {
 
     // initialize the Rosenbrock-problem
     typedef FindCoords<double> TFindCoords;
     TFindCoords f;
-
-
 
     Eigen::VectorXd temp0(2); temp0 << 0, 0;
     an->coords[0] = temp0;
@@ -197,14 +223,14 @@ void find_all_coords(ActNet *an) {
     
     Eigen::VectorXd b(2);
     f.b = b;
-    f.b << 0, 1.5;
+    f.b << 1.3, 0.75;
     an->coords[1][0] = f.b[0];
     an->coords[1][1] = f.b[1];    
     
     // Basic structure: Iteratively find coordinates based on simple triangulations.
     // This only works for actuator networks in which we can
     int fs = an->fixed_nodes.size();
-    for(int i = fs; i < an->num_vertices; i++) {
+    for(int i = fs; i < an->num_nodes; i++) {
       // Let's set up initial values
       // choose a starting point
       Eigen::VectorXd x(2); x << 1, 2;
@@ -216,7 +242,7 @@ void find_all_coords(ActNet *an) {
       f.b[0] = an->coords[i-(fs-1)][0];
       f.b[1] = an->coords[i-(fs-1)][1];
 
-      Chirality desired_sense = ((i % 2) == 0) ? CW : CCW;
+      Chirality desired_sense = ((i % 2) == 0) ? CCW : CW;
       f.chi = desired_sense;
 
       // and minimize the function
@@ -283,7 +309,7 @@ void find_all_coords(ActNet *an) {
       
       if (debug_find) std::cout << "f(x) " << f(x) << std::endl;
     }
-    for (int i = 0; i < an->num_vertices; i++) {
+    for (int i = 0; i < an->num_nodes; i++) {
       if (debug_find) std::cout << i << " =  " << an->coords[i] << std::endl;      
     }
     
@@ -311,14 +337,14 @@ public:
   using typename cppoptlib::Problem<T>::TVector;
   using typename cppoptlib::Problem<T>::THessian;
 						
-  ActNet *an;
+  TriLadder *an;
   Invert() {
   }
   
   // This function weights our close our values are to the goals.  
   T value(const TVector &ds) {
     // ds is a the length of each node.
-    // we set those length into the ActNet...
+    // we set those length into the TriLadder...
      an->distance.clear();
      auto it = an->distance.begin();
     for (int i = 0; i < an->num_edges; ++i) {
@@ -359,7 +385,7 @@ public:
 };
 
 
-void solve_inverse_problem(ActNet *an) {
+void solve_inverse_problem(TriLadder *an) {
   
   typedef Invert<double> TInvert;  
   TInvert inv;
@@ -368,13 +394,13 @@ void solve_inverse_problem(ActNet *an) {
   cppoptlib::LbfgsSolver<TInvert> isolver;
 
   // This in fact must be the distances that we seek.
-  // It must be the (unfixed) edges in the ActNet
+  // It must be the (unfixed) edges in the TriLadder
 
   // This constant actually must be removed.
-  Eigen::VectorXd x(7);
+  Eigen::VectorXd x(an->num_edges);
 
-  // We need the ActNet to have distances in order to iniitilize this meaningfully
-  for (int i = 0; i < 7; i++) {
+  // We need the TriLadder to have distances in order to iniitilize this meaningfully
+  for (int i = 0; i < an->num_edges; i++) {
     x[i] = an->distance[i];
   }
 
@@ -385,7 +411,7 @@ void solve_inverse_problem(ActNet *an) {
    
    isolver.minimize(inv, x);
 
-   for (int i = 0; i < 7; i++) {
+   for (int i = 0; i < an->num_edges; i++) {
      if (debug) std::cout << "distance " << i << " :  " << x[i] << std::endl;      
    }
    if (debug) std::cout << "inv(x) " << inv(x) << std::endl;  
@@ -393,16 +419,16 @@ void solve_inverse_problem(ActNet *an) {
 };
 
 int main(int argc, char const *argv[]) {
-    ActNet an = ActNet();
+    TriLadder an = TriLadder();
     if (debug) std::cout << "vertices(g) = ";
 
-    std::pair<ActNet::vertex_iter, ActNet::vertex_iter> vp;
+    std::pair<TriLadder::vertex_iter, TriLadder::vertex_iter> vp;
     for (vp = vertices(an.g); vp.first != vp.second; ++vp.first)
       std::cout << an.index[*vp.first] <<  " ";
     
     std::cout << std::endl;
 
-    for (int i = 0; i < an.num_vertices; i++) {
+    for (int i = 0; i < an.num_nodes; i++) {
       Eigen::VectorXd a(2);
       an.coords[i] = a;      
       an.coords[i] << 0, 0;      
@@ -411,13 +437,13 @@ int main(int argc, char const *argv[]) {
     // I think this is doing an implicit copy, and I'm not sure that is what we want.
     find_all_coords(&an);
     
-    for (int i = 0; i < an.num_vertices; i++) {
+    for (int i = 0; i < an.num_nodes; i++) {
       if (debug) std::cout << i << " =  " << an.coords[i] << std::endl;      
     }
 
     solve_inverse_problem(&an);
     
-    for (int i = 0; i < an.num_vertices; i++) {
+    for (int i = 0; i < an.num_nodes; i++) {
       std::cout << "node" << i << " =  " << an.coords[i] << std::endl;      
     }
 
