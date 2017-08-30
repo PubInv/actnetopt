@@ -39,7 +39,7 @@ using namespace cppoptlib;
 // cppoptlib::CMAesSolver<TFindCoords> solver;
 
 const bool debug_find = true;
-const bool debug = true;
+const bool debug = false;
 
 
 
@@ -71,7 +71,7 @@ public:
   // copy assignment; I have no idea why
   static const int num_nodes = LADDER_NODES;
   static const int num_edges = (num_nodes-3)*2 + 3;
-  static const int var_edges = num_edges-1;    
+  static const int var_edges = num_edges-1;
 
   const char* name = "ABCDE";
 
@@ -143,7 +143,7 @@ public:
     double bx = ((num_nodes % 2) == 1) ? 0.0 : 1.3;
     double by = 0.75 *num_nodes;
     // modify the relaxed position by this amount...
-    double mx = 0.0;
+    double mx = 0.5;
     double my = 0.0;
     Eigen::VectorXd gl(2); gl << bx+mx, by+my;
     goals[0] = gl;
@@ -345,11 +345,14 @@ public:
   T value(const TVector &ds) {
     // ds is a the length of each node.
     // we set those length into the TriLadder...
-     an->distance.clear();
-     auto it = an->distance.begin();
-    for (int i = 0; i < an->num_edges; ++i) {
+    //     an->distance.clear();
+    //     auto it = an->distance.begin();
+     // Skip over the first edge which is fixed
+    //     advance(it,1);
+    for (int i = 0; i < an->var_edges; ++i) {
       //      an->distance.insert(i,ds[i]);
-      it = an->distance.insert(it, ds[i]);      
+      //      it = an->distance.insert(it, ds[i]);
+      an->distance[i+1] = ds[i];
     }
     std::cout << "DISTANCES" << std::endl;
     print_vec(an->distance);
@@ -393,17 +396,15 @@ void solve_inverse_problem(TriLadder *an) {
 
   cppoptlib::LbfgsSolver<TInvert> isolver;
 
-  // This in fact must be the distances that we seek.
-  // It must be the (unfixed) edges in the TriLadder
-
-  // This constant actually must be removed.
-  Eigen::VectorXd x(an->num_edges);
+  Eigen::VectorXd x(an->var_edges);
 
   // We need the TriLadder to have distances in order to iniitilize this meaningfully
-  for (int i = 0; i < an->num_edges; i++) {
-    x[i] = an->distance[i];
+  for (int i = 0; i < an->var_edges; i++) {
+    // This assumes the first edge is fixed, which it is in TriLadder
+    x[i] = an->distance[i + 1];
+    std::cout << " i =" << i << std::endl; 
   }
-
+  std::cout << "OUT LOOP" <<  std::endl; 
   //   inv.setBoxConstraint(an->lower_bound,an->upper_bound);
    
    //   inv.setLowerBound(an->lower_bound);
@@ -411,8 +412,8 @@ void solve_inverse_problem(TriLadder *an) {
    
    isolver.minimize(inv, x);
 
-   for (int i = 0; i < an->num_edges; i++) {
-     if (debug) std::cout << "distance " << i << " :  " << x[i] << std::endl;      
+   for (int i = 0; i < an->var_edges; i++) {
+     if (debug) std::cout << "distance edge" << i+1 << " :  " << x[i] << std::endl;      
    }
    if (debug) std::cout << "inv(x) " << inv(x) << std::endl;  
   
