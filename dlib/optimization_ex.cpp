@@ -16,6 +16,7 @@
 #include <iostream>
 #include <math.h>
 
+#define PI 3.14159265
 
 using namespace std;
 using namespace dlib;
@@ -159,9 +160,16 @@ public:
 // I hardely know how to use that.
 // B) Maybe I should first test multiple variables in a simpler system first!
 // Can I solve 100 variables?
+void print_vec(const column_vector& vec)
+{
+  for(int i = 0; i < vec.size(); i++) {
+    std::cout << ' ' << vec(i);
+    }
+    std::cout << '\n';
+}
 
 
-const bool debug_find = true;
+const bool debug_find = false;
 const bool debug = true;
 
 double distance(column_vector a, column_vector b) {
@@ -172,11 +180,21 @@ double distance(column_vector a, column_vector b) {
   return std::sqrt(d);
 }
 
-#define LADDER_NODES 5
+double l2_norm(column_vector a) {
+  double d = 0.0;
+  for(int i = 0; i < a.size(); i++) {
+    d += a(i)*a(i);
+  }
+  return d;
+}
+
+#define LADDER_NODES 7
 // #define VAR_EDGES (LADDER_NODES-3)*2+2;
-#define VAR_EDGES 6
-#define UPPER_BOUND 1.93
-#define LOWER_BOUND 1.2  
+#define VAR_EDGES 10
+#define UPPER_BOUND 2.0
+#define LOWER_BOUND 1.2
+#define MEDIAN 1.5
+#define INITIAL 1.5
 
 class TriLadder {
 public:
@@ -230,7 +248,7 @@ public:
     // edge_array[4] = Edge(C,E);
     // edge_array[5] = Edge(B,D);
     // edge_array[6] = Edge(D,E);
-    cout << "TTTT0\n";
+    cout << "TTT\n";
     fixed_nodes.set_size(2);
     fixed_nodes(0) = A;
     fixed_nodes(1) = B;
@@ -258,25 +276,25 @@ public:
       //      add_edge(edge_array[i].first, edge_array[i].second, g);
       //      lower_bound[i] = 1.2;
       //      upper_bound[i] = 2.0;
-      distance(i) = 1.5;
+      distance(i) = MEDIAN;
     }
-    
-    cout << "TTTT2\n";
     
     for (int i = 0; i < var_edges; ++i) {
-      lower_bound(i) = 1.5;
-      upper_bound(i) = 1.5;            
+      lower_bound(i) = LOWER_BOUND;
+      upper_bound(i) = UPPER_BOUND;            
     }
-
-    double bx = ((num_nodes % 2) == 1) ? 0.0 : 1.3;
-    double by = 0.75 *num_nodes;
+    int last_node = num_nodes - 1;
+    double bx = ((last_node % 2) == 0) ? 0.0 : MEDIAN * cos(30.0*PI/180);
+    double by = (MEDIAN/2.0) * last_node;
     // modify the relaxed position by this amount...
-    double mx = 0.0;
-    double my = 0.0;
+    double mx = 0.1;
+    double my = 0.4;
     column_vector gl(2);
     gl(0) = bx+mx;
     gl(1) = by+my;
     goals[0] = gl;
+    cout << "last_node = " << last_node << "\n";
+    print_vec(gl);
 
     goal_nodes.push_back(num_nodes-1);
     
@@ -294,8 +312,8 @@ public:
       y(0) = coords[idx](0);
       y(1) = coords[idx](1);
       column_vector d;
-      if (debug) std::cout << "Invert x " <<  x(0) <<  "," << x(1)  << std::endl;
-      if (debug)std::cout << "Invert y " <<  y(0) <<  "," << y(1)  << std::endl;                  
+      std::cout << "Invert x " <<  x(0) <<  "," << x(1)  << std::endl;
+      std::cout << "Invert y " <<  y(0) <<  "," << y(1)  << std::endl;                  
       d = x - y;
       if (debug) std::cout << "Invert d " <<  d(0) <<  "," << d(1) <<  " " << std::endl;
       double vp = d(0)*d(0) + d(1)*d(1);
@@ -352,32 +370,22 @@ double sense(double a, double b, double d, double e, double g, double h) {
   return a*e - a*h - b*d + b*g + d*h - e*g;
 }
 
-// This is an attempt to use FindCoords in the correct order to find all of the things
-void find_all_coords(TriLadder *an) {
 
-  cout << "AAA\n";
+// This is an attempt to use FindCoords in the correct order to find all of the things
+
+// This this so that it doesn't modify *an but rather returns the coordinate vector
+
+void find_all_coords(TriLadder *an,column_vector coords[]) {
     FindCoords f;
-    cout << "BBB\n";
+
+    // This should really be moved inot the TriLadder class in some way!
     column_vector temp0(2);
     temp0 = 0, 0;
-    an->coords[0] = temp0;
+    coords[0] = temp0;
 
     column_vector temp1(2);
-    temp1 = 0, 1.5;
-    an->coords[1] = temp1;
-
-    column_vector a(2);
-    f.a = a;
-    f.a = 0, 0;
-    an->coords[0](0) = f.a(0);
-    an->coords[0](1) = f.a(1);    
-    
-    column_vector b(2);
-    f.b = b;
-    f.b = 1.3, 0.75;
-    an->coords[1](0) = f.b(0);
-    an->coords[1](1) = f.b(1);
-    cout << "CCC\n";
+    temp1 = 1.3, 0.75;
+    coords[1] = temp1;
     
     // Basic structure: Iteratively find coordinates based on simple triangulations.
     // This only works for actuator networks in which we can
@@ -385,15 +393,15 @@ void find_all_coords(TriLadder *an) {
     for(int i = fs; i < an->num_nodes; i++) {
       // Let's set up initial values
       // choose a starting point
+
       column_vector  x(2);
       x = 1, 2;
-
-    //      cppoptlib::LbfgsSolver<TFindCoords> solver;
-
-      f.a(0) = an->coords[i-fs](0);
-      f.a(1) = an->coords[i-fs](1);      
-      f.b(0) = an->coords[i-(fs-1)](0);
-      f.b(1) = an->coords[i-(fs-1)](1);
+      f.a.set_size(2);
+      f.a(0) = coords[i-fs](0);
+      f.a(1) = coords[i-fs](1);
+      f.b.set_size(2);
+      f.b(0) = coords[i-(fs-1)](0);
+      f.b(1) = coords[i-(fs-1)](1);
 
       Chirality desired_sense = ((i % 2) == 0) ? CCW : CW;
       f.chi = desired_sense;
@@ -406,26 +414,11 @@ void find_all_coords(TriLadder *an) {
       f.dac = an->distance(i-fs);
       f.dbc = an->distance(i-(fs-1));
       
-      //      solver.minimize(f, x);
-
       find_min_using_approximate_derivatives(bfgs_search_strategy(),
 					     objective_delta_stop_strategy(1e-7),
 					     f, x, -1);
       
-      // If x is not in the correct clock-sense, then we need to reflect it across
-      // the vector a,b:
-      // https://stackoverflow.com/questions/3306838/algorithm-for-reflecting-a-point-across-a-line
-
-      // https://math.stackexchange.com/questions/1324179/how-to-tell-if-3-connected-points-are-connected-clockwise-or-counter-clockwise
-      //      Eigen::Matrix3d ma;
-      //      ma << f.a[0], f.a[1], 1,
-      //	f.b[0], f.b[1], 1,
-      //	x[0], x[1], 1;
-
       double det = sense(f.a(0), f.a(1), f.b(0), f.b(1), x(0), x(1));
-
-
-      
       // d > 0 => ccw, d < 0 => cw.
       // now how do we make this penalize for going the wrong way?
       bool found_sense = (det > 0) ? CCW : CW;
@@ -461,9 +454,9 @@ void find_all_coords(TriLadder *an) {
       }
       if (debug_find) std::cout << " x " << x << std::endl;
 
-      an->coords[i].set_size(2);
-      an->coords[i](0) = x(0);
-      an->coords[i](1) = x(1);
+      coords[i].set_size(2);
+      coords[i](0) = x(0);
+      coords[i](1) = x(1);
       
       // print argmin
       // Now take x and make it the first coord...
@@ -473,7 +466,101 @@ void find_all_coords(TriLadder *an) {
     for (int i = 0; i < an->num_nodes; i++) {
       if (debug_find) std::cout << i << " =  " << an->coords[i] << std::endl;      
     }
+};
+
+
+
+class Invert {
+public:
+
+  TriLadder *an;
+  Invert() {
+  }
+  
+  // This function weights our close our values are to the goals.  
+  double operator() ( const column_vector& ds) const
+  {
+
+    if (debug) std::cout << "INPUTS" << std::endl;
+    for (int i = 0; i < an->var_edges; ++i) {
+          if (debug) std::cout << i << " : " << ds(i) << std::endl;
+	  an->distance(i+1) = ds(i);
+    }
+
+    if (debug) std::cout << "DISTANCES" << std::endl;
     
+    column_vector coords[LADDER_NODES];
+
+    // If I don't change an here, I'm not changing the coords!!
+    find_all_coords(an,coords);
+    for(int i = 0; i < an->num_nodes; i++) {
+      std::cout << " d["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
+    }
+
+    
+    double v = 0.0;
+    for(int i = 0; i < an->goal_nodes.size(); i++) {
+      int idx = an->goal_nodes[i];
+      if (debug) std::cout << "idx " <<  idx  << std::endl;      
+      column_vector g = an->goals[i];
+      column_vector c = coords[idx];      
+      column_vector x(2);
+      x(0) = g(0);
+      x(1) = g(1);
+      column_vector y(2);
+      y(0) = c(0);
+      y(1) = c(1);
+      
+      column_vector d(2);
+      if (debug) std::cout << "Invert x " <<  x(0) <<  "," << x(1)  << std::endl;
+      if (debug) std::cout << "Invert y " <<  y(0) <<  "," << y(1)  << std::endl;                  
+      d = x - y;
+      if (debug) std::cout << "Invert d " <<  d(0) <<  "," << d(1) <<  " " << std::endl;      
+      v += l2_norm(d);
+    }
+    std::cout << "Invert v " <<  v <<  " " << std::endl;
+    return v;
+  }
+};
+
+
+void solve_inverse_problem(TriLadder *an) {
+  column_vector sp(an->var_edges);
+  column_vector lb(an->var_edges);
+  column_vector ub(an->var_edges);      
+
+  // We need the TriLadder to have distances in order to iniitilize this meaningfully
+  for (int i = 0; i < an->var_edges; i++) {
+    // This assumes the first edge is fixed, which it is in TriLadder
+    sp(i) = an->distance(i + 1);
+    lb(i) = an->lower_bound(i);
+    ub(i) = an->upper_bound(i);    
+  }
+  std::cout << "OUT LOOP" <<  std::endl;
+  
+  Invert inv;
+  inv.an = an;
+
+  int n = an->var_edges;
+  
+  find_min_bobyqa(inv, 
+		  sp, 
+		  (n+1)*(n+2)/2,    // number of interpolation points
+		  uniform_matrix<double>(n,1, LOWER_BOUND),  // lower bound constraint
+		  uniform_matrix<double>(n,1, UPPER_BOUND),   // upper bound constraint
+		  INITIAL/5,    // initial trust region radius (rho_begin)
+		  1e-6,  // stopping trust region radius (rho_end)
+		  10000    // max number of objective function evaluations
+		  );
+  cout << "bobyqa solution:\n" << sp << endl;
+  std::cout << "inv(x) " << inv(sp) << std::endl;    
+
+   for (int i = 0; i < an->var_edges; i++) {
+    std::cout << "distance edge" << i+1 << " :  " << sp(i) << std::endl;
+    an->distance(i+1) = sp(i);
+  }
+  std::cout << "inv(x) " << inv(sp) << std::endl;  
+  
 };
 
 
@@ -712,29 +799,40 @@ int main()
         // cout << "bobyqa solution:\n" << starting_point << endl;
 
 	{
-	  cout << "AAAA0\n";	  
-	    TriLadder an = TriLadder();
-	  cout << "AAAA1\n";
+	  TriLadder an = TriLadder();
 
 	  for (int i = 0; i < an.num_edges; ++i) {
-	    an.distance(i) = 1.5;
+	    an.distance(i) = MEDIAN;
+	  }
+
+	  // WARNING: We are trying here to skip over fixed edge; this should really be computed!
+	  for (int i = 1; i < an.num_edges; ++i) {
+	    an.distance(i) = INITIAL;
+	  }
+
+	  column_vector coords[an.num_nodes];
+	  
+	  find_all_coords(&an,coords);
+	  solve_inverse_problem(&an);
+
+	  for (int i = 0; i < an.num_edges; ++i) {
+	    std::cout << i << " : " << an.distance(i) << std::endl;
+	  }
+
+	  find_all_coords(&an,coords);
+	  Invert inv;
+	  inv.an = &an;
+	  column_vector sp(an.var_edges);
+	  for (int i = 0; i < an.var_edges; i++) {
+	    sp(i) = an.distance(i + 1);
+	  }	  
+	  double final = inv(sp);
+	  std::cout << "inv(x) final : " << final << std::endl;
+	  for(int i = 0; i < an.num_nodes; i++) {
+	    std::cout << " d["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
 	  }
 	  
-	    find_all_coords(&an);
-	    
-	    std::cout << "coords" << std::endl;
-	    
-	    for (int i = 0; i < an.num_nodes; ++i) {
-	      std::cout << i << " : (" << an.coords[i](0) << "," << an.coords[i](1) << ")" << std::endl;
-	    }
-	    
-	    for (int i = 0; i < an.num_edges; ++i) {
-	      std::cout << i << " : " << an.distance(i) << std::endl;
-	    }
-	    for(int i = 0; i < an.num_nodes-1; i++) {
-	      int j = i+1;
-	      std::cout << " d[" << i << "," << j << "] : " << distance(an.coords[i],an.coords[j]) << std::endl;
-	    }
+	  
 	}
 	
     }
