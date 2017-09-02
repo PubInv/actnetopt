@@ -170,7 +170,7 @@ void print_vec(const column_vector& vec)
 
 
 const bool debug_find = false;
-const bool debug = true;
+const bool debug = false;
 
 double distance(column_vector a, column_vector b) {
   double d = 0.0;
@@ -188,9 +188,9 @@ double l2_norm(column_vector a) {
   return d;
 }
 
-#define LADDER_NODES 7
+#define LADDER_NODES 13
 // #define VAR_EDGES (LADDER_NODES-3)*2+2;
-#define VAR_EDGES 10
+#define VAR_EDGES 22
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
@@ -287,8 +287,8 @@ public:
     double bx = ((last_node % 2) == 0) ? 0.0 : MEDIAN * cos(30.0*PI/180);
     double by = (MEDIAN/2.0) * last_node;
     // modify the relaxed position by this amount...
-    double mx = 0.1;
-    double my = 0.4;
+    double mx = 3.0;
+    double my = 3.0;
     column_vector gl(2);
     gl(0) = bx+mx;
     gl(1) = by+my;
@@ -312,8 +312,8 @@ public:
       y(0) = coords[idx](0);
       y(1) = coords[idx](1);
       column_vector d;
-      std::cout << "Invert x " <<  x(0) <<  "," << x(1)  << std::endl;
-      std::cout << "Invert y " <<  y(0) <<  "," << y(1)  << std::endl;                  
+      //      std::cout << "Invert x " <<  x(0) <<  "," << x(1)  << std::endl;
+      //      std::cout << "Invert y " <<  y(0) <<  "," << y(1)  << std::endl;                  
       d = x - y;
       if (debug) std::cout << "Invert d " <<  d(0) <<  "," << d(1) <<  " " << std::endl;
       double vp = d(0)*d(0) + d(1)*d(1);
@@ -494,7 +494,7 @@ public:
     // If I don't change an here, I'm not changing the coords!!
     find_all_coords(an,coords);
     for(int i = 0; i < an->num_nodes; i++) {
-      std::cout << " d["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
+      //      std::cout << " d["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
     }
 
     
@@ -518,7 +518,7 @@ public:
       if (debug) std::cout << "Invert d " <<  d(0) <<  "," << d(1) <<  " " << std::endl;      
       v += l2_norm(d);
     }
-    std::cout << "Invert v " <<  v <<  " " << std::endl;
+    if (debug) std::cout << "Invert v " <<  v <<  " " << std::endl;
     return v;
   }
 };
@@ -550,7 +550,7 @@ void solve_inverse_problem(TriLadder *an) {
 		  uniform_matrix<double>(n,1, UPPER_BOUND),   // upper bound constraint
 		  INITIAL/5,    // initial trust region radius (rho_begin)
 		  1e-6,  // stopping trust region radius (rho_end)
-		  10000    // max number of objective function evaluations
+		  100000    // max number of objective function evaluations
 		  );
   cout << "bobyqa solution:\n" << sp << endl;
   std::cout << "inv(x) " << inv(sp) << std::endl;    
