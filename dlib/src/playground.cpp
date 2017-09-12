@@ -27,13 +27,16 @@ typedef matrix<double,0,1> column_vector;
 // I hardely know how to use that.
 // B) Maybe I should first test multiple variables in a simpler system first!
 // Can I solve 100 variables?
-void print_vec(const column_vector& vec)
+void print_vec(column_vector& vec)
 {
   for(int i = 0; i < vec.size(); i++) {
     std::cout << ' ' << vec(i);
     }
     std::cout << '\n';
 }
+
+
+void physical_to_viewport(double px,double py,double *vx, double *vy);
 
 
 const bool debug_find = false;
@@ -55,9 +58,9 @@ double l2_norm(column_vector a) {
   return d;
 }
 
-#define LADDER_NODES 13
+#define LADDER_NODES 5
 // #define VAR_EDGES (LADDER_NODES-3)*2+2;
-#define VAR_EDGES 22
+#define VAR_EDGES 7
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
@@ -433,275 +436,48 @@ void solve_inverse_problem(TriLadder *an) {
 
 // ----------------------------------------------------------------------------------------
 
-int mainx()
+int mainx(TriLadder *an,column_vector* coords)
 {
     try
     {
-        // // make a column vector of length 2
-        // column_vector starting_point(2);
-
-
-        // // Set the starting point to (4,8).  This is the point the optimization algorithm
-        // // will start out from and it will move it closer and closer to the function's 
-        // // minimum point.   So generally you want to try and compute a good guess that is
-        // // somewhat near the actual optimum value.
-        // starting_point = 4, 8;
-
-        // // The first example below finds the minimum of the rosen() function and uses the
-        // // analytical derivative computed by rosen_derivative().  Since it is very easy to
-        // // make a mistake while coding a function like rosen_derivative() it is a good idea
-        // // to compare your derivative function against a numerical approximation and see if
-        // // the results are similar.  If they are very different then you probably made a 
-        // // mistake.  So the first thing we do is compare the results at a test point: 
-        // cout << "Difference between analytic derivative and numerical approximation of derivative: " 
-        //       << length(derivative(rosen)(starting_point) - rosen_derivative(starting_point)) << endl;
-
-
-        // cout << "Find the minimum of the rosen function()" << endl;
-        // // Now we use the find_min() function to find the minimum point.  The first argument
-        // // to this routine is the search strategy we want to use.  The second argument is the 
-        // // stopping strategy.  Below I'm using the objective_delta_stop_strategy which just 
-        // // says that the search should stop when the change in the function being optimized 
-        // // is small enough.
-
-        // // The other arguments to find_min() are the function to be minimized, its derivative, 
-        // // then the starting point, and the last is an acceptable minimum value of the rosen() 
-        // // function.  That is, if the algorithm finds any inputs to rosen() that gives an output 
-        // // value <= -1 then it will stop immediately.  Usually you supply a number smaller than 
-        // // the actual global minimum.  So since the smallest output of the rosen function is 0 
-        // // we just put -1 here which effectively causes this last argument to be disregarded.
-
-        // find_min(bfgs_search_strategy(),  // Use BFGS search algorithm
-        //          objective_delta_stop_strategy(1e-7), // Stop when the change in rosen() is less than 1e-7
-        //          rosen, rosen_derivative, starting_point, -1);
-        // // Once the function ends the starting_point vector will contain the optimum point 
-        // // of (1,1).
-        // cout << "rosen solution:\n" << starting_point << endl;
-
-
-        // // Now let's try doing it again with a different starting point and the version
-        // // of find_min() that doesn't require you to supply a derivative function.  
-        // // This version will compute a numerical approximation of the derivative since 
-        // // we didn't supply one to it.
-        // starting_point = -94, 5.2;
-        // find_min_using_approximate_derivatives(bfgs_search_strategy(),
-        //                                        objective_delta_stop_strategy(1e-7),
-        //                                        rosen, starting_point, -1);
-        // // Again the correct minimum point is found and stored in starting_point
-        // cout << "rosen solution:\n" << starting_point << endl;
-
-
-        // // Here we repeat the same thing as above but this time using the L-BFGS 
-        // // algorithm.  L-BFGS is very similar to the BFGS algorithm, however, BFGS 
-        // // uses O(N^2) memory where N is the size of the starting_point vector.  
-        // // The L-BFGS algorithm however uses only O(N) memory.  So if you have a 
-        // // function of a huge number of variables the L-BFGS algorithm is probably 
-        // // a better choice.
-        // starting_point = 0.8, 1.3;
-        // find_min(lbfgs_search_strategy(10),  // The 10 here is basically a measure of how much memory L-BFGS will use.
-        //          objective_delta_stop_strategy(1e-7).be_verbose(),  // Adding be_verbose() causes a message to be 
-        //                                                             // printed for each iteration of optimization.
-        //          rosen, rosen_derivative, starting_point, -1);
-
-        // cout << endl << "rosen solution: \n" << starting_point << endl;
-
-        // starting_point = -94, 5.2;
-        // find_min_using_approximate_derivatives(lbfgs_search_strategy(10),
-        //                                        objective_delta_stop_strategy(1e-7),
-        //                                        rosen, starting_point, -1);
-        // cout << "rosen solution: \n"<< starting_point << endl;
-
-
-
-
-        // // dlib also supports solving functions subject to bounds constraints on
-        // // the variables.  So for example, if you wanted to find the minimizer
-        // // of the rosen function where both input variables were in the range
-        // // 0.1 to 0.8 you would do it like this:
-        // starting_point = 0.1, 0.1; // Start with a valid point inside the constraint box.
-        // find_min_box_constrained(lbfgs_search_strategy(10),  
-        //                          objective_delta_stop_strategy(1e-9),  
-        //                          rosen, rosen_derivative, starting_point, 0.1, 0.8);
-        // // Here we put the same [0.1 0.8] range constraint on each variable, however, you
-        // // can put different bounds on each variable by passing in column vectors of
-        // // constraints for the last two arguments rather than scalars.  
-
-        // cout << endl << "constrained rosen solution: \n" << starting_point << endl;
-
-        // // You can also use an approximate derivative like so:
-        // starting_point = 0.1, 0.1; 
-        // find_min_box_constrained(bfgs_search_strategy(),  
-        //                          objective_delta_stop_strategy(1e-9),  
-        //                          rosen, derivative(rosen), starting_point, 0.1, 0.8);
-        // cout << endl << "constrained rosen solution: \n" << starting_point << endl;
-
-
-
-
-        // // In many cases, it is useful if we also provide second derivative information
-        // // to the optimizers.  Two examples of how we can do that are shown below.  
-        // starting_point = 0.8, 1.3;
-        // find_min(newton_search_strategy(rosen_hessian),
-        //          objective_delta_stop_strategy(1e-7),
-        //          rosen,
-        //          rosen_derivative,
-        //          starting_point,
-        //          -1);
-        // cout << "rosen solution: \n"<< starting_point << endl;
-
-        // // We can also use find_min_trust_region(), which is also a method which uses
-        // // second derivatives.  For some kinds of non-convex function it may be more
-        // // reliable than using a newton_search_strategy with find_min().
-        // starting_point = 0.8, 1.3;
-        // find_min_trust_region(objective_delta_stop_strategy(1e-7),
-        //     rosen_model(), 
-        //     starting_point, 
-        //     10 // initial trust region radius
-        // );
-        // cout << "rosen solution: \n"<< starting_point << endl;
-
-
-
-
-        // // Now let's look at using the test_function object with the optimization 
-        // // functions.  
-        // cout << "\nFind the minimum of the test_function" << endl;
-
-        // // column_vector target(4);
-        // // starting_point.set_size(4);
-
-        // // // This variable will be used as the target of the test_function.   So,
-        // // // our simple test_function object will have a global minimum at the
-        // // // point given by the target.  We will then use the optimization 
-        // // // routines to find this minimum value.
-        // // target = 3, 5, 1, 7;
-
-        // // // set the starting point far from the global minimum
-        // // starting_point = 1,2,3,4;
-        // // find_min_using_approximate_derivatives(bfgs_search_strategy(),
-        // //                                        objective_delta_stop_strategy(1e-7),
-        // //                                        test_function(target), starting_point, -1);
-        // // // At this point the correct value of (3,5,1,7) should be found and stored in starting_point
-        // // cout << "test_function solution:\n" << starting_point << endl;
-
-        // // // Now let's try it again with the conjugate gradient algorithm.
-        // // starting_point = -4,5,99,3;
-        // // find_min_using_approximate_derivatives(cg_search_strategy(),
-        // //                                        objective_delta_stop_strategy(1e-7),
-        // //                                        test_function(target), starting_point, -1);
-        // // cout << "test_function solution:\n" << starting_point << endl;
-
-
-
-        // // // Finally, let's try the BOBYQA algorithm.  This is a technique specially
-        // // // designed to minimize a function in the absence of derivative information.  
-        // // // Generally speaking, it is the method of choice if derivatives are not available.
-        // // starting_point = -4,5,99,3;
-        // // find_min_bobyqa(test_function(target), 
-        // //                 starting_point, 
-        // //                 9,    // number of interpolation points
-        // //                 uniform_matrix<double>(4,1, -1e100),  // lower bound constraint
-        // //                 uniform_matrix<double>(4,1, 1e100),   // upper bound constraint
-        // //                 10,    // initial trust region radius
-        // //                 1e-6,  // stopping trust region radius
-        // //                 100    // max number of objective function evaluations
-        // // );
-        // // cout << "test_function solution:\n" << starting_point << endl;
-
-	// int n = 4;
-        // column_vector target(n);
-        // starting_point.set_size(n);
-
-        // // This variable will be used as the target of the test_function.   So,
-        // // our simple test_function object will have a global minimum at the
-        // // point given by the target.  We will then use the optimization 
-        // // routines to find this minimum value.
-	// //        target = 3, 5, 1, 7;
-	
-        // // set the starting point far from the global minimum
-	// //        starting_point = 1,2,3,4;
-	
-	// for(int i = 0; i < n; i++) {
-	//   target(i) = i;
-	//   starting_point(i) = i % 8;
-	// }
-
-        // find_min_using_approximate_derivatives(bfgs_search_strategy(),
-        //                                        objective_delta_stop_strategy(1e-7),
-        //                                        test_function(target), starting_point, -1);
-        // // At this point the correct value of (3,5,1,7) should be found and stored in starting_point
-        // cout << "test_function solution:\n" << starting_point << endl;
-
-        // // Now let's try it again with the conjugate gradient algorithm.
-	// //        starting_point = -4,5,99,3;
-        // find_min_using_approximate_derivatives(cg_search_strategy(),
-        //                                        objective_delta_stop_strategy(1e-7),
-        //                                        test_function(target), starting_point, -1);
-        // cout << "test_function solution:\n" << starting_point << endl;
-
-
-
-        // // Finally, let's try the BOBYQA algorithm.  This is a technique specially
-        // // designed to minimize a function in the absence of derivative information.  
-        // // Generally speaking, it is the method of choice if derivatives are not available.
-	// //        starting_point = -4,5,99,3;
-
-	// for(int i = 0; i < n; i++) {
-	//   target(i) = i % 7;
-	//   starting_point(i) = i % 3;
-	// }
-
-        // cout << "starting :\n" << starting_point << endl;	
-
-	// cout <<  "UNIFORM_MATRIX" <<  uniform_matrix<double>(n,1, 12) << "\n";
-        // find_min_bobyqa(test_function(target), 
-        //                 starting_point, 
-        //                 (n+1)*(n+2)/2,    // number of interpolation points
-        //                 uniform_matrix<double>(n,1, -10),  // lower bound constraint
-        //                 uniform_matrix<double>(n,1, 3),   // upper bound constraint
-        //                 5,    // initial trust region radius (rho_begin)
-        //                 1e-6,  // stopping trust region radius (rho_end)
-        //                 1000    // max number of objective function evaluations
-        // );
-        // cout << "bobyqa solution:\n" << starting_point << endl;
-
+      // NOTE: This is currently using an algorithm that works without derivatives,
+      // even though I think I have correctly analyzed the derivatives (see LaTeX paper.)
+      // It can probably be made more efficient to use a dlib algorithm that uses derivatives.
+      // However, that is a low priority until I get the playground working.
 	{
-	  TriLadder an = TriLadder();
 
-	  for (int i = 0; i < an.num_edges; ++i) {
-	    an.distance(i) = MEDIAN;
+	  for (int i = 0; i < an->num_edges; ++i) {
+	    an->distance(i) = MEDIAN;
 	  }
 
 	  // WARNING: We are trying here to skip over fixed edge; this should really be computed!
-	  for (int i = 1; i < an.num_edges; ++i) {
-	    an.distance(i) = INITIAL;
+	  for (int i = 1; i < an->num_edges; ++i) {
+	    an->distance(i) = INITIAL;
 	  }
 
-	  column_vector coords[an.num_nodes];
+	  //	  column_vector* coordsx = new column_vector[an->num_nodes];
 	  
-	  find_all_coords(&an,coords);
-	  solve_inverse_problem(&an);
+	  find_all_coords(an,coords);
+	  solve_inverse_problem(an);
 
-	  for (int i = 0; i < an.num_edges; ++i) {
-	    std::cout << i << " : " << an.distance(i) << std::endl;
+	  for (int i = 0; i < an->num_edges; ++i) {
+	    std::cout << i << " : " << an->distance(i) << std::endl;
 	  }
 
-	  find_all_coords(&an,coords);
+	  find_all_coords(an,coords);
 	  Invert inv;
-	  inv.an = &an;
-	  column_vector sp(an.var_edges);
-	  for (int i = 0; i < an.var_edges; i++) {
-	    sp(i) = an.distance(i + 1);
+	  inv.an = an;
+	  column_vector sp(an->var_edges);
+	  for (int i = 0; i < an->var_edges; i++) {
+	    sp(i) = an->distance(i + 1);
 	  }	  
 	  double final = inv(sp);
 	  std::cout << "inv(x) final : " << final << std::endl;
-	  for(int i = 0; i < an.num_nodes; i++) {
+	  for(int i = 0; i < an->num_nodes; i++) {
 	    std::cout << " d["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
 	  }
-	  
-	  
+	  // should now deallocate coords
 	}
-	
     }
     catch (std::exception& e)
     {
@@ -721,14 +497,13 @@ SDL_Surface* gHelloWorld = NULL;
 
 void draw_rect(SDL_Renderer* renderer,SDL_Rect r) {
     // Set render color to red ( background will be rendered in this color )
-    SDL_SetRenderDrawColor( renderer, 255, 0, 0, 255 );
+    SDL_SetRenderDrawColor( renderer, 255, 255, 255, 255 );
 
     // Clear winow
     SDL_RenderClear( renderer );
 
-
     // Set render color to blue ( rect will be rendered in this color )
-    SDL_SetRenderDrawColor( renderer, 0, 0, 255, 255 );
+    SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
 
     // Render rect
     SDL_RenderFillRect( renderer, &r );
@@ -736,6 +511,65 @@ void draw_rect(SDL_Renderer* renderer,SDL_Rect r) {
     // Render the rect to the screen
     SDL_RenderPresent(renderer);
 }
+
+void render_coords(SDL_Renderer* renderer, 
+		   column_vector* coords, int i, int j) {
+       column_vector v0 = coords[i];
+       column_vector v1 = coords[j];
+       double px0 = v0(0);
+       double py0 = v0(1);
+       double vx0;
+       double vy0; 
+       physical_to_viewport(px0,py0,&vx0,&vy0);
+       
+       double px1 = v1(0);
+       double py1 = v1(1);
+       double vx1;
+       double vy1; 
+       physical_to_viewport(px1,py1,&vx1,&vy1);
+
+       cout << "vx,vy" << vx0 << "," << vy0 << "\n";
+       cout << "vx,vy" << vx1 << "," << vy1 << "\n";
+       
+       int x0 = (int) vx0;
+       int y0 = (int) vy0;
+       
+       int x1 = (int) vx1;
+       int y1 = (int) vy1;
+       
+       SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+       SDL_RenderDrawLine(renderer, x0, y0, x1, y1);
+}
+
+
+void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
+    // Set render color to red ( background will be rendered in this color )
+    SDL_SetRenderDrawColor( renderer, 255, 255, 255, SDL_ALPHA_OPAQUE );
+
+    // Clear winow
+    SDL_RenderClear( renderer );
+
+    // Set render color to blue ( rect will be rendered in this color )
+    SDL_SetRenderDrawColor( renderer, 0, 0, 0, SDL_ALPHA_OPAQUE );
+    SDL_RenderClear(renderer);
+
+    // need to develop complete rendering, but will do something
+    // halfway at present...
+     for(int j = 0; j < an->num_nodes; j++) {
+       int k = j - 1;
+       int h = j - 2;
+       if (k > 0) {
+	 render_coords(renderer,coords,j,k);
+       }
+       if (h > 0) {
+	 render_coords(renderer,coords,j,h);
+       }
+     }
+     std::cout << '\n';
+     SDL_RenderPresent(renderer);
+}
+
+
 
 class Input
 {
@@ -757,6 +591,9 @@ public:
   bool mouseDown;
   SDL_Keycode sdl_keycode;
 
+  double x;
+  double y;
+  
 // Data
 private:
    SDL_Event m_event;
@@ -797,7 +634,11 @@ void Input::readInput()
       {
 	//         m_keysHeld[m_event.key.keysym.sym] = true;
 	 mouseDown = true;
-	 cout << m_event.button.x << "," << m_event.button.y << "\n";
+	 x = m_event.button.x;
+	 y = m_event.button.y;
+	 
+	 cout << x << "," << y << "\n";
+
       }
 
       if (m_event.type == SDL_MOUSEBUTTONUP)
@@ -845,42 +686,62 @@ int sdl_EventFilter(void*      userdata,
 void mousedown_function() {
 }
 
+const int WIN_WIDTH = 640 * 2;
+const int WIN_HEIGHT = 480 * 2;
+
+// These are the size of the physical size
+const double w = 20.0;
+const double h = 20.0;
+
+void physical_to_viewport(double px,double py,double *vx, double *vy) {
+  
+    // Let's assume our play space is from -10 to + 10, centered on the origin...
+ 
+    double x = px;
+    double y = py;
+    // first scale appropriately
+    x = x * (WIN_WIDTH / (2 * w));
+    y = y * (WIN_HEIGHT / (2 * h));
+    
+    // now move to origin....
+    x += WIN_WIDTH/2;
+    y = (-y) + WIN_HEIGHT/2;
+
+    // These adjust our weird grid background to the origin...
+    y = y + WIN_HEIGHT / (2 *(2 * h));
+    x = x + WIN_WIDTH / (2 * (2 * w)) ;
+    
+    *vx = x;
+    *vy = y;
+}
+
 int main( int argc, char* args[] )
 {
+  TriLadder an = TriLadder();
 
-  mainx();
+  column_vector* coordsx = new column_vector[an.num_nodes];
+
+  mainx(&an,coordsx);
+
+  for(int i = 0; i < an.num_nodes; i++) {
+    cout << "X" <<  i << "\n";
+    print_vec(coordsx[i]);
+  }
+  cout << '\n';
+  
     SDL_Window* window = NULL;
     window = SDL_CreateWindow
     (
-        "Jeu de la vie", SDL_WINDOWPOS_UNDEFINED,
+        "Actuator Network Optimization", SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        640,
-        480,
+        WIN_WIDTH,
+        WIN_HEIGHT,
         SDL_WINDOW_SHOWN
     );
-    //    int mydata[3] = { 2,3,5};
-    //    SDL_AddEventWatch(sdl_EventFilter,
-    //		      mydata);
-
 
     // Setup renderer
     SDL_Renderer* renderer = NULL;
     renderer =  SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED);
-
-    // Set render color to red ( background will be rendered in this color )
-    //    SDL_SetRenderDrawColor( renderer, 255, 0, 0, 255 );
-
-    // Clear winow
-    //    SDL_RenderClear( renderer );
-
-    // Creat a rect at pos ( 50, 50 ) that's 50 pixels wide and 50 pixels high.
-    SDL_Rect r;
-    r.x = 50;
-    r.y = 50;
-    r.w = 50;
-    r.h = 50;
-    
-    draw_rect(renderer,r);
 
     SDL_Event spud;
 
@@ -889,29 +750,19 @@ int main( int argc, char* args[] )
     bool running = true;
     while(running) {
       input.readInput();
-      //      cout << input.mouseDown << "\n";
-      //      cout << input.sdl_keycode << "\n";
       if (input.sdl_keycode == SDLK_q) {
 	cout << "shutdown";
 	running = false;
+      }
+      if (input.mouseDown) {
+	draw_net(renderer,&an,coordsx);
+	input.mouseDown = false;
       }
       SDL_Delay( 10 );
       n++;
     }
     SDL_WaitEvent(&spud);
     cout << "type" << spud.type << "\n";
-
-    // Set render color to blue ( rect will be rendered in this color )
-    //    SDL_SetRenderDrawColor( renderer, 0, 0, 255, 255 );
-
-    // Render rect
-    //    SDL_RenderFillRect( renderer, &r );
-
-    // Render the rect to the screen
-    //    SDL_RenderPresent(renderer);
-
-    // Wait for 5 sec
-    //    SDL_Delay( 1000 );
 
     SDL_DestroyWindow(window);
     SDL_Quit();
