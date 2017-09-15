@@ -37,7 +37,7 @@ void print_vec(column_vector& vec)
 
 
 void physical_to_viewport(double px,double py,double *vx, double *vy);
-
+void viewport_to_physical(double px,double py,double *vx, double *vy);
 
 const bool debug_find = false;
 const bool debug = false;
@@ -58,9 +58,9 @@ double l2_norm(column_vector a) {
   return d;
 }
 
-#define LADDER_NODES 5
+#define LADDER_NODES 10
 // #define VAR_EDGES (LADDER_NODES-3)*2+2;
-#define VAR_EDGES 7
+#define VAR_EDGES 16
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
@@ -157,8 +157,8 @@ public:
     double bx = ((last_node % 2) == 0) ? 0.0 : MEDIAN * cos(30.0*PI/180);
     double by = (MEDIAN/2.0) * last_node;
     // modify the relaxed position by this amount...
-    double mx = 3.0;
-    double my = 3.0;
+    double mx = 0.1;
+    double my = 1.0;
     column_vector gl(2);
     gl(0) = bx+mx;
     gl(1) = by+my;
@@ -531,27 +531,34 @@ void render_coords(SDL_Renderer* renderer,
        cout << "vx,vy" << vx0 << "," << vy0 << "\n";
        cout << "vx,vy" << vx1 << "," << vy1 << "\n";
        
-       int x0 = (int) vx0;
-       int y0 = (int) vy0;
+       int x0 = (int) std::round(vx0);
+       int y0 = (int) std::round(vy0);
        
-       int x1 = (int) vx1;
-       int y1 = (int) vy1;
+       int x1 = (int) std::round(vx1);
+       int y1 = (int) std::round(vy1);
        
-       SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);
+       SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
        SDL_RenderDrawLine(renderer, x0, y0, x1, y1);
 }
+
+const int WIN_WIDTH = 640 * 2;
+const int WIN_HEIGHT = 480 * 2;
+
+// These are the size of the physical size
+const double w = 20.0;
+const double h = 20.0;
 
 
 void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
     // Set render color to red ( background will be rendered in this color )
-    SDL_SetRenderDrawColor( renderer, 255, 255, 255, SDL_ALPHA_OPAQUE );
+    // SDL_SetRenderDrawColor( renderer, 255, 255, 255, SDL_ALPHA_OPAQUE );
 
     // Clear winow
-    SDL_RenderClear( renderer );
+    //    SDL_RenderClear( renderer );
 
     // Set render color to blue ( rect will be rendered in this color )
-    SDL_SetRenderDrawColor( renderer, 0, 0, 0, SDL_ALPHA_OPAQUE );
-    SDL_RenderClear(renderer);
+    //    SDL_SetRenderDrawColor( renderer, 0, 0, 0, SDL_ALPHA_OPAQUE );
+    //    SDL_RenderClear(renderer);
 
     // need to develop complete rendering, but will do something
     // halfway at present...
@@ -566,9 +573,43 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
        }
      }
      std::cout << '\n';
-     SDL_RenderPresent(renderer);
+     //     SDL_RenderPresent(renderer);
 }
 
+void draw_axes(SDL_Renderer* renderer) {
+      SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+      {
+       double px0 = -w;
+       double py0 = 0.0;
+       double vx0;
+       double vy0; 
+       physical_to_viewport(px0,py0,&vx0,&vy0);
+       
+       double px1 = w;
+       double py1 = 0.0;
+       double vx1;
+       double vy1; 
+       physical_to_viewport(px1,py1,&vx1,&vy1);
+       cout << vx0 << "," <<  vx1 << "," << vy0 << "," << vy1 << "\n";
+       SDL_RenderDrawLine(renderer, vx0, vy0, vx1, vy1);       
+      }
+      {
+       double px0 = 0.0;
+       double py0 = h;
+       double vx0;
+       double vy0; 
+       physical_to_viewport(px0,py0,&vx0,&vy0);
+       
+       double px1 = 0.0;
+       double py1 = -h;
+       double vx1;
+       double vy1; 
+       physical_to_viewport(px1,py1,&vx1,&vy1);
+       cout << vx0 << "," <<  vx1 << "," << vy0 << "," << vy1 << "\n";
+       SDL_RenderDrawLine(renderer, vx0, vy0, vx1, vy1);       
+      }
+
+}
 
 
 class Input
@@ -686,12 +727,6 @@ int sdl_EventFilter(void*      userdata,
 void mousedown_function() {
 }
 
-const int WIN_WIDTH = 640 * 2;
-const int WIN_HEIGHT = 480 * 2;
-
-// These are the size of the physical size
-const double w = 20.0;
-const double h = 20.0;
 
 void physical_to_viewport(double px,double py,double *vx, double *vy) {
   
@@ -700,16 +735,34 @@ void physical_to_viewport(double px,double py,double *vx, double *vy) {
     double x = px;
     double y = py;
     // first scale appropriately
-    x = x * (WIN_WIDTH / (2 * w));
-    y = y * (WIN_HEIGHT / (2 * h));
+    x = x * (WIN_WIDTH / (2.0 * w));
+    y = y * (WIN_HEIGHT / (2.0 * h));
     
     // now move to origin....
-    x += WIN_WIDTH/2;
-    y = (-y) + WIN_HEIGHT/2;
+    x += WIN_WIDTH/2.0;
+    y = (-y) + WIN_HEIGHT/2.0;
 
     // These adjust our weird grid background to the origin...
-    y = y + WIN_HEIGHT / (2 *(2 * h));
-    x = x + WIN_WIDTH / (2 * (2 * w)) ;
+    //    y = y + WIN_HEIGHT / (2.0 *(2.0 * h));
+    //    x = x + WIN_WIDTH / (2.0 * (2.0 * w)) ;
+    
+    *vx = x;
+    *vy = y;
+}
+
+void viewport_to_physical(double px,double py,double *vx, double *vy) {
+  
+    // Let's assume our play space is from -10 to + 10, centered on the origin...
+    double x = px;
+    double y = py;
+
+        // now move to origin...    
+    x = x - (WIN_WIDTH / (2.0 ));
+    y = y - (WIN_HEIGHT / (2.0 ));
+
+    // then unscale..
+    x = x / (WIN_WIDTH / (2.0*w));
+    y = - y / (WIN_HEIGHT / (2.0*h));    
     
     *vx = x;
     *vy = y;
@@ -717,6 +770,19 @@ void physical_to_viewport(double px,double py,double *vx, double *vy) {
 
 int main( int argc, char* args[] )
 {
+
+  {
+    	double vx = 0.0;
+	double vy = 0.0;
+	double px;
+	double py;
+	viewport_to_physical(vx,vy,&px,&py);
+	cout << "PPPPPPPPPPPPPPPPP\n";
+	cout << vx << "," << vy << "\n";	
+	cout << px << "," << py << "\n";
+	physical_to_viewport(px,py,&vx,&vy);	
+	cout << vx << "," << vy << "\n";	
+  }
   TriLadder an = TriLadder();
 
   column_vector* coordsx = new column_vector[an.num_nodes];
@@ -755,7 +821,30 @@ int main( int argc, char* args[] )
 	running = false;
       }
       if (input.mouseDown) {
+
+
+	double vx = input.x;
+	double vy = input.y;
+	double px;
+	double py;
+	viewport_to_physical(vx,vy,&px,&py);
+	column_vector gl(2);
+	gl(0) = px;
+	gl(1) = py;
+	an.goals[0] = gl;
+	
+	mainx(&an,coordsx);
+       
+	// Clear winow
+	//	SDL_RenderClear( renderer );
+	SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
+	SDL_RenderClear(renderer);
+	draw_axes(renderer);
+	// now we want to try to find coordinates in the physical space...
+	
+
 	draw_net(renderer,&an,coordsx);
+	SDL_RenderPresent(renderer);       				
 	input.mouseDown = false;
       }
       SDL_Delay( 10 );
