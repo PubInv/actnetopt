@@ -58,9 +58,9 @@ double l2_norm(column_vector a) {
   return d;
 }
 
-#define LADDER_NODES 10
+#define LADDER_NODES 15
 // #define VAR_EDGES (LADDER_NODES-3)*2+2;
-#define VAR_EDGES 16
+#define VAR_EDGES 26
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
@@ -243,8 +243,97 @@ double sense(double a, double b, double d, double e, double g, double h) {
 
 // This is an attempt to use FindCoords in the correct order to find all of the things
 
+bool debug_find_third = false;
 // This this so that it doesn't modify *an but rather returns the coordinate vector
+column_vector find_third_point_given_two_and_distances(Chirality sense,double dab,double dbc,double dca,
+					      column_vector pa,column_vector pb) {
+  if (debug_find_third) cout << "--------------\n";  
+  if (debug_find_third) cout << "dab" << dab << "\n";
+  if (debug_find_third) cout << "dbc" << dbc << "\n";
+  if (debug_find_third) cout << "dca" << dca << "\n";
+  if (debug_find_third) print_vec(pa);
+  if (debug_find_third) print_vec(pb);
 
+  
+  // Conceptually, we create a straight line of length dca along x-axis...
+  double x = dca;
+  double y = 0.0;
+  // Then we rotate it...we need to know rotaion of A->B vector and then andgle A
+  double delta_x = pb(0) - pa(0);
+  double delta_y = pb(1) - pa(1);
+  if (debug_find_third) cout << "delta_x " << delta_x << "\n";
+  if (debug_find_third) cout << "delta_y " << delta_y << "\n";  
+  double theta = atan2(delta_y,delta_x); // radians?
+  if (debug_find_third) cout << "theta " << theta*180/M_PI << "\n";
+  if (debug_find_third) cout << "dca " << (dca*dca + dab*dab - dbc*dbc)/(2*dca*dab) << "\n";
+  double v = (dca*dca + dab*dab - dbc*dbc)/(2*dca*dab);
+
+
+  double A = (v >= 1.0) ? 0.0 : acos((dca*dca + dab*dab - dbc*dbc)/(2*dca*dab));
+  
+  if (debug_find_third) cout << "A " << A*180/M_PI << "\n";
+
+  // I don't know how to compute what the sign of this operation should be.
+  
+  double diff = theta + ((sense == CCW) ? A : -A);
+  
+  if (debug_find_third) cout << "diff" << diff*180/M_PI << "\n";
+
+  // we want to rotate by diff...
+  y = sin(diff)*dca;
+  x = cos(diff)*dca;
+  
+  // Then we translate by A into position...
+  x += pa(0);
+  y += pa(1);
+  column_vector c(2);
+  c(0) = x;
+  c(1) = y;
+  if (debug_find_third) print_vec(c);
+  if (debug_find_third) cout << "======\n";
+  return c;
+}
+const double SMALL_DEFINITION = 1.0e-3;
+bool any_too_small(double a, double b, double c) {
+  return ((a < SMALL_DEFINITION) || (b < SMALL_DEFINITION) || (c < SMALL_DEFINITION));
+}
+
+void fix_sense(bool desired_sense,double x0,double y0,double x1,double y1,column_vector z) {
+  
+      double det = sense(x0, y0, x1, y1, z(0), z(1));
+      // d > 0 => ccw, d < 0 => cw.
+      // now how do we make this penalize for going the wrong way?
+      bool found_sense = (det > 0) ? CCW : CW;
+
+      if (debug_find) std::cout << "det " << det << std::endl;
+      
+      bool need_to_flip = (desired_sense != found_sense);
+
+      if (need_to_flip) {
+	if (debug_find) std::cout << "NEED TO FLIP" << std::endl;
+	if (debug_find) std::cout << "start: " << z << std::endl;
+	column_vector r(2);
+      
+	// first we obtain the y = mx + b form..
+	if ( (x0-x1) == 0) {
+	  if (debug_find) std::cout << " SLOPE ZERO "  << std::endl;	  
+	  // In this case, we have a vertical line, we can tell based on
+	  // just where it is based on the x value of x and whether a is above
+	  r = 2*x0 - z(0),z(1);
+	} else {
+	  const double m = (y0-y1) / (x0-x1);
+	  const double b = y0 - m * x0;
+	  const double d = (z(0) + (z(1) - b)*m)/(1+m*m);
+	  const double xp = 2*d - z(0);
+	  const double yp = 2*d*m - z(1) + 2 * b;
+	  r = xp, yp;
+	}
+	if (debug_find) std::cout << "flipped: " <<  r  << std::endl;
+	z(0) = r(0);
+	z(1) = r(1);
+      }
+      if (debug_find) std::cout << " z " << z << std::endl;
+}
 void find_all_coords(TriLadder *an,column_vector coords[]) {
     FindCoords f;
 
@@ -264,8 +353,7 @@ void find_all_coords(TriLadder *an,column_vector coords[]) {
       // Let's set up initial values
       // choose a starting point
 
-      column_vector  x(2);
-      x = 1, 2;
+      
       f.a.set_size(2);
       f.a(0) = coords[i-fs](0);
       f.a(1) = coords[i-fs](1);
@@ -283,55 +371,82 @@ void find_all_coords(TriLadder *an,column_vector coords[]) {
 
       f.dac = an->distance(i-fs);
       f.dbc = an->distance(i-(fs-1));
-      
-      find_min_using_approximate_derivatives(bfgs_search_strategy(),
-					     objective_delta_stop_strategy(1e-7),
-					     f, x, -1);
-      
-      double det = sense(f.a(0), f.a(1), f.b(0), f.b(1), x(0), x(1));
-      // d > 0 => ccw, d < 0 => cw.
-      // now how do we make this penalize for going the wrong way?
-      bool found_sense = (det > 0) ? CCW : CW;
+      double dab = distance(f.a,f.b);
 
-      if (debug_find) std::cout << "processing node: " << i << std::endl;
-      
-      if (debug_find) std::cout << "det " << det << std::endl;
-      
-      bool need_to_flip = (desired_sense != found_sense);
 
-      if (need_to_flip) {
-	if (debug_find) std::cout << "NEED TO FLIP" << std::endl;
-	if (debug_find) std::cout << "start: " << x << std::endl;
-	column_vector r(2);
+      column_vector  y(2);
+
+      y = find_third_point_given_two_and_distances(desired_sense,dab,f.dbc,f.dac,f.a,f.b);
       
-	// first we obtain the y = mx + b form..
-	if ( (f.a(0)-f.b(0)) == 0) {
-	  if (debug_find) std::cout << " SLOPE ZERO "  << std::endl;	  
-	  // In this case, we have a vertical line, we can tell based on
-	  // just where it is based on the x value of x and whether a is above
-	  r = 2*f.a(0) - x(0),x(1);
-	} else {
-	  const double m = (f.a(1)-f.b(1)) / (f.a(0)-f.b(0));
-	  const double b = f.a(1) - m * f.a(0);
-	  const double d = (x(0) + (x(1) - b)*m)/(1+m*m);
-	  const double xp = 2*d - x(0);
-	  const double yp = 2*d*m - x(1) + 2 * b;
-	  r = xp, yp;
-	}
-	if (debug_find) std::cout << "flipped: " <<  r  << std::endl;
-	x(0) = r(0);
-	x(1) = r(1);
+      fix_sense(desired_sense,f.a(0), f.a(1), f.b(0), f.b(1),y);
+
+      // column_vector  x(2);
+      // x = 1, 2;
+      // find_min_using_approximate_derivatives(bfgs_search_strategy(),
+      // 					     objective_delta_stop_strategy(1e-7),
+      // 					     f, x, -1);
+      // fix_sense(desired_sense,f.a(0), f.a(1), f.b(0), f.b(1),x);      
+
+      //      if (distance(x,y) > 0.01) {
+	//	cout << "dist " << distance(x,y) << "\n";
+	//	print_vec(x);
+	//	print_vec(y);
+      //      }
+      
+      column_vector  z(2);            
+      if (!any_too_small(dab,f.dbc,f.dac)) {
+	z = y;
+      } else {
+	cout << "TOO SMALL! \n";
+	//	z = x;
       }
-      if (debug_find) std::cout << " x " << x << std::endl;
+      z = y;
+
+      fix_sense(desired_sense,f.a(0), f.a(1), f.b(0), f.b(1),z);            
+      // double det = sense(f.a(0), f.a(1), f.b(0), f.b(1), z(0), z(1));
+      // // d > 0 => ccw, d < 0 => cw.
+      // // now how do we make this penalize for going the wrong way?
+      // bool found_sense = (det > 0) ? CCW : CW;
+
+      // if (debug_find) std::cout << "processing node: " << i << std::endl;
+      
+      // if (debug_find) std::cout << "det " << det << std::endl;
+      
+      // bool need_to_flip = (desired_sense != found_sense);
+
+      // if (need_to_flip) {
+      // 	if (debug_find) std::cout << "NEED TO FLIP" << std::endl;
+      // 	if (debug_find) std::cout << "start: " << z << std::endl;
+      // 	column_vector r(2);
+      
+      // 	// first we obtain the y = mx + b form..
+      // 	if ( (f.a(0)-f.b(0)) == 0) {
+      // 	  if (debug_find) std::cout << " SLOPE ZERO "  << std::endl;	  
+      // 	  // In this case, we have a vertical line, we can tell based on
+      // 	  // just where it is based on the x value of x and whether a is above
+      // 	  r = 2*f.a(0) - z(0),z(1);
+      // 	} else {
+      // 	  const double m = (f.a(1)-f.b(1)) / (f.a(0)-f.b(0));
+      // 	  const double b = f.a(1) - m * f.a(0);
+      // 	  const double d = (z(0) + (z(1) - b)*m)/(1+m*m);
+      // 	  const double xp = 2*d - z(0);
+      // 	  const double yp = 2*d*m - z(1) + 2 * b;
+      // 	  r = xp, yp;
+      // 	}
+      // 	if (debug_find) std::cout << "flipped: " <<  r  << std::endl;
+      // 	z(0) = r(0);
+      // 	z(1) = r(1);
+      // }
+      // if (debug_find) std::cout << " x " << x << std::endl;
 
       coords[i].set_size(2);
-      coords[i](0) = x(0);
-      coords[i](1) = x(1);
+      coords[i](0) = z(0);
+      coords[i](1) = z(1);
       
       // print argmin
       // Now take x and make it the first coord...
       
-      if (debug_find) std::cout << "f(x) " << f(x) << std::endl;
+      if (debug_find) std::cout << "f(x) " << f(z) << std::endl;
     }
     for (int i = 0; i < an->num_nodes; i++) {
       if (debug_find) std::cout << i << " =  " << an->coords[i] << std::endl;      
@@ -420,7 +535,7 @@ void solve_inverse_problem(TriLadder *an) {
 		  uniform_matrix<double>(n,1, UPPER_BOUND),   // upper bound constraint
 		  INITIAL/5,    // initial trust region radius (rho_begin)
 		  1e-6,  // stopping trust region radius (rho_end)
-		  100000    // max number of objective function evaluations
+		  10000   // max number of objective function evaluations
 		  );
   cout << "bobyqa solution:\n" << sp << endl;
   std::cout << "inv(x) " << inv(sp) << std::endl;    
@@ -528,9 +643,6 @@ void render_coords(SDL_Renderer* renderer,
        double vy1; 
        physical_to_viewport(px1,py1,&vx1,&vy1);
 
-       cout << "vx,vy" << vx0 << "," << vy0 << "\n";
-       cout << "vx,vy" << vx1 << "," << vy1 << "\n";
-       
        int x0 = (int) std::round(vx0);
        int y0 = (int) std::round(vy0);
        
@@ -590,7 +702,6 @@ void draw_axes(SDL_Renderer* renderer) {
        double vx1;
        double vy1; 
        physical_to_viewport(px1,py1,&vx1,&vy1);
-       cout << vx0 << "," <<  vx1 << "," << vy0 << "," << vy1 << "\n";
        SDL_RenderDrawLine(renderer, vx0, vy0, vx1, vy1);       
       }
       {
@@ -605,7 +716,6 @@ void draw_axes(SDL_Renderer* renderer) {
        double vx1;
        double vy1; 
        physical_to_viewport(px1,py1,&vx1,&vy1);
-       cout << vx0 << "," <<  vx1 << "," << vy0 << "," << vy1 << "\n";
        SDL_RenderDrawLine(renderer, vx0, vy0, vx1, vy1);       
       }
 
@@ -767,21 +877,43 @@ void viewport_to_physical(double px,double py,double *vx, double *vy) {
     *vx = x;
     *vy = y;
 }
+void   test_find_third_point_given_two_and_distances() {
+    column_vector a(2);
+    column_vector b(2);
+    column_vector c(2);
+    column_vector x(2);            
+    a(0) = 0.0;
+    a(1) = 0.0;
+    b(0) = 1.3;
+    b(1) = 0.75;
+    c(0) = 2.0;
+    c(1) = 0.0;
+    double dab = distance(a,b);
+    double dbc = distance(b,c);
+    double dca = distance(c,a);
+    
+    x = find_third_point_given_two_and_distances(CCW,dab,dbc,dca,a,b);
+    print_vec(c);
+    print_vec(x);
+    cout << "XXXXXXXXXX\n";
+}
 
 int main( int argc, char* args[] )
 {
+  test_find_third_point_given_two_and_distances();
+  //  return EXIT_SUCCESS;
 
   {
     	double vx = 0.0;
-	double vy = 0.0;
-	double px;
-	double py;
-	viewport_to_physical(vx,vy,&px,&py);
-	cout << "PPPPPPPPPPPPPPPPP\n";
-	cout << vx << "," << vy << "\n";	
-	cout << px << "," << py << "\n";
-	physical_to_viewport(px,py,&vx,&vy);	
-	cout << vx << "," << vy << "\n";	
+  	double vy = 0.0;
+  	double px;
+  	double py;
+  	viewport_to_physical(vx,vy,&px,&py);
+  	cout << "PPPPPPPPPPPPPPPPP\n";
+  	cout << vx << "," << vy << "\n";	
+  	cout << px << "," << py << "\n";
+  	physical_to_viewport(px,py,&vx,&vy);	
+  	cout << vx << "," << vy << "\n";	
   }
   TriLadder an = TriLadder();
 
@@ -817,35 +949,35 @@ int main( int argc, char* args[] )
     while(running) {
       input.readInput();
       if (input.sdl_keycode == SDLK_q) {
-	cout << "shutdown";
-	running = false;
+  	cout << "shutdown";
+  	running = false;
       }
       if (input.mouseDown) {
 
 
-	double vx = input.x;
-	double vy = input.y;
-	double px;
-	double py;
-	viewport_to_physical(vx,vy,&px,&py);
-	column_vector gl(2);
-	gl(0) = px;
-	gl(1) = py;
-	an.goals[0] = gl;
+  	double vx = input.x;
+  	double vy = input.y;
+  	double px;
+  	double py;
+  	viewport_to_physical(vx,vy,&px,&py);
+  	column_vector gl(2);
+  	gl(0) = px;
+  	gl(1) = py;
+  	an.goals[0] = gl;
 	
-	mainx(&an,coordsx);
+  	mainx(&an,coordsx);
        
-	// Clear winow
-	//	SDL_RenderClear( renderer );
-	SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
-	SDL_RenderClear(renderer);
-	draw_axes(renderer);
-	// now we want to try to find coordinates in the physical space...
+  	// Clear winow
+  	//	SDL_RenderClear( renderer );
+  	SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
+  	SDL_RenderClear(renderer);
+  	draw_axes(renderer);
+  	// now we want to try to find coordinates in the physical space...
 	
 
-	draw_net(renderer,&an,coordsx);
-	SDL_RenderPresent(renderer);       				
-	input.mouseDown = false;
+  	draw_net(renderer,&an,coordsx);
+  	SDL_RenderPresent(renderer);       				
+  	input.mouseDown = false;
       }
       SDL_Delay( 10 );
       n++;

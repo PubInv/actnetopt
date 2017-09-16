@@ -3,9 +3,10 @@ SRC_DIR := src
 OBJ_DIR := object
 
 CC       := g++
-CPPFLAGS := -I$(INC_DIR) -MMD -MP
+# DEBUG_AND_PROFILE := -pg -g
+CPPFLAGS := -I$(INC_DIR) -MMD -MP $(DEBUG_AND_PROFILE)
 CXXFLAGS := -std=c++11 -Wall -I/usr/local/include/SDL2 -I/usr/X11R6/include -D_THREAD_SAFE -DDEBUG -DDLIB_NO_GUI_SUPPORT -I/Users/robertread/PubInv/dlib
-LDLIBS   := -L/usr/local/lib -lSDL2
+LDLIBS   := -L/usr/local/lib -lSDL2 $(DEBUG_AND_PROFILE)
 
 
 
