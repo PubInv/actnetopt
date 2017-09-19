@@ -38,8 +38,8 @@
 
 \section{Introduction}
 
-The Gluss Project builds robots that are networks of linear actuators connected with concentric joints.
-A fundamental problem of contronlling such robots is to move one of the joints, or nodes, to a given
+The Tetrobot Project builds robots that are networks of linear actuators connected with concentric joints.
+A fundamental problem of controlling such robots is to move one of the joints, or nodes, to a given
 position.
 More generally, we would like to leave some nodes (the feet) in position which we move another
 set of nodes (other feet, or graspers) to some positions that we specify. In general, this may
@@ -573,6 +573,41 @@ a chrome extension.
 I have high hopes for the C++ code, so far it is working well and seems
 far better documented and used.
 
+This C++ code (DLib) does seem to work much better.  I can solve the 2-dimensional
+problem rather well now.
+
+\section{Using Derivatives}
+
+It is conventional wisdom that if dervivatives are analytically computable, more
+efficient numerical optimization techniques are available.
+
+In a two-dimensional ladder, the length $x$ between $B$ and $C$ where $A$ and $B$ are
+nodes fixed by the geometry and $Z$ is the goal node to be moved, $s$ is the score, we can compute
+the $\frac{\partial s}{\partial x}$ in a multi-stage process. Considering the case
+that the $\vec{AB}$ is an external (rather than internal node).
+\begin{itemize}
+\item $\frac{\partial \theta}{\partial x}$ is (probably) $\frac{1}{\| \vec{AC} \| \sin{\phi}}$,
+  where $\phi$ is $\measuredangle ABC$. This derivation used the fact $\arcsin{x} \approx x$ when
+  $ x \ll 1.0$.
+\item $\frac{\partial Z}{\partial \theta}$ can then be computed by a pure rotation about $A$. Note
+  that this quanitity as actually a vector.
+\item $\frac{\partial S}{\partial Z}$ (a scalar) can then be computed analytically from this, if the $S$ is simply
+  a distance measure
+\item All of these can be chained together to produce the derivative needed by optimization
+  work.
+\end{itemize}
+
+In other words, given a confuration, we can compute (in constant time) the
+$\frac{\partial s}{\partial x}$ for each variables edges.
+
+The case when the edge is an interior is slightly more complicated, because you have to take into
+account the change to the next triangle in the latter $BCD$ to compute the change to $Z$.
+In both cases, however, you model the remaining parts of the ladder essentially as
+stiff triangles.
+
+In order to test this, I will use my grhapical system to render the varies stages
+as vectors on screen before I attempt to use an optimization technique that utilizes
+the derivatives.
 
 \section{References}
 
@@ -588,3 +623,8 @@ http://homes.cs.washington.edu/~sagarwal/aat.pdf
 http://zoonek.free.fr/blosxom/R/2012-06-01_Optimization.html
 
 http://docs.mosek.com/modeling-cookbook/cqo.html
+
+// This one looks pretty interesting
+http://ieeexplore.ieee.org/abstract/document/4160811/
+
+https://tspace.library.utoronto.ca/bitstream/1807/14046/1/NQ49815.pdf
