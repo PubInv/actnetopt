@@ -63,13 +63,13 @@ double l2_norm(column_vector a) {
   return d;
 }
 
-#define LADDER_NODES 10
-// #define VAR_EDGES (LADDER_NODES-3)*2+2;
-#define VAR_EDGES 16
-#define UPPER_BOUND 2.0
-#define LOWER_BOUND 1.2
-#define MEDIAN 1.5
-#define INITIAL 1.5
+// #define LADDER_NODES 10
+// // #define VAR_EDGES (LADDER_NODES-3)*2+2;
+// #define VAR_EDGES 16
+// #define UPPER_BOUND 2.0
+// #define LOWER_BOUND 1.2
+// #define MEDIAN 1.5
+// #define INITIAL 1.5
 
 //class TriLadder {
 //public:
@@ -113,8 +113,36 @@ double l2_norm(column_vector a) {
   // // This is a map into the goal position for each goal.
   // // goal_nodes[a] = b => goals[a] should be considered node b.
   // std::vector<int> goal_nodes;
+// int TriLadder::num_nodes;   // = LADDER_NODES;
+// int TriLadder::num_edges; //  = (num_nodes-3)*2 + 3;
+// int TriLadder::var_edges;   // = num_edges-1;
 
-  TriLadder::TriLadder() {
+// double TriLadder::upper_bound_d;
+// double TriLadder::lower_bound_d;
+// double TriLadder::median_d;
+// double TriLadder::initial_d;
+
+int TriLadder::edges_in_ladder(int n) {
+  return (n-3)*2 + 3;
+}
+
+TriLadder::TriLadder(int nodes,
+		     double u,
+		     double l,
+		     double m,
+		     double i) {
+  upper_bound_d = u;
+  lower_bound_d = l;
+  median_d = m;
+  initial_d = i;
+
+    num_nodes = nodes;
+    
+    num_edges = edges_in_ladder(num_nodes);
+    
+    var_edges = num_edges-1;
+    node_fixing_order = new int[num_nodes];
+    coords = new column_vector[num_nodes];      
 
     // edge_array[0] = Edge(A,B);
     // edge_array[1] = Edge(B,C);
@@ -151,16 +179,16 @@ double l2_norm(column_vector a) {
       //      add_edge(edge_array[i].first, edge_array[i].second, g);
       //      lower_bound[i] = 1.2;
       //      upper_bound[i] = 2.0;
-      distance(i) = MEDIAN;
+      distance(i) = median_d;
     }
     
     for (int i = 0; i < var_edges; ++i) {
-      lower_bound(i) = LOWER_BOUND;
-      upper_bound(i) = UPPER_BOUND;            
+      lower_bound(i) = lower_bound_d;
+      upper_bound(i) = upper_bound_d;            
     }
     int last_node = num_nodes - 1;
-    double bx = ((last_node % 2) == 0) ? 0.0 : MEDIAN * cos(30.0*PI/180);
-    double by = (MEDIAN/2.0) * last_node;
+    double bx = ((last_node % 2) == 0) ? 0.0 : median_d * cos(30.0*PI/180);
+    double by = (median_d/2.0) * last_node;
     // modify the relaxed position by this amount...
     double mx = 0.1;
     double my = 1.0;

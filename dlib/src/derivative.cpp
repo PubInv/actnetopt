@@ -13,9 +13,21 @@
 #define BOOST_TEST_MODULE MyTest
 #include <boost/test/unit_test.hpp>
 
+#define LADDER_NODES 10
+#define UPPER_BOUND 2.0
+#define LOWER_BOUND 1.2
+#define MEDIAN 1.5
+#define INITIAL 1.5
+
+
 BOOST_AUTO_TEST_CASE( my_test )
 {
-    TriLadder tl;
+  TriLadder tl(LADDER_NODES,
+			   UPPER_BOUND,
+			   LOWER_BOUND,
+			   MEDIAN,
+			   INITIAL
+	       );
     double x;
     double y;
     tl.compute_single_derivative(tl.coords,2,&x,&y);
@@ -83,4 +95,21 @@ BOOST_AUTO_TEST_CASE( test_triangle_motion )
   BOOST_CHECK_CLOSE( distance(b,c), distance(bp,cp),.0001 );
   BOOST_CHECK_CLOSE( distance(c,a), distance(cp,ap),.0001 );  
 
+}
+
+BOOST_AUTO_TEST_CASE( find_one_derivative )
+{
+  TriLadder tl(LADDER_NODES,
+			   UPPER_BOUND,
+			   LOWER_BOUND,
+			   MEDIAN,
+			   INITIAL
+			   );
+    double x;
+    double y;
+    tl.compute_single_derivative(tl.coords,2,&x,&y);
+    std::cout << x << "," << y << "\n";
+
+    BOOST_CHECK( x == 3 );
+    BOOST_CHECK( y == 4 );
 }

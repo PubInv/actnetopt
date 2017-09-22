@@ -40,14 +40,6 @@ double distance(column_vector a, column_vector b);
 
 double l2_norm(column_vector a);
 
-#define LADDER_NODES 10
-// #define VAR_EDGES (LADDER_NODES-3)*2+2;
-#define VAR_EDGES 16
-#define UPPER_BOUND 2.0
-#define LOWER_BOUND 1.2
-#define MEDIAN 1.5
-#define INITIAL 1.5
-
 class TriLadder {
 public:
 
@@ -57,9 +49,26 @@ public:
   enum { A, B, C, D, E, F };
   // Making this a const seems to destry to the implicit
   // copy assignment; I have no idea why
-  static const int num_nodes = LADDER_NODES;
-  static const int num_edges = (num_nodes-3)*2 + 3;
-  static const int var_edges = num_edges-1;
+
+
+  int num_nodes;   // = LADDER_NODES;
+  int num_edges; //  = (num_nodes-3)*2 + 3;
+  int var_edges;   // = num_edges-1;
+  double upper_bound_d;
+  double lower_bound_d;
+  double median_d;
+  double initial_d;
+
+  int *node_fixing_order;
+  column_vector*  coords;
+
+  int edges_in_ladder(int n);  
+
+  TriLadder(int nodes,
+	    double u,
+	    double l,
+	    double m,
+	    double i);
   
   const char* name = "ABCDE";
 
@@ -72,11 +81,11 @@ public:
   //  static const int num_edges = 3;  
   //  Edge edge_array[num_edges];
   column_vector fixed_nodes;
-  int node_fixing_order[num_nodes];
+  //  int node_fixing_order[num_nodes];
   //  typedef property_map<Graph, vertex_index_t>::type IndexMap;
   //  typedef graph_traits<Graph>::vertex_iterator vertex_iter;
   //  IndexMap index;
-  column_vector coords[num_nodes];
+
   column_vector goals[1];
 
   column_vector distance;
@@ -91,7 +100,7 @@ public:
   // goal_nodes[a] = b => goals[a] should be considered node b.
   std::vector<int> goal_nodes;
 
-  TriLadder();
+
   double gscore();
   double lscore();
   // This really assumes a single goal node is being moved;
