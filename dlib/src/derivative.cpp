@@ -13,7 +13,7 @@
 #define BOOST_TEST_MODULE MyTest
 #include <boost/test/unit_test.hpp>
 
-#define LADDER_NODES 10
+#define LADDER_NODES 4
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
@@ -28,13 +28,25 @@ BOOST_AUTO_TEST_CASE( my_test )
 			   MEDIAN,
 			   INITIAL
 	       );
-    double x;
-    double y;
-    tl.compute_single_derivative(tl.coords,2,&x,&y);
-    std::cout << x << "," << y << "\n";
+  cout << "object made\n";
+  column_vector* coords = new column_vector[tl.num_nodes];  
+  find_all_coords(&tl,coords);
+  for(int i = 0; i < tl.num_nodes*4; i++) {
+    cout << i << " L " <<  tl.large_node(i) << "\n";
+  }
+  for(int i = 0; i < tl.num_nodes*4; i++) {
+    cout << i << " S " <<  tl.small_node(i) << "\n";          
+  }
 
-    BOOST_CHECK( x == 3 );
-    BOOST_CHECK( y == 4 );
+  
+    
+  for(int i = 0; i < tl.var_edges; i++) {
+    double dtheta = tl.compute_single_derivative(coords,i);
+    cout << i << " : " << dtheta << "\n";
+  }
+  //  std::cout << x << "," << y << "\n";
+
+  BOOST_CHECK(true);
 }
 
 
@@ -91,25 +103,9 @@ BOOST_AUTO_TEST_CASE( test_triangle_motion )
   bp = b + db;
   cp = c + dc;
   
-  BOOST_CHECK_CLOSE( distance(a,b), distance(ap,bp),.0001 );
-  BOOST_CHECK_CLOSE( distance(b,c), distance(bp,cp),.0001 );
-  BOOST_CHECK_CLOSE( distance(c,a), distance(cp,ap),.0001 );  
+  BOOST_CHECK_CLOSE( distance_2d(a,b), distance_2d(ap,bp),.0001 );
+  BOOST_CHECK_CLOSE( distance_2d(b,c), distance_2d(bp,cp),.0001 );
+  BOOST_CHECK_CLOSE( distance_2d(c,a), distance_2d(cp,ap),.0001 );  
 
 }
 
-BOOST_AUTO_TEST_CASE( find_one_derivative )
-{
-  TriLadder tl(LADDER_NODES,
-			   UPPER_BOUND,
-			   LOWER_BOUND,
-			   MEDIAN,
-			   INITIAL
-			   );
-    double x;
-    double y;
-    tl.compute_single_derivative(tl.coords,2,&x,&y);
-    std::cout << x << "," << y << "\n";
-
-    BOOST_CHECK( x == 3 );
-    BOOST_CHECK( y == 4 );
-}

@@ -36,7 +36,7 @@ void print_vec(column_vector& vec);
 const bool debug_find = false;
 const bool debug = false;
 
-double distance(column_vector a, column_vector b);
+double distance_2d(column_vector a, column_vector b);
 
 double l2_norm(column_vector a);
 
@@ -62,7 +62,11 @@ public:
   int *node_fixing_order;
   column_vector*  coords;
 
-  int edges_in_ladder(int n);  
+  int edges_in_ladder(int n);
+
+  int large_node(int e);
+  int small_node(int e);
+  
 
   TriLadder(int nodes,
 	    double u,
@@ -113,17 +117,13 @@ public:
 // change in length to edge number edge_number.
 // This returns a simple double because we have made the penalty function a
 // part of it.  
-void compute_single_derivative(column_vector cur_coords[],
-			       int edge_number,
-			       double *x,
-			       double *y);
+double compute_single_derivative(column_vector cur_coords[],
+			       int edge_number);
  
 // I think this is the form actually required by functions such as find_min_box_constrained
 // Probably this will have to call compute_single_derivative for each edge.
 column_vector derivative (const column_vector& m);
 
-
-  
 };
 
 typedef enum { CW, CCW } Chirality;

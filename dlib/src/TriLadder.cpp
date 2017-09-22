@@ -11,9 +11,6 @@
 
 #include "TriLadder.h"
 
-
-
-
 using namespace std;
 using namespace dlib;
 
@@ -47,7 +44,7 @@ void viewport_to_physical(double px,double py,double *vx, double *vy);
 // const bool debug_find = false;
 // const bool debug = false;
 
-double distance(column_vector a, column_vector b) {
+double distance_2d(column_vector a, column_vector b) {
   double d = 0.0;
   for(int i = 0; i < a.size(); i++) {
     d += (a(i)-b(i))*(a(i)-b(i));
@@ -63,68 +60,24 @@ double l2_norm(column_vector a) {
   return d;
 }
 
-// #define LADDER_NODES 10
-// // #define VAR_EDGES (LADDER_NODES-3)*2+2;
-// #define VAR_EDGES 16
-// #define UPPER_BOUND 2.0
-// #define LOWER_BOUND 1.2
-// #define MEDIAN 1.5
-// #define INITIAL 1.5
-
-//class TriLadder {
-//public:
-
-  // // I know this is poor C++, I am not a very good C++ coder
-  // //  typedef adjacency_list<vecS, vecS, bidirectionalS> Graph;
-  // // Make convenient labels for the vertices
-  // enum { A, B, C, D, E, F };
-  // // Making this a const seems to destry to the implicit
-  // // copy assignment; I have no idea why
-  // static const int num_nodes = LADDER_NODES;
-  // static const int num_edges = (num_nodes-3)*2 + 3;
-  // static const int var_edges = num_edges-1;
-  
-  // const char* name = "ABCDE";
-
-  // // writing out the edges in the graph
-  // //  typedef std::pair<int, int> Edge;
-
-  // //  Graph g;
-  // //  Edge e;
-
-  // //  static const int num_edges = 3;  
-  // //  Edge edge_array[num_edges];
-  // column_vector fixed_nodes;
-  // int node_fixing_order[num_nodes];
-  // //  typedef property_map<Graph, vertex_index_t>::type IndexMap;
-  // //  typedef graph_traits<Graph>::vertex_iterator vertex_iter;
-  // //  IndexMap index;
-  // column_vector coords[num_nodes];
-  // column_vector goals[1];
-
-  // column_vector distance;
-  
-  // column_vector lower_bound;
-  // column_vector upper_bound;
-  
-  // //  Eigen::VectorXd lower_bound;
-  // //  Eigen::VectorXd upper_bound;  
-
-  // // This is a map into the goal position for each goal.
-  // // goal_nodes[a] = b => goals[a] should be considered node b.
-  // std::vector<int> goal_nodes;
-// int TriLadder::num_nodes;   // = LADDER_NODES;
-// int TriLadder::num_edges; //  = (num_nodes-3)*2 + 3;
-// int TriLadder::var_edges;   // = num_edges-1;
-
-// double TriLadder::upper_bound_d;
-// double TriLadder::lower_bound_d;
-// double TriLadder::median_d;
-// double TriLadder::initial_d;
 
 int TriLadder::edges_in_ladder(int n) {
   return (n-3)*2 + 3;
 }
+
+int TriLadder::large_node(int e) {
+  return ((e % 2) == 0) ? (e/2)+1 : ((e+1)/2)+1 ;
+}
+
+int TriLadder::small_node(int e) {
+  int L = large_node(e);
+  return ((e % 2) == 1) ? L - 2 : L - 1;
+}
+
+// Note on edge numbering: Nodes are numbered in order of the
+// so that the lowest possible two nodes first.
+// So it order AB first.  Then it orders AC, since A+C < A+B.
+// Then it orders AC etc.
 
 TriLadder::TriLadder(int nodes,
 		     double u,
@@ -144,13 +97,6 @@ TriLadder::TriLadder(int nodes,
     node_fixing_order = new int[num_nodes];
     coords = new column_vector[num_nodes];      
 
-    // edge_array[0] = Edge(A,B);
-    // edge_array[1] = Edge(B,C);
-    // edge_array[2] = Edge(A,C);      
-    // edge_array[3] = Edge(D,C);
-    // edge_array[4] = Edge(C,E);
-    // edge_array[5] = Edge(B,D);
-    // edge_array[6] = Edge(D,E);
     cout << "TTT\n";
     fixed_nodes.set_size(2);
     fixed_nodes(0) = A;
@@ -176,9 +122,6 @@ TriLadder::TriLadder(int nodes,
     lower_bound.set_size(num_edges);
     upper_bound.set_size(num_edges);    
     for (int i = 0; i < num_edges; ++i) {
-      //      add_edge(edge_array[i].first, edge_array[i].second, g);
-      //      lower_bound[i] = 1.2;
-      //      upper_bound[i] = 2.0;
       distance(i) = median_d;
     }
     
@@ -233,6 +176,26 @@ double TriLadder::lscore() {
     return 0.0;
   }
 
+column_vector normalize(column_vector v) {
+  column_vector r(2);
+  column_vector zero(2);
+  zero(0) = 0.0;
+  zero(1) = 0.0;
+  double len = distance_2d(zero,v);
+  r(0) = v(0)/len;
+  r(1) = v(1)/len;
+  return r;
+}
+
+// This is to compute the SIGNED Angle between A to B to C (move A into C).
+double get_angle(column_vector a, column_vector b, column_vector c) {
+  column_vector Va = (a-b);
+  column_vector Vc = (c-b);
+  Va = normalize(Va);
+  Vc = normalize(Vc);  
+  double angle = atan2(Vc(1), Vc(0)) - atan2(Va(1), Va(0));
+  return angle;
+}
 // The goal of this is to compute a single derivative vector for the
 // change in length to edge number edge_number.
 // x and y are room for us to put in values.
@@ -241,12 +204,39 @@ double TriLadder::lscore() {
 // we in fact need to compute from this the change of the objective function.
 // However, we hope that will be easy. We could instead compute the
 // change in the objective function directly.
-void TriLadder::compute_single_derivative(column_vector cur_coords[],
-					     int edge_number,
-					     double *x,
-					     double *y) {
-  *x = 3;
-  *y = 4;
+double TriLadder::compute_single_derivative(column_vector cur_coords[],
+					     int edge_number) {
+  
+  // We add one because the variable edges are not the same as the num_edges
+  int e = edge_number + 1;
+  cout << "edge  "<< e << "\n";  
+  // Case split on if the edge is an outside edge or not
+  // A B C are a triangle.  A and B are fixed; BC is the changing line
+  // (the one specified by edge_number.) phi is angle ABC.
+  int A = large_node(e-1);
+  cout << "A " << A << "\n";
+  column_vector a = cur_coords[A];
+
+  int C = large_node(e);
+  cout << "C " << C << "\n";    
+  column_vector c = cur_coords[C];    
+
+  int B = small_node(e);
+  cout << "B " << B << "\n";  
+  column_vector b = cur_coords[B];
+  double len = distance_2d(a,c);
+  
+  double phi = get_angle(a,b,c);
+
+
+  cout << A << " " << B << " " << C << " a,b,c\n";
+  print_vec(a);
+  print_vec(b);
+  print_vec(c);
+  cout << phi*180/PI << "\n";
+  double dThetaDx = 1.0 / (len*sin(phi));
+  
+  return dThetaDx;
   
 }
 // I think this is the form actually required by functions such as find_min_box_constrained
@@ -255,37 +245,17 @@ column_vector TriLadder::derivative (const column_vector& m) {
     // make us a column vector of length 2
     column_vector res(var_edges);
     for (int i = 0; i < var_edges; ++i) {
-      double x;
-      double y;
-      compute_single_derivative(coords,i,&x,&y);
-      double ds = compute_d_score_from_vector(x,y);
-      res(i) = ds;
+      //      double x;
+      //      double y;
+      double dtheta = compute_single_derivative(coords,i);
+
+      //      double ds = compute_d_score_from_vector(x,y);
+      //      res(i) = ds;
+      res(i) = dtheta;
     }
     return res;
 }
 
-// };
-
-//typedef enum { CW, CCW } Chirality;
-
-// class FindCoords {
-// public:
-//   column_vector a;
-//   column_vector b;    
-
-//   TriLadder *an;
-  
-//   // Should the third point cc or ccw from a to b?
-//   // In other words, we use this to disambiguate the two distance based solutions.
-//   Chirality chi;
-
-//   //     const double dab = 1.5; // This is in fact a constant in our frame
-//   double dac; // these are in fact inputs to the problem
-//   double dbc;
-  
-//   // this is just the objective (NOT optional)
-//   // This input is an x,y position for c
-//   // The lengths between a, b, and c are constants (effectively, input to the problem)
   double FindCoords::operator() ( const column_vector& x) const
   {
     column_vector y(2);
@@ -443,7 +413,7 @@ void find_all_coords(TriLadder *an,column_vector coords[]) {
 
       f.dac = an->distance(i-fs);
       f.dbc = an->distance(i-(fs-1));
-      double dab = distance(f.a,f.b);
+      double dab = distance_2d(f.a,f.b);
 
 
       column_vector  y(2);
@@ -538,9 +508,9 @@ void   test_find_third_point_given_two_and_distances() {
     b(1) = 0.75;
     c(0) = 2.0;
     c(1) = 0.0;
-    double dab = distance(a,b);
-    double dbc = distance(b,c);
-    double dca = distance(c,a);
+    double dab = distance_2d(a,b);
+    double dbc = distance_2d(b,c);
+    double dca = distance_2d(c,a);
     
     x = find_third_point_given_two_and_distances(CCW,dab,dbc,dca,a,b);
     print_vec(c);
@@ -576,14 +546,14 @@ column_vector change_in_third_point(column_vector a,
   double dot_product = dot(bpp-mp,bp-mp);
   cout << "intermediate " << dot_product << "\n";
   
-  double distance_product = distance(mp,bp)*distance(mp,bpp);
+  double distance_product = distance_2d(mp,bp)*distance_2d(mp,bpp);
   cout << "d " << distance_product << "\n";
 
   bool prod_equal = (dot_product >= distance_product);
   
   cout << "prod_equal " << prod_equal << "\n";
   
-  double theta = (dot_product >= distance_product) ? 0.0 : acos(dot(bpp-mp,bp-mp)/(distance(mp,bp)*distance(mp,bpp)));
+  double theta = (dot_product >= distance_product) ? 0.0 : acos(dot(bpp-mp,bp-mp)/(distance_2d(mp,bp)*distance_2d(mp,bpp)));
   
   cout << "theta :" << theta*180/PI << "\n";
   
