@@ -213,17 +213,26 @@ double TriLadder::compute_single_derivative(column_vector cur_coords[],
   // Case split on if the edge is an outside edge or not
   // A B C are a triangle.  A and B are fixed; BC is the changing line
   // (the one specified by edge_number.) phi is angle ABC.
-  int A = large_node(e-1);
-  cout << "A " << A << "\n";
-  column_vector a = cur_coords[A];
 
   int C = large_node(e);
   cout << "C " << C << "\n";    
   column_vector c = cur_coords[C];    
-
   int B = small_node(e);
   cout << "B " << B << "\n";  
   column_vector b = cur_coords[B];
+
+  int A;
+  if ((e % 2) == 0) { // this is an interior edge
+    A = small_node(e-2);    
+  } else { // this is an exterior edge
+    A = C - 1;
+  }
+  
+
+  cout << "A " << A << "\n";
+  column_vector a = cur_coords[A];
+
+
   double len = distance_2d(a,c);
   
   double phi = get_angle(a,b,c);
