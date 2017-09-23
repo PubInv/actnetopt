@@ -117,8 +117,12 @@ public:
 // change in length to edge number edge_number.
 // This returns a simple double because we have made the penalty function a
 // part of it.  
-double compute_single_derivative(column_vector cur_coords[],
+double compute_single_derivative_dtheta(column_vector cur_coords[],
 			       int edge_number);
+
+column_vector compute_single_derivative_c(column_vector cur_coords[],
+				   int edge_number);
+ 
  
 // I think this is the form actually required by functions such as find_min_box_constrained
 // Probably this will have to call compute_single_derivative for each edge.

@@ -13,7 +13,7 @@
 #define BOOST_TEST_MODULE MyTest
 #include <boost/test/unit_test.hpp>
 
-#define LADDER_NODES 4
+#define LADDER_NODES 6
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
@@ -31,18 +31,42 @@ BOOST_AUTO_TEST_CASE( my_test )
   cout << "object made\n";
   column_vector* coords = new column_vector[tl.num_nodes];  
   find_all_coords(&tl,coords);
-  for(int i = 0; i < tl.num_nodes*4; i++) {
-    cout << i << " L " <<  tl.large_node(i) << "\n";
-  }
-  for(int i = 0; i < tl.num_nodes*4; i++) {
-    cout << i << " S " <<  tl.small_node(i) << "\n";          
-  }
+  // for(int i = 0; i < tl.num_nodes*4; i++) {
+  //   cout << i << " L " <<  tl.large_node(i) << "\n";
+  // }
+  // for(int i = 0; i < tl.num_nodes*4; i++) {
+  //   cout << i << " S " <<  tl.small_node(i) << "\n";          
+  // }
 
   
-    
+  // Edge 1: negative
+  // Edge 2: positive
   for(int i = 0; i < tl.var_edges; i++) {
-    double dtheta = tl.compute_single_derivative(coords,i);
-    cout << i << " : " << dtheta << "\n";
+    double dtheta = tl.compute_single_derivative_dtheta(coords,i);
+    cout << i+1 << " : " << dtheta << "\n";
+  }
+  //  std::cout << x << "," << y << "\n";
+
+  BOOST_CHECK(true);
+}
+
+BOOST_AUTO_TEST_CASE( node_derivative )
+{
+  TriLadder tl(LADDER_NODES,
+			   UPPER_BOUND,
+			   LOWER_BOUND,
+			   MEDIAN,
+			   INITIAL
+	       );
+  cout << "START\n";
+  column_vector* coords = new column_vector[tl.num_nodes];  
+  find_all_coords(&tl,coords);
+
+  for(int i = 0; i < tl.var_edges; i++) {
+    column_vector d = tl.compute_single_derivative_c(coords,i);
+    cout << "deriv " << i+1 << " :\n";
+    print_vec(d);
+
   }
   //  std::cout << x << "," << y << "\n";
 

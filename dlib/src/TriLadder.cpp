@@ -187,13 +187,23 @@ column_vector normalize(column_vector v) {
   return r;
 }
 
-// This is to compute the SIGNED Angle between A to B to C (move A into C).
+// This is to compute the SIGNED Angle between A to B to C (move C into A).
 double get_angle(column_vector a, column_vector b, column_vector c) {
   column_vector Va = (a-b);
   column_vector Vc = (c-b);
   Va = normalize(Va);
-  Vc = normalize(Vc);  
-  double angle = atan2(Vc(1), Vc(0)) - atan2(Va(1), Va(0));
+  Vc = normalize(Vc);
+  double aangle = atan2(Va(1), Va(0));
+  double cangle = atan2(Vc(1), Vc(0));
+  //  cout << "VA" << aangle*180/PI << "\n";
+  //  cout << "VC" << cangle*180/PI << "\n";
+  
+  double angle = aangle - cangle;
+  //  cout << angle*180/PI << "\n";
+  if (angle >= PI) angle = -(2*PI - angle);
+  if (angle <= -PI) angle = 2*PI + angle;
+
+  //  cout << "phi" << angle*180/PI << "\n";  
   return angle;
 }
 // The goal of this is to compute a single derivative vector for the
@@ -204,7 +214,7 @@ double get_angle(column_vector a, column_vector b, column_vector c) {
 // we in fact need to compute from this the change of the objective function.
 // However, we hope that will be easy. We could instead compute the
 // change in the objective function directly.
-double TriLadder::compute_single_derivative(column_vector cur_coords[],
+double TriLadder::compute_single_derivative_dtheta(column_vector cur_coords[],
 					     int edge_number) {
   
   // We add one because the variable edges are not the same as the num_edges
@@ -215,39 +225,73 @@ double TriLadder::compute_single_derivative(column_vector cur_coords[],
   // (the one specified by edge_number.) phi is angle ABC.
 
   int C = large_node(e);
-  cout << "C " << C << "\n";    
+  //  cout << "C " << C << "\n";    
   column_vector c = cur_coords[C];    
   int B = small_node(e);
-  cout << "B " << B << "\n";  
+  //   cout << "B " << B << "\n";  
   column_vector b = cur_coords[B];
 
   int A;
-  if ((e % 2) == 0) { // this is an interior edge
-    A = small_node(e-2);    
-  } else { // this is an exterior edge
+  if ((C - 1) == B) {
+    A = C - 2;
+  } else { 
     A = C - 1;
   }
   
-
-  cout << "A " << A << "\n";
+  //  cout << "A " << A << "\n";
   column_vector a = cur_coords[A];
-
 
   double len = distance_2d(a,c);
   
   double phi = get_angle(a,b,c);
 
-
-  cout << A << " " << B << " " << C << " a,b,c\n";
-  print_vec(a);
-  print_vec(b);
-  print_vec(c);
+  // cout << A << " " << B << " " << C << " a,b,c\n";
+  // print_vec(a);
+  // print_vec(b);
+  // print_vec(c);
   cout << phi*180/PI << "\n";
   double dThetaDx = 1.0 / (len*sin(phi));
   
   return dThetaDx;
   
 }
+column_vector TriLadder::compute_single_derivative_c(column_vector cur_coords[],
+						  int edge_number) {
+  int e = edge_number + 1;
+  int C = large_node(e);
+  int B = small_node(e);
+  int A;
+  if ((C - 1) == B) {
+    A = C - 2;
+  } else { 
+    A = C - 1;
+  }
+  double dtheta = compute_single_derivative_dtheta(cur_coords,edge_number);
+
+  // Now that we have dtheta, we want to compute the dCx/dtheta and dCy/dtheta
+  // dtheta is the rotation of C into A
+  // dCx,dCy are perpendicular to AC and proportional to dtheta and
+  // the sign depends where C, B, and A are.
+  // one way to do this is to rotate C into A about B and see how the
+  // values change to deterimne the sign.
+
+  column_vector c = cur_coords[C];    
+  column_vector b = cur_coords[B];
+  column_vector a = cur_coords[A];
+  column_vector bc = c - b;
+  double len = distance_2d(b,c);
+  bc = normalize(bc);
+  double phi = atan2(bc(1), bc(0));
+  double alpha = PI/2.0 - phi;
+  double dy = cos(alpha)*len;
+  double dx = sin(alpha)*len;
+  column_vector d(2);
+  // do we just multiply by dtheta?  
+  d(0) = dx*dtheta;
+  d(1) = dy*dtheta;
+  return d;
+}
+
 // I think this is the form actually required by functions such as find_min_box_constrained
 // Probably this will have to call compute_single_derivative for each edge.
 column_vector TriLadder::derivative (const column_vector& m) {
@@ -256,7 +300,7 @@ column_vector TriLadder::derivative (const column_vector& m) {
     for (int i = 0; i < var_edges; ++i) {
       //      double x;
       //      double y;
-      double dtheta = compute_single_derivative(coords,i);
+      double dtheta = compute_single_derivative_dtheta(coords,i);
 
       //      double ds = compute_d_score_from_vector(x,y);
       //      res(i) = ds;
