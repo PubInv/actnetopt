@@ -1,0 +1,235 @@
+\documentclass[11pt]{article}
+\usepackage{geometry} % see geometry.pdf on how to lay out the page. There's lots.
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{gensymb}
+\usepackage[affil-it]{authblk}
+\usepackage[toc,page]{appendix}
+\usepackage{pifont}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{relsize}
+\usepackage{draftwatermark}
+
+\SetWatermarkText{DRAFT}
+\SetWatermarkScale{6}
+\SetWatermarkLightness{0.95}
+
+% \geometry{letter} % or letter or a5paper or ... etc
+% \geometry{landscape} % rotated page geometry
+
+% See the ``Article customise'' template for come common customisations
+
+\title{On Simple Planar Variable Geometry Trusses}
+\author{Robert L. Read
+  \thanks{read.robert@gmail.com}
+}
+\affil{Founder, Public Invention, an educational non-profit.}
+
+
+\date{\today}
+
+%%% BEGIN DOCUMENT
+\begin{document}
+
+\maketitle
+
+%% \tableofcontents
+
+\section{Introduction}
+
+A {\em variable geometry truss} is a truss in which changes shape by means of the change of the length of members, in contrast
+to many robot arms which change joint angles. We call a member which can change length an {\em actuator}.
+A truss constructed purely by starting with a triangle and and repeatedly adding two members and a new joint to one side of an existing triangle
+to form a new triangle is a {\em simple truss}. This paper
+is concerned only with simple planar trusses. In particular, we focus on trusses isomorphic to the Warren truss (e.g., an unbranching configuration of triangles.)
+Furthermore, although the world {\em truss} connotes forces and structural analysis,
+we are concerned purely with geometry. Altough motivated by robotics, we assume that our trusses and actuators are strong enough that
+we need not consider the forces acting upon the truss---in other words, we are treating it as mechanism and not a machine.
+
+If we imagine a joint, usually at one end of our truss, to be an end effector, 
+he fundamental goal of this paper is to answer the question:
+\begin{quote}
+  How does a change in length of an actuator change the position of an end effector?
+\end{quote}
+
+\section{Formulation}
+
+A {\em truss} structure is a graph and a set of fixed nodes $T=(G,F)$. $G = (V,E)$. $V$ is a set of nodes or joints. $E$ is a set of lines or members which are 2-element subsets of $V$.
+At least two nodes are condidered to be fixed in space via a set of fixed nodes $F = {(i,x,y) \| i \in V \and x,y \in \mathbb{R}}$.
+
+We number joints from zero and designate them with a subscript. Members are designated by two subscripts, naming the joints they connect.
+
+A configuration function mapping each member of a truss structure to a non-negative length. $C: V \times V \mapsto \mathbb{R}$.
+
+A geometry is a placement of each joint in the Cartesian plane. $G: V \mapsto \mathbb{R} \times \mathbb{R} $.
+
+A {\em simple truss} is a truss constructed from a triangle by adding a single joint and two members to a side repetitively.
+A {\em Warren truss} is an unbranched simple truss, which is isomorphic to a truss that is a single chain of equilateral triangles.
+Furthermore, we insist that each even node $n$ occurs as a anti-clockwise turn (in the anti-clockwise semiplane) from the vector $\overrightarrow{n-2,n-1}$, and
+each odd node occurs as a clockwise turn (in the clockwise semiplane) from the previous to nodes.
+
+For a Warren truss, there is a simple algorithm $W$ for computing a geometry from a configuration: $W : C \mapsto G$.
+
+A goal joint is a joint $j$ such that $j \in V$ and a desired position given by a goal function $d : V \mapsto \mathbb{R}^2$. In robotics,
+a goal joint is often called an {\em end effector}.
+
+A {\em scoring function} is a function that that takes a geometry and returns a real, non-negative value based on 
+the goal node positions given by by a goal function and the actual position given by a Geometry. A score of zero is considered
+ a perfect score and the a higher score represents a less sought-after result.
+
+A {\em linear distance scoring function} is a special scoring function that that takes a geometry and returns a real, non-negative value based solely
+on a summation of distances between the goal node positions given by by a goal function and the actual position given by a Geometry.
+
+A truss {\em problem} $P = (T,d,s)$ is a truss with a scoring function and a desired position function.
+A solution to a problem is a configuration and a geometry. An optimal solution is a solution which minimizes the score.
+
+Our fundamental goal is to develop a formula for the partial derivative of the end effector
+with respect to the change in length of a member.
+
+A further goal is to be able to render a diagram illustrating the impact on the end-effector
+of a change of each member, as drawn by rendering a vector from the center point of each member.
+
+A further goal is to have algorithms to determine:
+\begin{itemize}
+\item What is the minimum overall change in length to a group of actuators to solve a Problem?
+\item Can a Problem be solved with a single change in length?
+\item Assuming bounds on the lengths of actuators, can we solve Problems?
+  \item What is the workspace of a truss?
+  \end{itemize}
+
+In the remainder of this paper we will consider only Warren trusses, linear distance scoring functions, and desired position functions
+that map only one node, called an end effector, to a desired position. Furthermore, we will assume that the first two nodes are fixed
+and that the furthest node (by path length) from the first node is the end effector.
+
+\section{Moving an External Member}
+
+We seek a formula for the change in position of the end effector $e$ with respect to change in the length of a member given a geometry.
+In the case of a Warren truss, all members can be divided between external members and internal members. A change to the length of an
+external member is particularly simple.
+
+The change in position is a centered on the goal node representing the place the goal node would move to with a unit change in length.
+However, the derivative is only valid as an infinitessimal, but as an infinitessimal its magnitude and direction may be usefully
+added to or compared to other such vectors. We can thus usefully tell which member would change the position of the goal node most
+rapidly in response to a minute change in different members.
+
+The fundamental observation is that for an external member $(i,i-2)$, a change in length generates a rotation $\theta$ about joint $n-1$
+whose position is given by $(x,y)$. $\theta$ is the angle of the vector from the pivot point to the end-effector with the $x$-axis.
+This rotation applies to the triangle defined by three joints: $\triangle i-1,i,e$. Not that this triangle doe not exist as a physical
+structure in the truss. This rotation about a point can be expressed as a matrix $M$:
+
+\[
+M = 
+\begin{bmatrix}
+    \cos{\theta} & -\sin{\theta} & -x \cdot \cos{\theta} + x + y \cdot \sin{\theta}  \\
+    \sin{\theta} & \cos{\theta} & -x \cdot \sin{\theta} - y \cdot \cos{\theta} + y  \\
+    0 & 0 & 1 & 
+\end{bmatrix}
+\]
+
+such that:
+\[
+M \begin{bmatrix}
+           e_x \\
+           e_y \\
+           1
+         \end{bmatrix} = \begin{bmatrix}
+           e_x' \\
+           e_y' \\
+           1
+         \end{bmatrix}
+\]
+where $(e_x',e_y')$ is the new position of $e$ after the rotation by $theta$. Multiplying this out:
+
+\[
+\begin{bmatrix}
+           e_x' \\
+           e_y' \\
+         \end{bmatrix}
+=
+\begin{bmatrix}
+           e_x \cos{\theta} + -e_y \sin{\theta}  + -x\cos{\theta} + x + y \sin{\theta} \\
+           e_x \sin{\theta} + e_y \cos{\theta} + -x\sin{\theta} + - y \cos{\theta} + y \\
+         \end{bmatrix}
+\]
+Collecting terms:
+\[
+\begin{bmatrix}
+           e_x' \\
+           e_y' \\
+         \end{bmatrix}
+=
+\begin{bmatrix}
+           (e_x  - x) \cos{\theta} + (y - e_y)\sin{\theta}  +  x  \\
+           (e_x - x ) \sin{\theta} + (e_y - y)\cos{\theta} +  y \\
+         \end{bmatrix}
+\]
+This can be easily differentiated with respect to $\theta$:
+
+
+\[
+\frac{\partial e}{\partial \theta} = \begin{bmatrix}
+           \frac{\partial e_x}{\partial \theta} \\
+           \frac{\partial e_y}{\partial \theta} \\
+         \end{bmatrix} = \begin{bmatrix}
+           -(e_x  - x) \sin{\theta} + -(e_y -y)\cos{\theta}  \\
+           (e_x - x ) \cos{\theta} + -(e_y - y)\sin{\theta}  \\
+         \end{bmatrix}
+\]
+
+As we might expect, the magnitude of this vector depends on the distance from the pivot joint $(x,y)$ and the position of the end effector
+$(e_x,e_y)$ and the direction depends on the direction of the vector from the pivot joint to the end effector, $\theta$.
+
+By using the law of cosines, where $a = \|\overrightarrow{n-2,n-1}\|, b = \|\overrightarrow{n-2,n}\| = l_{i,i-2}, c = \|\overrightarrow{n-1,n}\| $  ,
+where $b$ is the member opposite the pivot joint $n-1$ which changes the angle $\angle n-2,n-1,n = \phi_{i-1}$.
+\[
+\cos{\phi_{i-1}} = \frac{a^2 - b^2 + c^2}{2 a c}
+\]
+
+Using Woflram Alpha to differentiate this, we obtain:
+
+\[
+\frac{\partial \phi_{i-1}}{\partial l_{i,i-2}} = \frac{b}{ac\sqrt{1 - \frac{(a^2 + c^2 - b^2)^2}{4a^2c^2}}}
+\]
+
+So, by the chain rule
+
+\[
+\frac{\partial e}{\partial  l_{i,i-2}} = \begin{bmatrix}
+           \frac{\partial e_x}{\partial l_{i,i-2}} \\
+           \frac{\partial e_y}{\partial l_{i,i-2}} \\
+         \end{bmatrix} = \frac{b}{ac\sqrt{1 - \frac{(a^2 + c^2 - b^2)^2}{4a^2c^2}}} \begin{bmatrix}
+           -(e_x  - x) \sin{\theta} + -(e_y -y)\cos{\theta}  \\
+           (e_x - x ) \cos{\theta} + -(e_y - y)\sin{\theta}  \\
+         \end{bmatrix}
+\]
+
+So this is a closed-form expression for the change in the position for any external member $i,i-2$ we choose.
+
+
+\section{Moving an Internal Member}
+
+Moving an internal member is slightly more complicated. In a Warren Truss, moving an internal member $(i,i-1)$ always
+moves the large node around the the node $i-2$.
+
+\section{References}
+
+
+
+\end{document}
+
+http://eprints.cs.vt.edu/archive/00000192/01/TR-90-10.pdf
+
+
+https://people.eecs.berkeley.edu/~elghaoui/Teaching/EE227A/lecture6.pdf
+
+http://homes.cs.washington.edu/~sagarwal/aat.pdf
+
+http://zoonek.free.fr/blosxom/R/2012-06-01_Optimization.html
+
+http://docs.mosek.com/modeling-cookbook/cqo.html
+
+// This one looks pretty interesting
+http://ieeexplore.ieee.org/abstract/document/4160811/
+
+https://tspace.library.utoronto.ca/bitstream/1807/14046/1/NQ49815.pdf
