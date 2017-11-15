@@ -15,6 +15,8 @@
 \SetWatermarkScale{6}
 \SetWatermarkLightness{0.95}
 
+\DeclareMathOperator{\atantwo}{atan2}
+
 % \geometry{letter} % or letter or a5paper or ... etc
 % \geometry{landscape} % rotated page geometry
 
@@ -113,6 +115,12 @@ However, the derivative is only valid as an infinitessimal, but as an infinitess
 added to or compared to other such vectors. We can thus usefully tell which member would change the position of the goal node most
 rapidly in response to a minute change in different members.
 
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{Diagram for Derivatives of Ladder.png}
+  \caption{A Trusss Problem}  
+\end{figure}
+
 The fundamental observation is that for an external member $(i,i-2)$, a change in length generates a rotation $\theta$ about joint $n-1$
 whose position is given by $(x,y)$. $\theta$ is the angle of the vector from the pivot point to the end-effector with the $x$-axis.
 This rotation applies to the triangle defined by three joints: $\triangle i-1,i,e$. Not that this triangle doe not exist as a physical
@@ -209,8 +217,176 @@ So this is a closed-form expression for the change in the position for any exter
 
 \section{Moving an Internal Member}
 
-Moving an internal member is slightly more complicated. In a Warren Truss, moving an internal member $(i,i-1)$ always
-moves the large node around the the node $i-2$.
+Moving an internal member is slightly more complicated. In a Warren Truss, moving an internal member is in fact
+changing the shape of a parallelogram.  The best way to think of the overall transformation of an end effector is
+to imagine it as both a translation and a rotation of the midpoint of one of the edges of the parallelogram.
+
+We need to develop the formulae for the derivatives of the motions of both endpoints and add them together to obtain this.
+The motion of each point, however, is a pure translation.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=\textwidth]{Internal angle change.png}
+  \caption{Internal length change}  
+\end{figure}
+
+Given that we are dealing with infinitessimal motion, the partial derivative of $C$ is easy
+because it must be at right angles to $\vec{AC}$. Let $\theta$ be the anticlockwise angle $AC$ makes with the $x$-axis.
+
+\[
+\frac{\partial C}{\partial  l_{BC}} = \begin{bmatrix}
+           \frac{\partial C_x}{\partial l_{BC}} \\
+           \frac{\partial C_y}{\partial l_{BC}} \\
+         \end{bmatrix} = \begin{bmatrix}
+           \sin{\theta}  \\
+           \cos{\theta} \\
+         \end{bmatrix}
+\]
+
+To find the partial derivative of the $D$'s motion, we utlize the fact that the lengths of $\vec{BD}$ and $\vec{CD}$ don't change.
+We thus have three lengths and two points, from which the third point ($D$) can be computed. The easily way to do this
+is to assume that the point $B$ is at the origin, and compute the angle of $\vec{BD'}$. This is the sum of the angle $\angle D'BC'$
+which can be obtained from the law of cosines, and the angle of $\vec{BC'}$ with the $x$ axis.
+
+\[
+\angle D'BC' = \arccos{\frac{c^2 + d^2 - b^2}{2cd}}
+\]
+
+\[
+\angle \vec{BC'} = \atantwo( C'_y - B_y ,  C'_x - B_x )
+\]
+
+\[
+\psi = \angle \vec{BD'} = \angle D'BC' + \angle \vec{BC'}
+\]
+
+\[
+\psi = (\arccos{\frac{c^2 + d^2 - b^2}{2cd}} +  \atantwo( C'_y - B _y,  C'_x - B_x))
+\]
+
+\[
+D' = \delta \cdot \begin{bmatrix}
+          \sin{ \angle \vec{BD'} } \\
+          \cos{ \angle \vec{BD'} } \\
+\end{bmatrix} +
+\begin{bmatrix}
+           B_x  \\
+           B_y \\
+\end{bmatrix} =
+\delta \cdot 
+\begin{bmatrix}
+          \sin{ \psi } \\
+          \cos{ \psi } \\
+\end{bmatrix} +
+\begin{bmatrix}
+           B_x  \\
+           B_y \\
+         \end{bmatrix}
+\]
+
+\[
+D' =
+\delta \cdot 
+\begin{bmatrix}
+          \sin{ \psi } \\
+          \cos{ \psi } \\
+\end{bmatrix} +
+\begin{bmatrix}
+           B_x  \\
+           B_y \\
+         \end{bmatrix}
+\]
+
+Given that $\delta$ is the differential change in length, this can be rewritten as derivative:
+
+\[
+\frac{\partial D}{\partial  l_{BC}} = \begin{bmatrix}
+           \frac{\partial D_x}{\partial l_{BC}} \\
+           \frac{\partial D_y}{\partial l_{BC}} \\
+         \end{bmatrix} = \begin{bmatrix}
+           \sin{\psi}  \\
+           \cos{\psi} \\
+\end{bmatrix}
+\]
+
+
+
+Now to understand how a change to the $\vec{BC}$ length effects the end effector, we can
+add the partial derivatives of $C$ and $D$ in order to get the translational change
+to the midpoint $P$ of $\vec{CD}$. Then separately we must compute the change in the angle
+of the vector $\vec{CD}$. These things together will allow us to compute the
+partial derivative of the end effector $e$.
+
+\[
+\frac{\partial P}{\partial  l_{BC}} =
+\frac{\partial C}{\partial  l_{BC}} = \begin{bmatrix}
+           \frac{\partial C_x}{\partial l_{BC}} \\
+           \frac{\partial C_y}{\partial l_{BC}} \\
+         \end{bmatrix} \begin{bmatrix}
+           \frac{\partial D_x}{\partial l_{BC}} \\
+           \frac{\partial D_y}{\partial l_{BC}} \\
+\end{bmatrix}
+= \begin{bmatrix}
+           \sin{\theta}  \\
+           \cos{\theta} \\
+         \end{bmatrix}
+ +
+ \begin{bmatrix}
+           \sin{\psi}  \\
+           \cos{\psi} \\
+\end{bmatrix}
+ \]
+
+ Moving the member $\vec{BC}$ in general induces a rotation about $P$ as well.
+
+ \[
+ \rho = \angle{\vec{CD}} - \angle{\vec{C'D'}}
+ \]
+
+ \[
+ \rho = \angle{\atantwo{D'_y - C'_y}{D'_x - C'_x}}
+ \]
+
+ Since:
+
+ \[
+ \frac{d}{dx} \atantwo{g(x)}{f(x)} = \frac{g(x)f'(x) - f(x)g'(x)}{f(x)^2 + g(x)^2}
+ \]
+ , we have:
+
+ 
+ 
+\[
+\frac{\partial \rho}{ \partial l_{BC}} = \frac{ (D'_x - C'_x)\frac{\partial (D'_y - C'_y)}{\partial l_{BC}}
+  - (D'_y - C'_y)\frac{\partial (D'_x - C'_x)}{\partial l_{BC}}
+}
+  {(D'_y - C'_y)^2 + (D'_x - C'_x)^2}
+  \]
+
+  I always get confused between differentials and derivatives.  However, if we evaulate this instantaneously,
+  we can replace $D'$ with $D$ and $C'$ with $C$. We already have closed form expressions for the other partials.
+
+  \[
+\frac{\partial \rho}{ \partial l_{BC}} = \frac{ (D'_x - C'_x)\frac{\partial (D'_y - C'_y)}{\partial l_{BC}}
+  - (D'_y - C'_y)\frac{\partial (D'_x - C'_x)}{\partial l_{BC}}
+}
+  {(D'_y - C'_y)^2 + (D'_x - C'_x)^2}
+  \]
+
+  So we have:
+  
+    \[
+    \frac{\partial \rho}{ \partial l_{BC}} = \frac{ (D_x - C_x)(\sin{\psi} -\sin{\theta})
+      - (D_y - C_y)(\cos{\psi} - \cos{\theta})}
+  {(D_y - C_y)^2 + (D_x - C_x)^2}
+  \]
+
+  The change to the end effector is the composition of the translation of the midpoint and
+  the rotaion about the midpoint by this angle.
+
+  I now should check this by making graphs of this against reasonalbe values. This is
+  probably best done with a computer program. Is it better to do this interactively or to produce a plot?
+
 
 \section{References}
 
