@@ -18,12 +18,22 @@ void physical_to_viewport(double px,double py,double *vx, double *vy);
 void viewport_to_physical(double px,double py,double *vx, double *vy);
 
 
-#define LADDER_NODES 10
+#define LADDER_NODES 9
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
 #define INITIAL 1.5
 
+void get_rcoords(column_vector v,int* x,int* y) {
+       double px0 = v(0);
+       double py0 = v(1);
+       double vx0;
+       double vy0; 
+       physical_to_viewport(px0,py0,&vx0,&vy0);
+       
+       *x = (int) std::round(vx0);
+       *y = (int) std::round(vy0);
+}
 
 class Invert {
 public:
@@ -32,7 +42,10 @@ public:
   Invert() {
   }
   
-  // This function weights our close our values are to the goals.  
+  // This function weights how close our values are to the goals.
+  // At present, this is literally of the unweighted sum of the distances,
+  // or th l2_norms between each goal node and its corresponding position.
+  // For the purposes of the paper I will call this the "simple distance score" or sds.
   double operator() ( const column_vector& ds) const
   {
 
@@ -97,7 +110,8 @@ void solve_inverse_problem(TriLadder *an) {
   inv.an = an;
 
   int n = an->var_edges;
-  
+
+  // Inv is the objective funciton/object. It computes didstance for goal node.
   find_min_bobyqa(inv, 
 		  sp, 
 		  (n+1)*(n+2)/2,    // number of interpolation points
@@ -196,11 +210,8 @@ void draw_rect(SDL_Renderer* renderer,SDL_Rect r) {
     // Render the rect to the screen
     SDL_RenderPresent(renderer);
 }
-
-void render_coords(SDL_Renderer* renderer, 
-		   column_vector* coords, int i, int j) {
-       column_vector v0 = coords[i];
-       column_vector v1 = coords[j];
+void render_vector(SDL_Renderer* renderer, 
+		   column_vector v0, column_vector v1) {
        double px0 = v0(0);
        double py0 = v0(1);
        double vx0;
@@ -219,16 +230,76 @@ void render_coords(SDL_Renderer* renderer,
        int x1 = (int) std::round(vx1);
        int y1 = (int) std::round(vy1);
        
-       SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
        SDL_RenderDrawLine(renderer, x0, y0, x1, y1);
+}
+void render_arrow(SDL_Renderer* renderer, 
+		  column_vector v0, column_vector v1,double headf = 0.2) {
+       double px0 = v0(0);
+       double py0 = v0(1);
+       double vx0;
+       double vy0; 
+       physical_to_viewport(px0,py0,&vx0,&vy0);
+       
+       double px1 = v1(0);
+       double py1 = v1(1);
+       double vx1;
+       double vy1; 
+       physical_to_viewport(px1,py1,&vx1,&vy1);
+
+       int x0 = (int) std::round(vx0);
+       int y0 = (int) std::round(vy0);
+       
+       int x1 = (int) std::round(vx1);
+       int y1 = (int) std::round(vy1);
+       
+       SDL_RenderDrawLine(renderer, x0, y0, x1, y1);
+       // Now to draw the arrow head we create the vector pointing backwards...
+       {
+       column_vector bk = (v1 - v0)*headf + v1;
+       column_vector bk1 = rotate_point<double>(v1,bk,150*PI/180);
+
+       double bkx0 = bk1(0);
+       double bky0 = bk1(1);
+       double bkx0_v;
+       double bky0_v;
+       physical_to_viewport(bkx0,bky0,&bkx0_v,&bky0_v);       
+       int bx0 = (int) std::round(bkx0_v);
+       int by0 = (int) std::round(bky0_v);
+       
+       SDL_RenderDrawLine(renderer, bx0, by0, x1, y1);
+       }
+       {
+       column_vector bk = (v1 - v0)*headf + v1;
+       column_vector bk1 = rotate_point<double>(v1,bk,-150*PI/180);
+
+       double bkx0 = bk1(0);
+       double bky0 = bk1(1);
+       double bkx0_v;
+       double bky0_v;
+       physical_to_viewport(bkx0,bky0,&bkx0_v,&bky0_v);       
+       int bx0 = (int) std::round(bkx0_v);
+       int by0 = (int) std::round(bky0_v);
+       
+       SDL_RenderDrawLine(renderer, bx0, by0, x1, y1);
+       }
+       // Then we shorten it to the head lenghth..
+       // then we rotate and render 45 degrees in each direction.
+       SDL_RenderDrawLine(renderer, x0, y0, x1, y1);       
+}
+void render_coords(SDL_Renderer* renderer, 
+		   column_vector* coords, int i, int j) {
+       column_vector v0 = coords[i];
+       column_vector v1 = coords[j];
+       SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);       
+       render_vector(renderer,v0,v1);
 }
 
 const int WIN_WIDTH = 640 * 2;
 const int WIN_HEIGHT = 480 * 2;
 
 // These are the size of the physical size
-const double w = 20.0;
-const double h = 20.0;
+const double w = 10.0;
+const double h = 10.0;
 
 
 void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
@@ -247,14 +318,40 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
      for(int j = 0; j < an->num_nodes; j++) {
        int k = j - 1;
        int h = j - 2;
-       if (k > 0) {
-	 render_coords(renderer,coords,j,k);
+       if (k >= 0) {
+	 	 render_coords(renderer,coords,j,k);
        }
-       if (h > 0) {
-	 render_coords(renderer,coords,j,h);
+       if (h >= 0) {
+	 	 render_coords(renderer,coords,j,h);
+       }
+       SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+       int x;
+       int y;
+       get_rcoords(coords[j],&x,&y);
+       cout << x << " " << y << "\n";
+       SDL_Rect srcrect;
+       srcrect.x = x-3;
+       srcrect.y = y-3;
+       srcrect.w = 6;
+       srcrect.h = 6;
+       
+       SDL_RenderDrawRect(renderer, &srcrect);
+       SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);       
+     }
+
+     SDL_SetRenderDrawColor(renderer, 255, 255, 0, 200);       
+     for(int i = 0; i < an->var_edges; i++) {
+       //       column_vector d = an->compute_single_derivative_c(coords,i);
+       if ((i % 2) == 0) {
+	 column_vector d = an->compute_external_effector_derivative_c(coords,i);
+	 cout << "deriv " << i << " :\n";
+	 print_vec(d);
+	 int node = an->large_node(i+1);
+	 column_vector tail = (coords[node]+ coords[an->small_node(i+1)])/ 2.0;    
+	 render_arrow(renderer,tail,d+tail);
        }
      }
-     std::cout << '\n';
+
      //     SDL_RenderPresent(renderer);
 }
 
@@ -448,6 +545,19 @@ void viewport_to_physical(double px,double py,double *vx, double *vy) {
     *vy = y;
 }
 
+void render_all(SDL_Renderer* renderer, TriLadder *an,column_vector* coordsx) {
+  	// Clear winow
+  	//	SDL_RenderClear( renderer );
+  SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
+  SDL_RenderClear(renderer);
+  draw_axes(renderer);
+  // now we want to try to find coordinates in the physical space...
+	
+
+  draw_net(renderer,an,coordsx);
+  SDL_RenderPresent(renderer);       				
+}
+
 int main( int argc, char* args[] )
 {
   {
@@ -493,6 +603,8 @@ int main( int argc, char* args[] )
     SDL_Renderer* renderer = NULL;
     renderer =  SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED);
 
+    render_all(renderer,&an,coordsx);
+	
     SDL_Event spud;
 
     Input input(&mousedown_function);
@@ -518,17 +630,9 @@ int main( int argc, char* args[] )
   	an.goals[0] = gl;
 	
   	mainx(&an,coordsx);
-       
-  	// Clear winow
-  	//	SDL_RenderClear( renderer );
-  	SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
-  	SDL_RenderClear(renderer);
-  	draw_axes(renderer);
-  	// now we want to try to find coordinates in the physical space...
-	
 
-  	draw_net(renderer,&an,coordsx);
-  	SDL_RenderPresent(renderer);       				
+	render_all(renderer,&an,coordsx);
+       
   	input.mouseDown = false;
       }
       SDL_Delay( 10 );

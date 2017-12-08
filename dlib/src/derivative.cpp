@@ -20,6 +20,41 @@
 #define INITIAL 1.5
 
 
+BOOST_AUTO_TEST_CASE( test_angle )
+{
+  TriLadder tl(LADDER_NODES,
+			   UPPER_BOUND,
+			   LOWER_BOUND,
+			   MEDIAN,
+			   INITIAL
+	       );
+
+  column_vector xaxis(2);
+  xaxis(0) = 1.0;
+  xaxis(1) = 0.0;
+
+  column_vector origin(2);
+  origin(0) = 0.0;
+  origin(1) = 0.0;
+
+  column_vector yaxis(2);
+  yaxis(0) = 0.0;
+  yaxis(1) = 1.0;
+
+  column_vector d(2);
+  d(0) = 1.0;
+  d(1) = 1.0;
+  
+  double theta = get_angle(xaxis, origin, d);
+  cout << "theta = " << theta*180/PI << "\n";
+  double epsilon = 0.0001;
+  double target = -45.0;
+  BOOST_CHECK(abs((theta * 180 /PI) - target) < epsilon);
+
+  BOOST_CHECK(true);
+}
+
+
 BOOST_AUTO_TEST_CASE( my_test )
 {
   TriLadder tl(LADDER_NODES,

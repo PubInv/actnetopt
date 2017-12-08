@@ -37,6 +37,9 @@ void print_vec(column_vector& vec)
     std::cout << '\n';
 }
 
+template <typename T> int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
 
 void physical_to_viewport(double px,double py,double *vx, double *vy);
 void viewport_to_physical(double px,double py,double *vx, double *vy);
@@ -188,6 +191,7 @@ column_vector normalize(column_vector v) {
 }
 
 // This is to compute the SIGNED Angle between A to B to C (move C into A).
+// I think this is computing the clockwise angle.
 double get_angle(column_vector a, column_vector b, column_vector c) {
   column_vector Va = (a-b);
   column_vector Vc = (c-b);
@@ -290,6 +294,83 @@ column_vector TriLadder::compute_single_derivative_c(column_vector cur_coords[],
   d(0) = dx*dtheta;
   d(1) = dy*dtheta;
   return d;
+}
+
+column_vector TriLadder::compute_external_effector_derivative_c(column_vector cur_coords[],
+						  int edge_number) {
+  // First, let us set up our variables...
+  // This nomenclature matches the paper "OnSimplePlanarVariableGeomertyTrusses"
+  // e is the end effector
+  column_vector en = cur_coords[goal_nodes[0]];
+  double enx = en(0);
+  double eny = en(1);
+
+  // let P be the joint about which we are rotating by changing e
+  // let M be the directly moved joint.
+  // let S be the "stable" joint connected to M by e.
+
+  int e = edge_number+1;
+  int M = large_node(e);
+  int S = small_node(e);
+  int P = (M+S)/2;
+  // note these nodes should be three-in-a-row
+  cout << "S,P,M:" << S << " " << P << " " << M << "\n";
+
+  column_vector m = cur_coords[M];
+  column_vector p = cur_coords[P];
+  column_vector s = cur_coords[S];  
+    
+  double x = cur_coords[P](0);
+  double y = cur_coords[P](1);
+  
+  double a = distance_2d(s,p);
+  double b = distance_2d(s,m);
+  double c = distance_2d(p,m);
+
+  // f is just a name for "factor"...
+  // f0 is just a placeholder
+  // Unfortunately, we need to compute the sign of this...
+  // We should be able to do this based on the sign of < SPM
+  double spm = -get_angle(s,p,m);
+  double f0 = (a*a + c*c - b*b)/ (4*a*a * c*c);
+  double f = b / (a*c*sqrt(1 - f0));
+
+  f = f * sgn(spm);
+
+  cout << "f = " << f << "\n";
+
+  // theta is angle about P of S into M
+  // I worked the math in that paper out based on anticlockwise angles!
+  //  double theta = -get_angle(s,p,m);
+  column_vector xaxis(2);
+  xaxis(0) = 10.0;
+  xaxis(1) = 0.0;
+
+  column_vector pivot_to_en = en - p;
+  cout << "en :" << en << "\n";    
+  cout << "pivot_to_en :" << pivot_to_en << "\n";
+  cout << "p :" << p << "\n";  
+  double theta = -get_angle(xaxis+p,p,en);
+  
+  double stheta = sin(theta);
+  double ctheta = cos(theta);
+
+  cout << "theta :" << theta*180/PI << "\n";
+  cout << "stheta :" << stheta << "\n";
+  cout << "ctheta :" << ctheta << "\n";
+
+  double xd = (enx - x);
+  double yd = (eny - y);
+  cout << "xd, yd" << xd << "," << yd << "\n";
+
+  // d_e_l is the "partial derivative of e with respect to l"
+  column_vector d_e_l(2);
+  // I think this is right, but I don't know what was wrong with my reasoning.
+  //  d_e_l(0) = f * (-xd * stheta + -yd * ctheta);
+  //  d_e_l(1) = f * (xd * ctheta + - yd * stheta);
+  d_e_l(0) = f * (-yd );
+  d_e_l(1) = f * (xd);
+  return d_e_l;
 }
 
 // I think this is the form actually required by functions such as find_min_box_constrained

@@ -16,6 +16,7 @@
 \SetWatermarkLightness{0.95}
 
 \DeclareMathOperator{\atantwo}{atan2}
+\DeclareMathOperator{\sign}{sign}
 
 % \geometry{letter} % or letter or a5paper or ... etc
 % \geometry{landscape} % rotated page geometry
@@ -42,15 +43,15 @@
 
 A {\em variable geometry truss} is a truss in which changes shape by means of the change of the length of members, in contrast
 to many robot arms which change joint angles. We call a member which can change length an {\em actuator}.
-A truss constructed purely by starting with a triangle and and repeatedly adding two members and a new joint to one side of an existing triangle
+A truss constructed purely by starting with a triangle and repeatedly adding two members and a new joint to one side of an existing triangle
 to form a new triangle is a {\em simple truss}. This paper
 is concerned only with simple planar trusses. In particular, we focus on trusses isomorphic to the Warren truss (e.g., an unbranching configuration of triangles.)
 Furthermore, although the world {\em truss} connotes forces and structural analysis,
-we are concerned purely with geometry. Altough motivated by robotics, we assume that our trusses and actuators are strong enough that
+we are concerned purely with geometry. Although motivated by robotics, we assume that our trusses and actuators are strong enough that
 we need not consider the forces acting upon the truss---in other words, we are treating it as mechanism and not a machine.
 
 If we imagine a joint, usually at one end of our truss, to be an end effector, 
-he fundamental goal of this paper is to answer the question:
+the fundamental goal of this paper is to answer the question:
 \begin{quote}
   How does a change in length of an actuator change the position of an end effector?
 \end{quote}
@@ -58,13 +59,13 @@ he fundamental goal of this paper is to answer the question:
 \section{Formulation}
 
 A {\em truss} structure is a graph and a set of fixed nodes $T=(G,F)$. $G = (V,E)$. $V$ is a set of nodes or joints. $E$ is a set of lines or members which are 2-element subsets of $V$.
-At least two nodes are condidered to be fixed in space via a set of fixed nodes $F = {(i,x,y) \| i \in V \and x,y \in \mathbb{R}}$.
+At least two nodes are considered to be fixed in space via a set of fixed nodes $F = {(i,x,y) \| i \in V \and x,y \in \mathbb{R}}$.
 
 We number joints from zero and designate them with a subscript. Members are designated by two subscripts, naming the joints they connect.
 
-A configuration function mapping each member of a truss structure to a non-negative length. $C: V \times V \mapsto \mathbb{R}$.
+A {\em configuration} is a function mapping each member of a truss structure to a non-negative length. $C: V \times V \mapsto \mathbb{R}$.
 
-A geometry is a placement of each joint in the Cartesian plane. $G: V \mapsto \mathbb{R} \times \mathbb{R} $.
+A {\em geometry} is a placement of each joint in the Cartesian plane. $G: V \mapsto \mathbb{R} \times \mathbb{R} $.
 
 A {\em simple truss} is a truss constructed from a triangle by adding a single joint and two members to a side repetitively.
 A {\em Warren truss} is an unbranched simple truss, which is isomorphic to a truss that is a single chain of equilateral triangles.
@@ -126,70 +127,9 @@ whose position is given by $(x,y)$. $\theta$ is the angle of the vector from the
 This rotation applies to the triangle defined by three joints: $\triangle i-1,i,e$. Not that this triangle doe not exist as a physical
 structure in the truss. This rotation about a point can be expressed as a matrix $M$:
 
-\[
-M = 
-\begin{bmatrix}
-    \cos{\theta} & -\sin{\theta} & -x \cdot \cos{\theta} + x + y \cdot \sin{\theta}  \\
-    \sin{\theta} & \cos{\theta} & -x \cdot \sin{\theta} - y \cdot \cos{\theta} + y  \\
-    0 & 0 & 1 & 
-\end{bmatrix}
-\]
-
-such that:
-\[
-M \begin{bmatrix}
-           e_x \\
-           e_y \\
-           1
-         \end{bmatrix} = \begin{bmatrix}
-           e_x' \\
-           e_y' \\
-           1
-         \end{bmatrix}
-\]
-where $(e_x',e_y')$ is the new position of $e$ after the rotation by $theta$. Multiplying this out:
-
-\[
-\begin{bmatrix}
-           e_x' \\
-           e_y' \\
-         \end{bmatrix}
-=
-\begin{bmatrix}
-           e_x \cos{\theta} + -e_y \sin{\theta}  + -x\cos{\theta} + x + y \sin{\theta} \\
-           e_x \sin{\theta} + e_y \cos{\theta} + -x\sin{\theta} + - y \cos{\theta} + y \\
-         \end{bmatrix}
-\]
-Collecting terms:
-\[
-\begin{bmatrix}
-           e_x' \\
-           e_y' \\
-         \end{bmatrix}
-=
-\begin{bmatrix}
-           (e_x  - x) \cos{\theta} + (y - e_y)\sin{\theta}  +  x  \\
-           (e_x - x ) \sin{\theta} + (e_y - y)\cos{\theta} +  y \\
-         \end{bmatrix}
-\]
-This can be easily differentiated with respect to $\theta$:
-
-
-\[
-\frac{\partial e}{\partial \theta} = \begin{bmatrix}
-           \frac{\partial e_x}{\partial \theta} \\
-           \frac{\partial e_y}{\partial \theta} \\
-         \end{bmatrix} = \begin{bmatrix}
-           -(e_x  - x) \sin{\theta} + -(e_y -y)\cos{\theta}  \\
-           (e_x - x ) \cos{\theta} + -(e_y - y)\sin{\theta}  \\
-         \end{bmatrix}
-\]
-
-As we might expect, the magnitude of this vector depends on the distance from the pivot joint $(x,y)$ and the position of the end effector
-$(e_x,e_y)$ and the direction depends on the direction of the vector from the pivot joint to the end effector, $\theta$.
-
-By using the law of cosines, where $a = \|\overrightarrow{n-2,n-1}\|, b = \|\overrightarrow{n-2,n}\| = l_{i,i-2}, c = \|\overrightarrow{n-1,n}\| $  ,
-where $b$ is the member opposite the pivot joint $n-1$ which changes the angle $\angle n-2,n-1,n = \phi_{i-1}$.
+By using the law of cosines, where $a = \|\overrightarrow{n-2,n-1}\|, b = \|\overrightarrow{n-2,n}\| = l_{i,i-2}, c = \|\overrightarrow{n-1,n}\| $,
+where $b$ is the member opposite the pivot joint $n-1$ which changes the angle $\angle n-2,n-1,n = \phi_{i-1}$. In other words, $\phi$ is a signed angle measure
+$n-2$ moved into $n$, with positive representing anti-clockwise.
 \[
 \cos{\phi_{i-1}} = \frac{a^2 - b^2 + c^2}{2 a c}
 \]
@@ -200,20 +140,39 @@ Using Woflram Alpha to differentiate this, we obtain:
 \frac{\partial \phi_{i-1}}{\partial l_{i,i-2}} = \frac{b}{ac\sqrt{1 - \frac{(a^2 + c^2 - b^2)^2}{4a^2c^2}}}
 \]
 
-So, by the chain rule
+This derivation loses the sign information, which we recover by considering whether $S = \sign{\phi}$.
+
+The change in the end effector is always perpendicular to the drawn from the pivot joint to the effector and proportional to its length.
+An alternative way of looking at this is that the result should be orthogonal to the vector
+\[
+\begin{bmatrix}
+           (e_x  - x) \\
+           (e_y - y)  \\
+\end{bmatrix}
+\]
+In other words:
+\[
+S \cdot
+\begin{bmatrix}
+           - (e_y  - y) \\
+           (e_x - x)  \\
+\end{bmatrix}
+\]
+With the sign $S$ is negative if $\phi$ is clockwise. $\phi$ cannot be zero or equal or exceed $\pi$ in a physical machine is excluded for that reason.
+
+Since the change in $\phi$ is equal to the change in $\theta$, we can use the chain rule:
 
 \[
 \frac{\partial e}{\partial  l_{i,i-2}} = \begin{bmatrix}
            \frac{\partial e_x}{\partial l_{i,i-2}} \\
            \frac{\partial e_y}{\partial l_{i,i-2}} \\
-         \end{bmatrix} = \frac{b}{ac\sqrt{1 - \frac{(a^2 + c^2 - b^2)^2}{4a^2c^2}}} \begin{bmatrix}
-           -(e_x  - x) \sin{\theta} + -(e_y -y)\cos{\theta}  \\
-           (e_x - x ) \cos{\theta} + -(e_y - y)\sin{\theta}  \\
+         \end{bmatrix} = \frac{Sb}{ac\sqrt{1 - \frac{(a^2 + c^2 - b^2)^2}{4a^2c^2}}} \begin{bmatrix}
+           -(e_y -y)  \\
+           (e_x - x )  \\
          \end{bmatrix}
 \]
 
 So this is a closed-form expression for the change in the position for any external member $i,i-2$ we choose.
-
 
 \section{Moving an Internal Member}
 
@@ -231,15 +190,15 @@ The motion of each point, however, is a pure translation.
 \end{figure}
 
 Given that we are dealing with infinitessimal motion, the partial derivative of $C$ is easy
-because it must be at right angles to $\vec{AC}$. Let $\theta$ be the anticlockwise angle $AC$ makes with the $x$-axis.
+because it must be at right angles to $\vec{AC}$. Let $\rho$ be the anticlockwise angle $AC$ makes with the $x$-axis.
 
 \[
 \frac{\partial C}{\partial  l_{BC}} = \begin{bmatrix}
            \frac{\partial C_x}{\partial l_{BC}} \\
            \frac{\partial C_y}{\partial l_{BC}} \\
          \end{bmatrix} = \begin{bmatrix}
-           \sin{\theta}  \\
-           \cos{\theta} \\
+           \sin{\rho}  \\
+           \cos{\rho} \\
          \end{bmatrix}
 \]
 
@@ -327,8 +286,8 @@ partial derivative of the end effector $e$.
            \frac{\partial D_y}{\partial l_{BC}} \\
 \end{bmatrix}
 = \begin{bmatrix}
-           \sin{\theta}  \\
-           \cos{\theta} \\
+           \sin{\rho}  \\
+           \cos{\rho} \\
          \end{bmatrix}
  +
  \begin{bmatrix}
@@ -376,16 +335,51 @@ partial derivative of the end effector $e$.
   So we have:
   
     \[
-    \frac{\partial \rho}{ \partial l_{BC}} = \frac{ (D_x - C_x)(\sin{\psi} -\sin{\theta})
-      - (D_y - C_y)(\cos{\psi} - \cos{\theta})}
+    \frac{\partial \rho}{ \partial l_{BC}} = \frac{ (D_x - C_x)(\sin{\psi} -\sin{\rho})
+      - (D_y - C_y)(\cos{\psi} - \cos{\rho})}
   {(D_y - C_y)^2 + (D_x - C_x)^2}
   \]
 
   The change to the end effector is the composition of the translation of the midpoint and
   the rotaion about the midpoint by this angle.
 
-  I now should check this by making graphs of this against reasonalbe values. This is
-  probably best done with a computer program. Is it better to do this interactively or to produce a plot?
+  Now we can apply our basic rotation about a point formula:
+
+  
+\[
+\frac{\partial e}{\partial \theta} = \begin{bmatrix}
+           \frac{\partial e_x}{\partial \theta} \\
+           \frac{\partial e_y}{\partial \theta} \\
+         \end{bmatrix} = \begin{bmatrix}
+           -(e_x  - x) \sin{\theta} + -(e_y -y)\cos{\theta}  \\
+           (e_x - x ) \cos{\theta} + -(e_y - y)\sin{\theta}  \\
+         \end{bmatrix}
+\]
+
+where $x,y$ is the point of rotation. In this case, we simply add the contributions due to the rotation
+and the translation.
+
+\begin{equation} \label{eq1}
+\begin{split}
+\frac{\partial e}{\partial l_{BC}} = 
+\frac{\partial e}{\partial \rho} \frac{\partial \rho}{ \partial l_{BC}} = & \\
+ & \frac{ (D_x - C_x)(\sin{\psi} -\sin{\rho})
+      - (D_y - C_y)(\cos{\psi} - \cos{\rho})}
+  {(D_y - C_y)^2 + (D_x - C_x)^2} \cdot \\
+\begin{bmatrix}
+           -(e_x  - P_x) \sin{\rho} + -(e_y - P_y)\cos{\rho}  \\
+           (e_x - P_x ) \cos{\rho} + -(e_y - P_y)\sin{\rho}  \\
+         \end{bmatrix}
+\end{split}
+\end{equation}
+
+\section{Testing}
+
+The best way to test this is to build a diagram that draws the vector $\frac{\partial e}{\partial l_{BC}}$ at at the center
+of each edge $\vec{BC}$. This should allow both the direction and magnintude to be visualized in a reasonable way.
+We could call this a {\em delta diagram}.
+
+  
 
 
 \section{References}

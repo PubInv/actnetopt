@@ -122,6 +122,11 @@ double compute_single_derivative_dtheta(column_vector cur_coords[],
 
 column_vector compute_single_derivative_c(column_vector cur_coords[],
 				   int edge_number);
+
+column_vector compute_external_effector_derivative_c(column_vector cur_coords[],
+				   int edge_number);
+ 
+ 
  
  
 // I think this is the form actually required by functions such as find_min_box_constrained
@@ -131,6 +136,8 @@ column_vector derivative (const column_vector& m);
 };
 
 typedef enum { CW, CCW } Chirality;
+
+double get_angle(column_vector a, column_vector b, column_vector c);
 
 class FindCoords {
 public:
