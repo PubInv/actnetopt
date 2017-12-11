@@ -24,6 +24,8 @@ void viewport_to_physical(double px,double py,double *vx, double *vy);
 #define MEDIAN 1.5
 #define INITIAL 1.5
 
+#define USE_DERIVATIVES 0
+
 void get_rcoords(column_vector v,int* x,int* y) {
        double px0 = v(0);
        double py0 = v(1);
@@ -39,6 +41,7 @@ class Invert {
 public:
 
   TriLadder *an;
+  static TriLadder *cur_an;  
   Invert() {
   }
   
@@ -48,11 +51,20 @@ public:
   // For the purposes of the paper I will call this the "simple distance score" or sds.
   double operator() ( const column_vector& ds) const
   {
+    cur_an = an;
+    return objective(ds);
+  }
 
+  void set_cur_an() {
+    cur_an = an;
+  }
+  
+  static double objective(const column_vector& ds) {
+    if (debug) std::cout << "CUR_AN " << cur_an << "\n";
     if (debug) std::cout << "INPUTS" << std::endl;
-    for (int i = 0; i < an->var_edges; ++i) {
+    for (int i = 0; i < cur_an->var_edges; ++i) {
           if (debug) std::cout << i << " : " << ds(i) << std::endl;
-	  an->distance(i+1) = ds(i);
+	  cur_an->distance(i+1) = ds(i);
     }
 
     if (debug) std::cout << "DISTANCES" << std::endl;
@@ -60,17 +72,16 @@ public:
     column_vector coords[LADDER_NODES];
 
     // If I don't change an here, I'm not changing the coords!!
-    find_all_coords(an,coords);
-    for(int i = 0; i < an->num_nodes; i++) {
+    find_all_coords(cur_an,coords);
+    for(int i = 0; i < cur_an->num_nodes; i++) {
       //      std::cout << " d["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
     }
-
     
     double v = 0.0;
-    for(int i = 0; i < an->goal_nodes.size(); i++) {
-      int idx = an->goal_nodes[i];
+    for(int i = 0; i < cur_an->goal_nodes.size(); i++) {
+      int idx = cur_an->goal_nodes[i];
       if (debug) std::cout << "idx " <<  idx  << std::endl;      
-      column_vector g = an->goals[i];
+      column_vector g = cur_an->goals[i];
       column_vector c = coords[idx];      
       column_vector x(2);
       x(0) = g(0);
@@ -87,9 +98,22 @@ public:
       v += l2_norm(d);
     }
     if (debug) std::cout << "Invert v " <<  v <<  " " << std::endl;
-    return v;
+    return v;    
   }
+
+  // static double derivative(const column_vector& ds) {
+  //   for(int i = 0; i < an->var_edges; i++) {
+  //     //       column_vector d = an->compute_single_derivative_c(coords,i);
+  //     if ((i % 2) == 0) {
+  // 	column_vector d = an->compute_external_effector_derivative_c(coords,i);
+  // 	cout << "deriv " << i << " :\n";
+  //     } else {
+  //     }
+  //   }
+  
 };
+
+TriLadder *Invert::cur_an = 0;
 
 
 void solve_inverse_problem(TriLadder *an) {
@@ -108,19 +132,32 @@ void solve_inverse_problem(TriLadder *an) {
   
   Invert inv;
   inv.an = an;
+  inv.set_cur_an();
 
   int n = an->var_edges;
 
-  // Inv is the objective funciton/object. It computes didstance for goal node.
-  find_min_bobyqa(inv, 
-		  sp, 
-		  (n+1)*(n+2)/2,    // number of interpolation points
-		  uniform_matrix<double>(n,1, LOWER_BOUND),  // lower bound constraint
-		  uniform_matrix<double>(n,1, UPPER_BOUND),   // upper bound constraint
-		  INITIAL/5,    // initial trust region radius (rho_begin)
-		  1e-6,  // stopping trust region radius (rho_end)
-		  10000   // max number of objective function evaluations
-		  );
+  if (!USE_DERIVATIVES) {
+    // Inv is the objective funciton/object. It computes didstance for goal node.
+    find_min_bobyqa(inv, 
+		    sp, 
+		    (n+1)*(n+2)/2,    // number of interpolation points
+		    uniform_matrix<double>(n,1, LOWER_BOUND),  // lower bound constraint
+		    uniform_matrix<double>(n,1, UPPER_BOUND),   // upper bound constraint
+		    INITIAL/5,    // initial trust region radius (rho_begin)
+		    1e-6,  // stopping trust region radius (rho_end)
+		    10000   // max number of objective function evaluations
+		    );
+  } else {
+    find_min_box_constrained(
+			     lbfgs_search_strategy(10),  
+			     objective_delta_stop_strategy(1e-9),
+			     *Invert::objective,
+			     *Invert::objective,
+			     sp,
+			     uniform_matrix<double>(n,1, LOWER_BOUND),  // lower bound constraint
+			     uniform_matrix<double>(n,1, UPPER_BOUND)   // upper bound constraint
+			     );
+  }
   cout << "bobyqa solution:\n" << sp << endl;
   std::cout << "inv(x) " << inv(sp) << std::endl;    
 
@@ -166,6 +203,7 @@ int mainx(TriLadder *an,column_vector* coords)
 	  find_all_coords(an,coords);
 	  Invert inv;
 	  inv.an = an;
+	  inv.set_cur_an();
 	  column_vector sp(an->var_edges);
 	  for (int i = 0; i < an->var_edges; i++) {
 	    sp(i) = an->distance(i + 1);
