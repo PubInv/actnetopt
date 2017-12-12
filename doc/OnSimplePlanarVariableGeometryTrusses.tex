@@ -118,26 +118,29 @@ rapidly in response to a minute change in different members.
 
 \begin{figure}
   \centering
-  \includegraphics[width=\textwidth]{Diagram for Derivatives of Ladder.png}
-  \caption{A Trusss Problem}  
+  \includegraphics[width=\textwidth]{External_angle_Change.png}
+  \caption{A Trusss Problem with Change to an External Member Length}  
 \end{figure}
 
-The fundamental observation is that for an external member $(i,i-2)$, a change in length generates a rotation $\theta$ about joint $n-1$
-whose position is given by $(x,y)$. $\theta$ is the angle of the vector from the pivot point to the end-effector with the $x$-axis.
-This rotation applies to the triangle defined by three joints: $\triangle i-1,i,e$. Not that this triangle doe not exist as a physical
-structure in the truss. This rotation about a point can be expressed as a matrix $M$:
+The fundamental observation is that for an external member $(C,A)$, a change in length generates a rotation $\theta$ about joint $B$
+whose position is given by $(B_x,B_y)$. $\theta$ is the angle of the vector from the pivot point $B$ to the end-effector $E$ with the $x$-axis.
+This rotation applies to the triangle defined by three joints: $\triangle B,C,E$. Not that this triangle doeS not exist as a physical
+structure in the truss. 
 
-By using the law of cosines, where $a = \|\overrightarrow{n-2,n-1}\|, b = \|\overrightarrow{n-2,n}\| = l_{i,i-2}, c = \|\overrightarrow{n-1,n}\| $,
-where $b$ is the member opposite the pivot joint $n-1$ which changes the angle $\angle n-2,n-1,n = \phi_{i-1}$. In other words, $\phi$ is a signed angle measure
-$n-2$ moved into $n$, with positive representing anti-clockwise.
+By using the law of cosines, where $a = \|\overrightarrow{A,B}\|, b = \|\overrightarrow{A,C}\|, c = \|\overrightarrow{B,C}\| $,
+where $b$ is the member opposite the pivot joint $B$ which changes the angle $ \phi_{i-1} = \angle ABC $. In other words, $\phi$ is a signed angle measure
+$BA$ moved into $BC$, with positive representing anti-clockwise.
 \[
-\cos{\phi_{i-1}} = \frac{a^2 - b^2 + c^2}{2 a c}
+\cos{\phi} = \frac{a^2 - b^2 + c^2}{2 a c}
 \]
-
+or
+\[
+\phi = \arccos{\frac{a^2 - b^2 + c^2}{2 a c}}
+\]
 Using Woflram Alpha to differentiate this, we obtain:
 
 \[
-\frac{\partial \phi_{i-1}}{\partial l_{i,i-2}} = \frac{b}{ac\sqrt{1 - \frac{(a^2 + c^2 - b^2)^2}{4a^2c^2}}}
+\frac{\partial \phi}{\partial b} = \frac{b}{ac\sqrt{1 - \frac{(a^2 + c^2 - b^2)^2}{4a^2c^2}}}
 \]
 
 This derivation loses the sign information, which we recover by considering whether $S = \sign{\phi}$.
@@ -163,18 +166,226 @@ With the sign $S$ is negative if $\phi$ is clockwise. $\phi$ cannot be zero or e
 Since the change in $\phi$ is equal to the change in $\theta$, we can use the chain rule:
 
 \[
-\frac{\partial e}{\partial  l_{i,i-2}} = \begin{bmatrix}
-           \frac{\partial e_x}{\partial l_{i,i-2}} \\
-           \frac{\partial e_y}{\partial l_{i,i-2}} \\
+\frac{\partial e}{\partial  b} = \begin{bmatrix}
+           \frac{\partial e_x}{\partial b} \\
+           \frac{\partial e_y}{\partial b} \\
          \end{bmatrix} = \frac{Sb}{ac\sqrt{1 - \frac{(a^2 + c^2 - b^2)^2}{4a^2c^2}}} \begin{bmatrix}
            -(e_y -y)  \\
            (e_x - x )  \\
          \end{bmatrix}
 \]
 
-So this is a closed-form expression for the change in the position for any external member $i,i-2$ we choose.
+So this is a closed-form expression for the change in the position of an end effector for any external member $i,i-2$ we choose. If we then know how the
+scoring functions changes as the end effector moves, we can compute the change in the scoring functions as we change $b = \| AC \|$, which is what
+we need for numeric optimization.
 
 \section{Moving an Internal Member}
+
+
+In the Internal Member Length change diagram, $\angle ABC = \beta $, $\angle CBD = \psi$, $\angle BCD = \chi$,
+$\angle ACB = \gamma$, $\angle ADC \delta$, and $\angle BAC = \alpha$. The lengths are marked $a,b,c,f,g$, with $a$ being opposite node $A$ and a diagonal
+of the quadrilateral $ABDC$.
+
+
+
+
+Furthermore, $\angle ABD = \beta + \psi$, and $\angle ACD = \gamma + \chi$.
+
+The absolute angle between the line between the fixed nodes $A$ and $B$ and the $x$-axis is $\rho$ (counting positive as anticlockwise from the $x$-axis.)
+Both $A$ and $B$ are considered fixed, but both $C$ and $D$ move as $a$ changes. $D$ rotates about $B$ and $C$ rotatest about $A$.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.7\textwidth]{Internal_angle_change.png}
+  \caption{A Trusss Problem with Change to an Internal Member Length}  
+\end{figure}
+
+
+Because the member $DC$ does not change its length, we conceptualize the impact of a change to length $a$ as translating  between $C$ and $D$ and
+rotating $BC$ about $M$. By knowing the change in the absolute rotation and the change in the position of $M$ as $a$ changes infintessimally, we know how the
+end effector $E$ changes.
+
+
+We can compute $\frac{\partial \beta}{\partial a}$ directly (using Wolfram Alpha) from $\phi$:
+\[
+\beta = \arccos{\frac{a^2 - b^2 + c^2}{2 a c}}
+\]
+
+\[
+\frac{\partial \beta}{\partial a} =
+-\frac{\frac{1}{c} - \frac{a^2 - b^2 + c^2}{2 a^2 c}}
+{\sqrt{1 - \frac{(a^2 - b^2 + c^2)^2}{4 a^2 c^2}}}
+\]
+
+Calculating the same way for $\alpha$ in order to have $C$
+\[
+\alpha = \arccos{\frac{-a^2 +  b^2 + c^2}{2 b c}}
+\]
+
+\[
+\frac{\partial \alpha}{\partial a} =
+\frac{a}
+{bc \sqrt{1 - \frac{(-a^2 + b^2 + c^2)^2}{4 b^2 c^2}}}
+\]
+
+\[ \gamma = \pi - (\alpha + \beta) \]
+
+Now we compute $\chi$ from the law of cosines:
+\[
+\chi = \arccos{\frac{a^2 - f^2 + g^2}{2 a g}}
+\]
+
+\[
+\frac{\partial \chi}{\partial a} =
+-\frac{\frac{1}{g} - \frac{a^2 - f^2 + g^2}{2 a^2 g}}
+{\sqrt{1 - \frac{(a^2 - f^2 + g^2)^2}{4 a^2 g^2}}}
+\]
+
+
+\[
+\begin{bmatrix}
+  C_x \\
+  C_y \\
+\end{bmatrix} =
+\begin{bmatrix}
+ A_x + b \cos{(\rho - \alpha)} \\
+ A_y + b \sin{(\rho - \alpha)} \\
+\end{bmatrix}
+\]
+
+Taking the derivative of this with respect to $a$,
+
+\[
+\begin{bmatrix}
+  \frac{\partial C_x}{\partial a} \\
+  \frac{\partial C_y}{\partial a} \\
+\end{bmatrix} =
+\begin{bmatrix}
+ 0 + \frac{\partial b \cos{(\rho - \alpha)}}{\partial a} \\
+ 0 + \frac{\partial b \sin{(\rho - \alpha)}}{\partial a} \\
+\end{bmatrix} =
+\begin{bmatrix}
+b \frac{a\sin{(\rho - \alpha)}}
+{bc \sqrt{1 - \frac{(-a^2 + b^2 + c^2)^2}{4 b^2 c^2}}}
+  \\
+- b \frac{a\cos{(\rho - \alpha)}}
+{bc \sqrt{1 - \frac{(-a^2 + b^2 + c^2)^2}{4 b^2 c^2}}}
+  \\
+\end{bmatrix} =
+\frac{a}{c \sqrt{1 - \frac{(-a^2 + b^2 + c^2)^2}{4 b^2 c^2}}}
+\begin{bmatrix}
+ \sin{(\rho - \alpha)}  \\
+- \cos{(\rho - \alpha)}  \\
+\end{bmatrix}
+\]
+
+
+The angle $\theta$ between $CD$ and the $x$-axis is therefore given by:
+\begin{align*}
+  \theta &= \\
+  (\rho - \alpha) + (\pi - (\chi + \gamma)) &= \\
+\rho + \pi - (\alpha + \chi + (\pi - (\alpha + \beta)) &= \\
+\rho + \pi - (\chi + (\pi  -\beta))  &= \\
+\rho + -\chi + \beta
+\end{align*}
+We seek $\frac{\partial \theta}{\partial a}$.
+
+\[
+\frac{\partial \theta}{\partial a} = 0 - \frac{\partial \chi}{\partial a} +
+\frac{\partial \beta}{\partial a} =
+\frac{\frac{1}{c} - \frac{a^2 - b^2 + c^2}{2 a^2 c}}
+{\sqrt{1 - \frac{(a^2 - b^2 + c^2)^2}{4 a^2 c^2}}}
+-\frac{\frac{1}{g} - \frac{a^2 - f^2 + g^2}{2 a^2 g}}
+{\sqrt{1 - \frac{(a^2 - f^2 + g^2)^2}{4 a^2 g^2}}}
+\]
+
+Now $E$ is simply a translation by $\frac{\partial C}{\partial a}$ by a rotation
+about $C$, which as we have previously shown
+
+\[
+\frac{\partial e}{\partial  a} = 
+\begin{bmatrix}
+  \frac{\partial C_x}{\partial a}  \\
+  \frac{\partial C_y}{\partial a} \\
+  \end{bmatrix}
+ +
+(\frac{\frac{1}{c} - \frac{a^2 - b^2 + c^2}{2 a^2 c}}
+{\sqrt{1 - \frac{(a^2 - b^2 + c^2)^2}{4 a^2 c^2}}}
+-\frac{\frac{1}{g} - \frac{a^2 - f^2 + g^2}{2 a^2 g}}
+{\sqrt{1 - \frac{(a^2 - f^2 + g^2)^2}{4 a^2 g^2}}})
+\begin{bmatrix}
+           -(e_y -C_y)  \\
+           (e_x - C_x )  \\
+         \end{bmatrix}
+\]
+
+\[
+\frac{\partial e}{\partial  a} =
+\frac{a}{c \sqrt{1 - \frac{(-a^2 + b^2 + c^2)^2}{4 b^2 c^2}}}
+\begin{bmatrix}
+ \sin{(\rho - \alpha)}  \\
+- \cos{(\rho - \alpha)}  \\
+\end{bmatrix}
+ +
+\Bigg(\frac{\frac{1}{c} - \frac{a^2 - b^2 + c^2}{2 a^2 c}}
+{\sqrt{1 - \frac{(a^2 - b^2 + c^2)^2}{4 a^2 c^2}}}
+-\frac{\frac{1}{g} - \frac{a^2 - f^2 + g^2}{2 a^2 g}}
+{\sqrt{1 - \frac{(a^2 - f^2 + g^2)^2}{4 a^2 g^2}}}
+\Bigg)
+\begin{bmatrix}
+           -(e_y -C_y)  \\
+           (e_x - C_x )  \\
+         \end{bmatrix}
+\]
+
+
+In computing all of this, one must be very careful to keep the signs straight.
+
+
+
+
+
+
+
+
+\section{Testing}
+
+The best way to test this is to build a diagram that draws the vector $\frac{\partial e}{\partial l_{BC}}$ at at the center
+of each edge $\vec{BC}$. This should allow both the direction and magnintude to be visualized in a reasonable way.
+We could call this a {\em delta diagram}.
+
+  
+
+
+\section{References}
+
+
+
+\end{document}
+
+http://eprints.cs.vt.edu/archive/00000192/01/TR-90-10.pdf
+
+
+https://people.eecs.berkeley.edu/~elghaoui/Teaching/EE227A/lecture6.pdf
+
+http://homes.cs.washington.edu/~sagarwal/aat.pdf
+
+http://zoonek.free.fr/blosxom/R/2012-06-01_Optimization.html
+
+http://docs.mosek.com/modeling-cookbook/cqo.html
+
+// This one looks pretty interesting
+http://ieeexplore.ieee.org/abstract/document/4160811/
+
+https://tspace.library.utoronto.ca/bitstream/1807/14046/1/NQ49815.pdf
+
+
+
+\section{Moving an Internal Member}
+
+Note: I believe the expression for the moving the node is as simple as $\frac{d\rho}{dz} = \frac{1}{\cos{\alpha} L}$, where $\alpha$ is the angle between the rods, and $\rho$ $z$ is the length
+of the changed rod, and $L$ is the length of the moved node $\vec{AC}$. We can then solve for the interior triangle comletely. The final action can be thought of as
+a translation of either $D$ or $C$ and a rotation about that point. This computation will end up using absolute angles (relative to the axes) in it compuation.)
 
 Moving an internal member is slightly more complicated. In a Warren Truss, moving an internal member is in fact
 changing the shape of a parallelogram.  The best way to think of the overall transformation of an end effector is
@@ -182,12 +393,6 @@ to imagine it as both a translation and a rotation of the midpoint of one of the
 
 We need to develop the formulae for the derivatives of the motions of both endpoints and add them together to obtain this.
 The motion of each point, however, is a pure translation.
-
-\begin{figure}
-  \centering
-  \includegraphics[width=\textwidth]{Internal angle change.png}
-  \caption{Internal length change}  
-\end{figure}
 
 Given that we are dealing with infinitessimal motion, the partial derivative of $C$ is easy
 because it must be at right angles to $\vec{AC}$. Let $\rho$ be the anticlockwise angle $AC$ makes with the $x$-axis.
@@ -373,33 +578,3 @@ and the translation.
 \end{split}
 \end{equation}
 
-\section{Testing}
-
-The best way to test this is to build a diagram that draws the vector $\frac{\partial e}{\partial l_{BC}}$ at at the center
-of each edge $\vec{BC}$. This should allow both the direction and magnintude to be visualized in a reasonable way.
-We could call this a {\em delta diagram}.
-
-  
-
-
-\section{References}
-
-
-
-\end{document}
-
-http://eprints.cs.vt.edu/archive/00000192/01/TR-90-10.pdf
-
-
-https://people.eecs.berkeley.edu/~elghaoui/Teaching/EE227A/lecture6.pdf
-
-http://homes.cs.washington.edu/~sagarwal/aat.pdf
-
-http://zoonek.free.fr/blosxom/R/2012-06-01_Optimization.html
-
-http://docs.mosek.com/modeling-cookbook/cqo.html
-
-// This one looks pretty interesting
-http://ieeexplore.ieee.org/abstract/document/4160811/
-
-https://tspace.library.utoronto.ca/bitstream/1807/14046/1/NQ49815.pdf
