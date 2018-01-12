@@ -18,13 +18,13 @@ void physical_to_viewport(double px,double py,double *vx, double *vy);
 void viewport_to_physical(double px,double py,double *vx, double *vy);
 
 
-#define LADDER_NODES 9
+#define LADDER_NODES 10
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
 #define INITIAL 1.5
 
-#define USE_DERIVATIVES 0
+#define USE_DERIVATIVES 1
 
 void get_rcoords(column_vector v,int* x,int* y) {
        double px0 = v(0);
@@ -58,7 +58,8 @@ public:
   void set_cur_an() {
     cur_an = an;
   }
-  
+
+  // This is currently computing the sum of the l2_norm of the goal point quandrances (square of distance).
   static double objective(const column_vector& ds) {
     if (debug) std::cout << "CUR_AN " << cur_an << "\n";
     if (debug) std::cout << "INPUTS" << std::endl;
@@ -97,19 +98,52 @@ public:
       if (debug) std::cout << "Invert d " <<  d(0) <<  "," << d(1) <<  " " << std::endl;      
       v += l2_norm(d);
     }
-    if (debug) std::cout << "Invert v " <<  v <<  " " << std::endl;
+   std::cout << "Invert v " <<  v <<  " " << std::endl;
     return v;    
   }
 
-  // static double derivative(const column_vector& ds) {
-  //   for(int i = 0; i < an->var_edges; i++) {
-  //     //       column_vector d = an->compute_single_derivative_c(coords,i);
-  //     if ((i % 2) == 0) {
-  // 	column_vector d = an->compute_external_effector_derivative_c(coords,i);
-  // 	cout << "deriv " << i << " :\n";
-  //     } else {
-  //     }
-  //   }
+  // compute the derivatives of the objective as the configuration ds.
+  // NOTE: At present this only works with ONE goal node
+  static column_vector derivative(const column_vector& ds) {
+    for (int i = 0; i < cur_an->var_edges; ++i) {
+          if (debug) std::cout << i << " : " << ds(i) << std::endl;
+	  cur_an->distance(i+1) = ds(i);
+    }
+     // If I don't change an here, I'm not changing the coords!!
+    column_vector coords[LADDER_NODES];    
+    find_all_coords(cur_an,coords);
+    column_vector d(cur_an->var_edges);
+    for(int i = 0; i < cur_an->var_edges; i++) {
+      //       column_vector d = an->compute_single_derivative_c(coords,i);
+      if (((i % 2) == 0)) {
+  	column_vector dx = cur_an->compute_external_effector_derivative_c(coords,i);
+	//  	cout << "deriv " << i << " :\n";
+	// Now we have the directional change in terms of the (lone) end_effector.
+	// How does this change the objective function? In some sense it is the inner product
+	// of the the current end effector position with the derivative.
+	// We want to take the inner product, be sure to preserve the sign as negative if pointing the
+	// wrong way.
+	column_vector g = cur_an->goals[0];
+	int idx = cur_an->goal_nodes[0];	
+	column_vector c = coords[idx];
+
+	// Print out these values until we understand what is hapening here.
+	cout << " c, g " << c << " , " << g << "\n";
+	column_vector goal_direction = g - c;
+	cout << " direction " << goal_direction << "\n";	
+	double prod = dot(goal_direction,dx);
+	cout << " product : " << prod << "\n";
+	d(i) = prod;
+      } else {
+	// at present we are not consideing internal nodes, so there derivative is zero, independent of configuration...
+	// possibly I need to make the middle length in order for this to work --- 0 is not right so long as
+	d(i) = 0.0;
+      }
+    }
+    cout << "cur_an->var_edges = " << cur_an->var_edges << "\n";    
+    cout << "d = " << d << "\n";
+    return d;
+  }
   
 };
 
@@ -149,10 +183,11 @@ void solve_inverse_problem(TriLadder *an) {
 		    );
   } else {
     find_min_box_constrained(
-			     lbfgs_search_strategy(10),  
+			     //			     lbfgs_search_strategy(10),
+			     cg_search_strategy(),  			     
 			     objective_delta_stop_strategy(1e-9),
 			     *Invert::objective,
-			     *Invert::objective,
+			     *Invert::derivative,
 			     sp,
 			     uniform_matrix<double>(n,1, LOWER_BOUND),  // lower bound constraint
 			     uniform_matrix<double>(n,1, UPPER_BOUND)   // upper bound constraint
@@ -162,10 +197,10 @@ void solve_inverse_problem(TriLadder *an) {
   std::cout << "inv(x) " << inv(sp) << std::endl;    
 
    for (int i = 0; i < an->var_edges; i++) {
-    std::cout << "distance edge" << i+1 << " :  " << sp(i) << std::endl;
+     if (debug)  std::cout << "distance edge" << i+1 << " :  " << sp(i) << std::endl;
     an->distance(i+1) = sp(i);
   }
-  std::cout << "inv(x) " << inv(sp) << std::endl;  
+   if (debug)  std::cout << "inv(x) " << inv(sp) << std::endl;  
   
 };
 
@@ -208,11 +243,11 @@ int mainx(TriLadder *an,column_vector* coords)
 	  for (int i = 0; i < an->var_edges; i++) {
 	    sp(i) = an->distance(i + 1);
 	  }	  
-	  double final = inv(sp);
-	  std::cout << "inv(x) final : " << final << std::endl;
-	  for(int i = 0; i < an->num_nodes; i++) {
-	    std::cout << " d["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
-	  }
+	  // double final = inv(sp);
+	  // std::cout << "inv(x) final : " << final << std::endl;
+	  // for(int i = 0; i < an->num_nodes; i++) {
+	  //   std::cout << " d["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
+	  // }
 	  // should now deallocate coords
 	}
     }
@@ -382,11 +417,22 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
        //       column_vector d = an->compute_single_derivative_c(coords,i);
        if ((i % 2) == 0) {
 	 column_vector d = an->compute_external_effector_derivative_c(coords,i);
-	 cout << "deriv " << i << " :\n";
-	 print_vec(d);
+	 //	 cout << "deriv " << i << " :\n";
+	 //	 print_vec(d);
 	 int node = an->large_node(i+1);
-	 column_vector tail = (coords[node]+ coords[an->small_node(i+1)])/ 2.0;    
+	 column_vector tail = (coords[node]+ coords[an->small_node(i+1)])/ 2.0;
+       SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);       	 	 
 	 render_arrow(renderer,tail,d+tail);
+       } else if (((i+1) % 4) == 2) {
+	 if ((i+1)+4 < an->var_edges) {
+	 column_vector d = an->compute_internal_effector_derivative_c(coords,i);
+	 cout << "deriv " << i << " :\n";
+	 print_vec(d);	 
+	 int node = an->large_node(i+1);
+	 column_vector tail = (coords[node]+ coords[an->small_node(i+1)])/ 2.0;
+       SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);       	 
+	 render_arrow(renderer,tail,d+tail);
+	 }
        }
      }
 
@@ -493,7 +539,7 @@ void Input::readInput()
 	 x = m_event.button.x;
 	 y = m_event.button.y;
 	 
-	 cout << x << "," << y << "\n";
+	 //	 cout << x << "," << y << "\n";
 
       }
 
@@ -621,11 +667,11 @@ int main( int argc, char* args[] )
 
   mainx(&an,coordsx);
 
-  for(int i = 0; i < an.num_nodes; i++) {
-    cout << "X" <<  i << "\n";
-    print_vec(coordsx[i]);
-  }
-  cout << '\n';
+  // for(int i = 0; i < an.num_nodes; i++) {
+  //   cout << "X" <<  i << "\n";
+  //   print_vec(coordsx[i]);
+  // }
+  // cout << '\n';
   
     SDL_Window* window = NULL;
     window = SDL_CreateWindow

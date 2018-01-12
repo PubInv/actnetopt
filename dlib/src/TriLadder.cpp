@@ -314,7 +314,7 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
   int S = small_node(e);
   int P = (M+S)/2;
   // note these nodes should be three-in-a-row
-  cout << "S,P,M:" << S << " " << P << " " << M << "\n";
+  if (debug) cout << "S,P,M:" << S << " " << P << " " << M << "\n";
 
   column_vector m = cur_coords[M];
   column_vector p = cur_coords[P];
@@ -337,7 +337,7 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
 
   f = f * sgn(spm);
 
-  cout << "f = " << f << "\n";
+  if (debug) cout << "f = " << f << "\n";
 
   // theta is angle about P of S into M
   // I worked the math in that paper out based on anticlockwise angles!
@@ -347,21 +347,21 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
   xaxis(1) = 0.0;
 
   column_vector pivot_to_en = en - p;
-  cout << "en :" << en << "\n";    
-  cout << "pivot_to_en :" << pivot_to_en << "\n";
-  cout << "p :" << p << "\n";  
+  //  cout << "en :" << en << "\n";    
+  //  cout << "pivot_to_en :" << pivot_to_en << "\n";
+  //  cout << "p :" << p << "\n";  
   double theta = -get_angle(xaxis+p,p,en);
   
   double stheta = sin(theta);
   double ctheta = cos(theta);
 
-  cout << "theta :" << theta*180/PI << "\n";
-  cout << "stheta :" << stheta << "\n";
-  cout << "ctheta :" << ctheta << "\n";
+  if (debug) cout << "theta :" << theta*180/PI << "\n";
+  if (debug) cout << "stheta :" << stheta << "\n";
+  if (debug) cout << "ctheta :" << ctheta << "\n";
 
   double xd = (enx - x);
   double yd = (eny - y);
-  cout << "xd, yd" << xd << "," << yd << "\n";
+  if (debug) cout << "xd, yd" << xd << "," << yd << "\n";
 
   // d_e_l is the "partial derivative of e with respect to l"
   column_vector d_e_l(2);
@@ -371,6 +371,97 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
   d_e_l(0) = f * (-yd );
   d_e_l(1) = f * (xd);
   return d_e_l;
+}
+
+column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cur_coords[],
+						  int edge_number) {
+  // This is a preliminary attempt to code the internal derivative from "On Simple Planar Variable Geometry Trusses."
+  // Given it's complexity, I suspect it will take some debugging.
+  // This cannot be understood without reference to the diagram occuring in that paper.
+
+  int e = edge_number+1;
+  int ai = small_node(e);
+  int bi = large_node(e);
+  int ci = bi+1;
+  int di = ci+1;
+
+  cout << "e " << e << "\n";
+  cout << "ai bi ci di " << ai << " " << bi << " " << ci << " " << di << "\n";
+
+  column_vector A = cur_coords[ai];
+  column_vector B = cur_coords[bi];
+  column_vector C = cur_coords[ci];
+  column_vector D = cur_coords[di];    
+  
+  double a = distance_2d(B,C);
+  double b = distance_2d(A,C);
+  double c = distance_2d(A,B);
+  double f = distance_2d(B,D);
+  double g = distance_2d(C,D);
+
+  column_vector en = cur_coords[goal_nodes[0]];
+
+  column_vector X(2);
+  X(0) = 100.0;
+  X(1) = 0.0;
+
+  double rho = get_angle(B,A,X);
+  double alpha = get_angle(C,A,B);
+
+  //  cout << "rho :" << rho*180/M_PI << "\n";
+  //   cout << "alpha :" << alpha*180/M_PI << "\n";      
+
+  
+
+  column_vector rot(2);
+  rot(0) = sin(rho-alpha);
+  rot(1) = -cos(rho-alpha);
+
+  column_vector e_minus_c(2);
+  e_minus_c(0) = -(en(1) - C(1));
+  e_minus_c(1) = (en(0) - C(0));
+
+
+  cout << "rot:" << "\n";
+  print_vec(rot);
+  
+  cout << "e_minus_c:" << "\n";  
+  print_vec(e_minus_c);
+  
+
+  // using capital to represent negated terms...
+  double b_c_A = b*b + c*c - a*a;
+  double a_c_B = a*a + c*c - b*b;
+  double a_g_F = a*a + g*g - f*f;
+
+  cout << "a,b,c,f,g " << a << " " << b << " " << c << " " << f << " " << g << "\n";
+
+  cout << "b_c_A " << b_c_A << "\n";
+
+  cout << "denom " << 4*b*b*c*c << "\n";  
+
+  cout << "LARGER THAN 1.0? " << ((b_c_A*b_c_A) / (4*b*b*c*c)) << "\n";
+  
+
+  double first_coeff = a / (c*sqrt( 1 - ((b_c_A*b_c_A) / (4*b*b*c*c))));
+
+  cout << "first_coeff: " << first_coeff << "\n";  
+
+  
+  // no good way to name these...
+  double nw = 1/c - a_c_B/(2.0*a*a*c);
+  double ne = 1/g - a_g_F/(2.0*a*a*g);  
+  double sw = sqrt(1.0 - (a_c_B*a_c_B)/(4.0*a*a*c*c));
+  double se = sqrt(1.0 - (a_g_F*a_g_F)/(4.0*a*a*g*g));
+
+  double second_coeff = (nw/sw) - (ne/se);
+  cout << "second_coeff: " << second_coeff << "\n";
+  
+
+  // derivative of end effector wrt to change in length a...
+  column_vector d_e_a(2);
+  d_e_a = first_coeff*rot + second_coeff*e_minus_c;
+  return d_e_a;
 }
 
 // I think this is the form actually required by functions such as find_min_box_constrained
@@ -678,18 +769,18 @@ column_vector change_in_third_point(column_vector a,
   // now theta is the angle bpp->m->bp
   // Sadly as always we have to worry about the sign here...
   double dot_product = dot(bpp-mp,bp-mp);
-  cout << "intermediate " << dot_product << "\n";
+  if (debug) cout << "intermediate " << dot_product << "\n";
   
   double distance_product = distance_2d(mp,bp)*distance_2d(mp,bpp);
-  cout << "d " << distance_product << "\n";
+  if (debug) cout << "d " << distance_product << "\n";
 
   bool prod_equal = (dot_product >= distance_product);
   
-  cout << "prod_equal " << prod_equal << "\n";
+  if (debug) cout << "prod_equal " << prod_equal << "\n";
   
   double theta = (dot_product >= distance_product) ? 0.0 : acos(dot(bpp-mp,bp-mp)/(distance_2d(mp,bp)*distance_2d(mp,bpp)));
   
-  cout << "theta :" << theta*180/PI << "\n";
+  if (debug) cout << "theta :" << theta*180/PI << "\n";
   
   column_vector cp(2);
   cp = rotate_point<double>(mp,tc,theta);

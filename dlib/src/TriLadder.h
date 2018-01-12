@@ -125,7 +125,9 @@ column_vector compute_single_derivative_c(column_vector cur_coords[],
 
 column_vector compute_external_effector_derivative_c(column_vector cur_coords[],
 				   int edge_number);
- 
+
+ column_vector compute_internal_effector_derivative_c(column_vector cur_coords[],
+								 int edge_number);
  
  
  
