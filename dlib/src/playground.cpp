@@ -106,10 +106,10 @@ public:
   // NOTE: At present this only works with ONE goal node
   static column_vector derivative(const column_vector& ds) {
     for (int i = 0; i < cur_an->var_edges; ++i) {
-          if (debug) std::cout << i << " : " << ds(i) << std::endl;
-	  cur_an->distance(i+1) = ds(i);
+      if (debug) std::cout << i << " : " << ds(i) << std::endl;
+      cur_an->distance(i+1) = ds(i);
     }
-     // If I don't change an here, I'm not changing the coords!!
+    // If I don't change an here, I'm not changing the coords!!
     column_vector coords[LADDER_NODES];    
     find_all_coords(cur_an,coords);
     column_vector d(cur_an->var_edges);
@@ -128,16 +128,35 @@ public:
 	column_vector c = coords[idx];
 
 	// Print out these values until we understand what is hapening here.
-	cout << " c, g " << c << " , " << g << "\n";
+	//	cout << " c, g " << c << " , " << g << "\n";
 	column_vector goal_direction = g - c;
-	cout << " direction " << goal_direction << "\n";	
+	//	cout << " direction " << goal_direction << "\n";	
 	double prod = dot(goal_direction,dx);
-	cout << " product : " << prod << "\n";
+	//	cout << " product : " << prod << "\n";
 	d(i) = prod;
+      }
+      else if (((i+1) % 4) == 2) {
+      	if ((i+1)+4 < cur_an->var_edges) {
+      	  // at present we are not consideing internal nodes, so there derivative is zero, independent of configuration...
+      	  // possibly I need to make the middle length in order for this to work --- 0 is not right so long as
+      	  column_vector dx = cur_an->compute_internal_effector_derivative_c(coords,i);
+      	  column_vector g = cur_an->goals[0];
+      	  int idx = cur_an->goal_nodes[0];	
+      	  column_vector c = coords[idx];
+
+      	  // Print out these values until we understand what is hapening here.
+      	  cout << " c, g " << c << " , " << g << "\n";
+      	  column_vector goal_direction = g - c;
+      	  cout << " direction " << goal_direction << "\n";	
+      	  double prod = dot(goal_direction,dx);
+      	  cout << " product : " << prod << "\n";
+      	  d(i) = prod;
+      	} else {
+      	  d(i) = 0.0;
+      	}
       } else {
-	// at present we are not consideing internal nodes, so there derivative is zero, independent of configuration...
-	// possibly I need to make the middle length in order for this to work --- 0 is not right so long as
-	d(i) = 0.0;
+      	column_vector prod;
+      	d(i) = 0.0;
       }
     }
     cout << "cur_an->var_edges = " << cur_an->var_edges << "\n";    
@@ -421,18 +440,24 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
 	 //	 print_vec(d);
 	 int node = an->large_node(i+1);
 	 column_vector tail = (coords[node]+ coords[an->small_node(i+1)])/ 2.0;
-       SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);       	 	 
+	 
+	 SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);       	 	 
 	 render_arrow(renderer,tail,d+tail);
-       } else if (((i+1) % 4) == 2) {
+       } else
 	 if ((i+1)+4 < an->var_edges) {
-	 column_vector d = an->compute_internal_effector_derivative_c(coords,i);
-	 cout << "deriv " << i << " :\n";
-	 print_vec(d);	 
-	 int node = an->large_node(i+1);
-	 column_vector tail = (coords[node]+ coords[an->small_node(i+1)])/ 2.0;
-       SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);       	 
-	 render_arrow(renderer,tail,d+tail);
-	 }
+	   if ((i % 4) == 1) {
+	     column_vector d = an->compute_internal_effector_derivative_c(coords,i);
+	 
+	     cout << "deriv " << i << " :\n";
+	     print_vec(d);
+	 
+	     int node = an->large_node(i+1);
+	     column_vector tail = (coords[node]+ coords[an->small_node(i+1)])/ 2.0;
+	 
+	     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);       	 
+	     render_arrow(renderer,tail,d+tail);
+	   }
+       } else {
        }
      }
 

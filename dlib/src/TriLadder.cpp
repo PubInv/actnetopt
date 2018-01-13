@@ -191,7 +191,7 @@ column_vector normalize(column_vector v) {
 }
 
 // This is to compute the SIGNED Angle between A to B to C (move C into A).
-// I think this is computing the clockwise angle.
+// I think this is computing the anticlockwise angle.
 double get_angle(column_vector a, column_vector b, column_vector c) {
   column_vector Va = (a-b);
   column_vector Vc = (c-b);
@@ -408,8 +408,8 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
   double rho = get_angle(B,A,X);
   double alpha = get_angle(C,A,B);
 
-  //  cout << "rho :" << rho*180/M_PI << "\n";
-  //   cout << "alpha :" << alpha*180/M_PI << "\n";      
+  cout << "rho :" << rho*180/M_PI << "\n";
+   cout << "alpha :" << alpha*180/M_PI << "\n";      
 
   
 
@@ -435,32 +435,37 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
   double a_g_F = a*a + g*g - f*f;
 
   cout << "a,b,c,f,g " << a << " " << b << " " << c << " " << f << " " << g << "\n";
-
   cout << "b_c_A " << b_c_A << "\n";
-
   cout << "denom " << 4*b*b*c*c << "\n";  
-
   cout << "LARGER THAN 1.0? " << ((b_c_A*b_c_A) / (4*b*b*c*c)) << "\n";
-  
-
   double first_coeff = a / (c*sqrt( 1 - ((b_c_A*b_c_A) / (4*b*b*c*c))));
 
   cout << "first_coeff: " << first_coeff << "\n";  
-
   
   // no good way to name these...
   double nw = 1/c - a_c_B/(2.0*a*a*c);
-  double ne = 1/g - a_g_F/(2.0*a*a*g);  
   double sw = sqrt(1.0 - (a_c_B*a_c_B)/(4.0*a*a*c*c));
+  double ne = 1/g - a_g_F/(2.0*a*a*g);
   double se = sqrt(1.0 - (a_g_F*a_g_F)/(4.0*a*a*g*g));
 
-  double second_coeff = (nw/sw) - (ne/se);
-  cout << "second_coeff: " << second_coeff << "\n";
-  
+  cout << "nw ne " << nw << " " << ne << "\n";
+
+  // These are the straight calculations, not considering the
+  double dchi_da = -nw/sw;
+  double dbeta_da = -ne/se;
+  cout << "dchi_da: " << dchi_da << "\n";
+  cout << "dbeta_da: " << dbeta_da << "\n";    
+
+  // There is a problem here that chi and beta are not treated
+  // as signed values, but absolute values...but theta must be a signed
+  // value measured against the x axis. I must use the chiratlity to determine a value.
+  double dtheta_da = dchi_da - dbeta_da;
+  cout << "dtheta_da: " << dtheta_da << "\n";
+  print_vec(e_minus_c);
 
   // derivative of end effector wrt to change in length a...
   column_vector d_e_a(2);
-  d_e_a = first_coeff*rot + second_coeff*e_minus_c;
+  d_e_a = first_coeff*rot + dtheta_da*e_minus_c;
   return d_e_a;
 }
 
