@@ -17,6 +17,7 @@
 
 \DeclareMathOperator{\atantwo}{atan2}
 \DeclareMathOperator{\sign}{sign}
+\DeclareMathOperator{\sense}{sense}
 
 % \geometry{letter} % or letter or a5paper or ... etc
 % \geometry{landscape} % rotated page geometry
@@ -288,16 +289,53 @@ The angle $\theta$ between $CD$ and the $x$-axis is therefore given by:
 \rho + \pi - (\chi + (\pi  -\beta))  &= \\
 \rho + -\chi + \beta
 \end{align*}
-We seek $\frac{\partial \theta}{\partial a}$.
+We seek $\frac{\partial \theta}{\partial a}$. However, $\chi$ and $\beta$, computed from $\arccos$,
+are ``interanl angles''. We need to seek absolute orientation.
+
+In computing all of this, one must be very careful to keep the signs straight.
+
+In fact, the cleanest way to keep angles straight is to convert angles quickly from ``internal angles'' between two vectors
+and compute the ``absolute orientation'' or vectors (that is, the angle measure anticlockwise against the $x$-axis.
+
+The computation of $\frac{\partial \theta}{\partial a}$ above should be considered the computation of an
+``absolute orientation''.
+
+We can think of the computation of $\theta = \rho - \chi + \beta$ is a zig zag compuation.
+To find the change in the rotation of $\theta$, we find the change in $\chi$ and then the change in $\beta$.
+
+We will say the ``sense'' of an angle $\angle XYZ$  is clockwise or anticlockwise depending on if the
+smallest turn from $X$ to $Z$ through $Y$ is clockwise or anitclockwise.
 
 \[
-\frac{\partial \theta}{\partial a} = 0 - \frac{\partial \chi}{\partial a} +
-\frac{\partial \beta}{\partial a} =
-\frac{\frac{1}{c} - \frac{a^2 - b^2 + c^2}{2 a^2 c}}
-{\sqrt{1 - \frac{(a^2 - b^2 + c^2)^2}{4 a^2 c^2}}}
--\frac{\frac{1}{g} - \frac{a^2 - f^2 + g^2}{2 a^2 g}}
-{\sqrt{1 - \frac{(a^2 - f^2 + g^2)^2}{4 a^2 g^2}}}
+\sense{\angle XYZ} =
+\begin{cases}
+  0 & \angle XYZ = \pi \\
+      1 & \text{ if } \angle XYZ \text{ is anticlockwise moving } \overrightarrow{Y,X} \text{ into } \overrightarrow{Y,Z} \\
+      -1 & \text{otherwise}
+    \end{cases}
 \]
+
+The orientation $\tau = \overrightarrow{B,C}$ is thus $\rho + -(\pi - \|\beta\|)$ if $\angle ABC$ is clockwise,
+and $\rho + (\pi - \|\beta\|)$ if $\angle ABC$ is anticlockwsie.
+
+The orientation $\theta = \overrightarrow{C,D}$ is thus $\tau + -(\pi - \|\chi\|)$  if $\angle BCD$ is clockwise,
+and $\tau + (\pi - \|\chi\|)$ if $\angle BCD$ is anticlockwise.
+
+\begin{align*}
+\theta &= \rho + (\sense{\angle ABC})(\pi - \|\beta\|) + (\sense{\angle BCD})(\pi -\|\chi\|) \\
+&= \rho + (\sense{\angle ABC})\pi + (\sense{\angle BCD})\pi +  - (\sense{\angle ABC})\|\beta\|  + - (\sense{\angle BCD})\|\chi\|
+\end{align*}
+
+The quantities $\pi$ and $\sense{\angle ABC}$ and $\sense{\angle BCD}$ don't depend on $a$.
+
+\begin{align*}
+\frac{\partial \theta}{\partial a} &= 0 + - (\sense{\angle ABC}) \frac{\partial \beta}{\partial a} +
+- (\sense{\angle BCD})\frac{\partial \chi}{\partial a}  \\
+&= - (\sense{\angle ABC}) \frac{\frac{1}{c} - \frac{a^2 - b^2 + c^2}{2 a^2 c}}
+{\sqrt{1 - \frac{(a^2 - b^2 + c^2)^2}{4 a^2 c^2}}}
++ - (\sense{\angle BCD})\frac{\frac{1}{g} - \frac{a^2 - f^2 + g^2}{2 a^2 g}}
+{\sqrt{1 - \frac{(a^2 - f^2 + g^2)^2}{4 a^2 g^2}}}
+\end{align*}
 
 Now $E$ is simply a translation by $\frac{\partial C}{\partial a}$ by a rotation
 about $C$, which as we have previously shown
@@ -308,11 +346,8 @@ about $C$, which as we have previously shown
   \frac{\partial C_x}{\partial a}  \\
   \frac{\partial C_y}{\partial a} \\
   \end{bmatrix}
- +
-(\frac{\frac{1}{c} - \frac{a^2 - b^2 + c^2}{2 a^2 c}}
-{\sqrt{1 - \frac{(a^2 - b^2 + c^2)^2}{4 a^2 c^2}}}
--\frac{\frac{1}{g} - \frac{a^2 - f^2 + g^2}{2 a^2 g}}
-{\sqrt{1 - \frac{(a^2 - f^2 + g^2)^2}{4 a^2 g^2}}})
++
+\frac{\partial \theta}{\partial a} 
 \begin{bmatrix}
            -(e_y -C_y)  \\
            (e_x - C_x )  \\
@@ -326,23 +361,13 @@ about $C$, which as we have previously shown
  \sin{(\rho - \alpha)}  \\
 - \cos{(\rho - \alpha)}  \\
 \end{bmatrix}
- +
-\Bigg(\frac{\frac{1}{c} - \frac{a^2 - b^2 + c^2}{2 a^2 c}}
-{\sqrt{1 - \frac{(a^2 - b^2 + c^2)^2}{4 a^2 c^2}}}
--\frac{\frac{1}{g} - \frac{a^2 - f^2 + g^2}{2 a^2 g}}
-{\sqrt{1 - \frac{(a^2 - f^2 + g^2)^2}{4 a^2 g^2}}}
-\Bigg)
++
+\frac{\partial \theta}{\partial a} 
 \begin{bmatrix}
            -(e_y -C_y)  \\
            (e_x - C_x )  \\
          \end{bmatrix}
 \]
-
-
-In computing all of this, one must be very careful to keep the signs straight.
-
-
-
 
 
 
@@ -380,201 +405,4 @@ http://ieeexplore.ieee.org/abstract/document/4160811/
 https://tspace.library.utoronto.ca/bitstream/1807/14046/1/NQ49815.pdf
 
 
-
-\section{Moving an Internal Member}
-
-Note: I believe the expression for the moving the node is as simple as $\frac{d\rho}{dz} = \frac{1}{\cos{\alpha} L}$, where $\alpha$ is the angle between the rods, and $\rho$ $z$ is the length
-of the changed rod, and $L$ is the length of the moved node $\vec{AC}$. We can then solve for the interior triangle comletely. The final action can be thought of as
-a translation of either $D$ or $C$ and a rotation about that point. This computation will end up using absolute angles (relative to the axes) in it compuation.)
-
-Moving an internal member is slightly more complicated. In a Warren Truss, moving an internal member is in fact
-changing the shape of a parallelogram.  The best way to think of the overall transformation of an end effector is
-to imagine it as both a translation and a rotation of the midpoint of one of the edges of the parallelogram.
-
-We need to develop the formulae for the derivatives of the motions of both endpoints and add them together to obtain this.
-The motion of each point, however, is a pure translation.
-
-Given that we are dealing with infinitessimal motion, the partial derivative of $C$ is easy
-because it must be at right angles to $\vec{AC}$. Let $\rho$ be the anticlockwise angle $AC$ makes with the $x$-axis.
-
-\[
-\frac{\partial C}{\partial  l_{BC}} = \begin{bmatrix}
-           \frac{\partial C_x}{\partial l_{BC}} \\
-           \frac{\partial C_y}{\partial l_{BC}} \\
-         \end{bmatrix} = \begin{bmatrix}
-           \sin{\rho}  \\
-           \cos{\rho} \\
-         \end{bmatrix}
-\]
-
-To find the partial derivative of the $D$'s motion, we utlize the fact that the lengths of $\vec{BD}$ and $\vec{CD}$ don't change.
-We thus have three lengths and two points, from which the third point ($D$) can be computed. The easily way to do this
-is to assume that the point $B$ is at the origin, and compute the angle of $\vec{BD'}$. This is the sum of the angle $\angle D'BC'$
-which can be obtained from the law of cosines, and the angle of $\vec{BC'}$ with the $x$ axis.
-
-\[
-\angle D'BC' = \arccos{\frac{c^2 + d^2 - b^2}{2cd}}
-\]
-
-\[
-\angle \vec{BC'} = \atantwo( C'_y - B_y ,  C'_x - B_x )
-\]
-
-\[
-\psi = \angle \vec{BD'} = \angle D'BC' + \angle \vec{BC'}
-\]
-
-\[
-\psi = (\arccos{\frac{c^2 + d^2 - b^2}{2cd}} +  \atantwo( C'_y - B _y,  C'_x - B_x))
-\]
-
-\[
-D' = \delta \cdot \begin{bmatrix}
-          \sin{ \angle \vec{BD'} } \\
-          \cos{ \angle \vec{BD'} } \\
-\end{bmatrix} +
-\begin{bmatrix}
-           B_x  \\
-           B_y \\
-\end{bmatrix} =
-\delta \cdot 
-\begin{bmatrix}
-          \sin{ \psi } \\
-          \cos{ \psi } \\
-\end{bmatrix} +
-\begin{bmatrix}
-           B_x  \\
-           B_y \\
-         \end{bmatrix}
-\]
-
-\[
-D' =
-\delta \cdot 
-\begin{bmatrix}
-          \sin{ \psi } \\
-          \cos{ \psi } \\
-\end{bmatrix} +
-\begin{bmatrix}
-           B_x  \\
-           B_y \\
-         \end{bmatrix}
-\]
-
-Given that $\delta$ is the differential change in length, this can be rewritten as derivative:
-
-\[
-\frac{\partial D}{\partial  l_{BC}} = \begin{bmatrix}
-           \frac{\partial D_x}{\partial l_{BC}} \\
-           \frac{\partial D_y}{\partial l_{BC}} \\
-         \end{bmatrix} = \begin{bmatrix}
-           \sin{\psi}  \\
-           \cos{\psi} \\
-\end{bmatrix}
-\]
-
-
-
-Now to understand how a change to the $\vec{BC}$ length effects the end effector, we can
-add the partial derivatives of $C$ and $D$ in order to get the translational change
-to the midpoint $P$ of $\vec{CD}$. Then separately we must compute the change in the angle
-of the vector $\vec{CD}$. These things together will allow us to compute the
-partial derivative of the end effector $e$.
-
-\[
-\frac{\partial P}{\partial  l_{BC}} =
-\frac{\partial C}{\partial  l_{BC}} = \begin{bmatrix}
-           \frac{\partial C_x}{\partial l_{BC}} \\
-           \frac{\partial C_y}{\partial l_{BC}} \\
-         \end{bmatrix} \begin{bmatrix}
-           \frac{\partial D_x}{\partial l_{BC}} \\
-           \frac{\partial D_y}{\partial l_{BC}} \\
-\end{bmatrix}
-= \begin{bmatrix}
-           \sin{\rho}  \\
-           \cos{\rho} \\
-         \end{bmatrix}
- +
- \begin{bmatrix}
-           \sin{\psi}  \\
-           \cos{\psi} \\
-\end{bmatrix}
- \]
-
- Moving the member $\vec{BC}$ in general induces a rotation about $P$ as well.
-
- \[
- \rho = \angle{\vec{CD}} - \angle{\vec{C'D'}}
- \]
-
- \[
- \rho = \angle{\atantwo{D'_y - C'_y}{D'_x - C'_x}}
- \]
-
- Since:
-
- \[
- \frac{d}{dx} \atantwo{g(x)}{f(x)} = \frac{g(x)f'(x) - f(x)g'(x)}{f(x)^2 + g(x)^2}
- \]
- , we have:
-
- 
- 
-\[
-\frac{\partial \rho}{ \partial l_{BC}} = \frac{ (D'_x - C'_x)\frac{\partial (D'_y - C'_y)}{\partial l_{BC}}
-  - (D'_y - C'_y)\frac{\partial (D'_x - C'_x)}{\partial l_{BC}}
-}
-  {(D'_y - C'_y)^2 + (D'_x - C'_x)^2}
-  \]
-
-  I always get confused between differentials and derivatives.  However, if we evaulate this instantaneously,
-  we can replace $D'$ with $D$ and $C'$ with $C$. We already have closed form expressions for the other partials.
-
-  \[
-\frac{\partial \rho}{ \partial l_{BC}} = \frac{ (D'_x - C'_x)\frac{\partial (D'_y - C'_y)}{\partial l_{BC}}
-  - (D'_y - C'_y)\frac{\partial (D'_x - C'_x)}{\partial l_{BC}}
-}
-  {(D'_y - C'_y)^2 + (D'_x - C'_x)^2}
-  \]
-
-  So we have:
-  
-    \[
-    \frac{\partial \rho}{ \partial l_{BC}} = \frac{ (D_x - C_x)(\sin{\psi} -\sin{\rho})
-      - (D_y - C_y)(\cos{\psi} - \cos{\rho})}
-  {(D_y - C_y)^2 + (D_x - C_x)^2}
-  \]
-
-  The change to the end effector is the composition of the translation of the midpoint and
-  the rotaion about the midpoint by this angle.
-
-  Now we can apply our basic rotation about a point formula:
-
-  
-\[
-\frac{\partial e}{\partial \theta} = \begin{bmatrix}
-           \frac{\partial e_x}{\partial \theta} \\
-           \frac{\partial e_y}{\partial \theta} \\
-         \end{bmatrix} = \begin{bmatrix}
-           -(e_x  - x) \sin{\theta} + -(e_y -y)\cos{\theta}  \\
-           (e_x - x ) \cos{\theta} + -(e_y - y)\sin{\theta}  \\
-         \end{bmatrix}
-\]
-
-where $x,y$ is the point of rotation. In this case, we simply add the contributions due to the rotation
-and the translation.
-
-\begin{equation} \label{eq1}
-\begin{split}
-\frac{\partial e}{\partial l_{BC}} = 
-\frac{\partial e}{\partial \rho} \frac{\partial \rho}{ \partial l_{BC}} = & \\
- & \frac{ (D_x - C_x)(\sin{\psi} -\sin{\rho})
-      - (D_y - C_y)(\cos{\psi} - \cos{\rho})}
-  {(D_y - C_y)^2 + (D_x - C_x)^2} \cdot \\
-\begin{bmatrix}
-           -(e_x  - P_x) \sin{\rho} + -(e_y - P_y)\cos{\rho}  \\
-           (e_x - P_x ) \cos{\rho} + -(e_y - P_y)\sin{\rho}  \\
-         \end{bmatrix}
-\end{split}
-\end{equation}
 
