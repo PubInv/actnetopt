@@ -114,9 +114,12 @@ public:
     find_all_coords(cur_an,coords);
     column_vector d(cur_an->var_edges);
     for(int i = 0; i < cur_an->var_edges; i++) {
+      // The true edge number is one higher than the index of the variable edges, since the first is fixed.
+      int e = i + 1;
       //       column_vector d = an->compute_single_derivative_c(coords,i);
-      if (((i % 2) == 0)) {
-  	column_vector dx = cur_an->compute_external_effector_derivative_c(coords,i);
+      if (((e % 2) == 1)) {
+	// The true edge_number is one higher than
+  	column_vector dx = cur_an->compute_external_effector_derivative_c(coords,e);
 	//  	cout << "deriv " << i << " :\n";
 	// Now we have the directional change in terms of the (lone) end_effector.
 	// How does this change the objective function? In some sense it is the inner product
@@ -135,11 +138,12 @@ public:
 	//	cout << " product : " << prod << "\n";
 	d(i) = prod;
       }
-      else if (((i+1) % 4) == 2) {
-      	if ((i+1)+4 < cur_an->var_edges) {
+      else if ((e % 4) == 2) {
+	/*      	if (e+4 < cur_an->var_edges) {
       	  // at present we are not consideing internal nodes, so there derivative is zero, independent of configuration...
       	  // possibly I need to make the middle length in order for this to work --- 0 is not right so long as
-      	  column_vector dx = cur_an->compute_internal_effector_derivative_c(coords,i);
+	  cout << "sending in : "<< e << "\n"; 
+      	  column_vector dx = cur_an->compute_internal_effector_derivative_c(coords,e);
       	  column_vector g = cur_an->goals[0];
       	  int idx = cur_an->goal_nodes[0];	
       	  column_vector c = coords[idx];
@@ -154,6 +158,7 @@ public:
       	} else {
       	  d(i) = 0.0;
       	}
+	*/
       } else {
       	column_vector prod;
       	d(i) = 0.0;
@@ -434,8 +439,9 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
      SDL_SetRenderDrawColor(renderer, 255, 255, 0, 200);       
      for(int i = 0; i < an->var_edges; i++) {
        //       column_vector d = an->compute_single_derivative_c(coords,i);
-       if ((i % 2) == 0) {
-	 column_vector d = an->compute_external_effector_derivative_c(coords,i);
+       int e = i + 1;
+       if ((e % 2) == 1) {
+	 column_vector d = an->compute_external_effector_derivative_c(coords,e);
 	 //	 cout << "deriv " << i << " :\n";
 	 //	 print_vec(d);
 	 int node = an->large_node(i+1);
@@ -443,25 +449,21 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
 	 
 	 SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);       	 	 
 	 render_arrow(renderer,tail,d+tail);
-       } else
-	 if ((i+1)+4 < an->var_edges) {
-	   if ((i % 4) == 1) {
-	     column_vector d = an->compute_internal_effector_derivative_c(coords,i);
-	 
-	     cout << "deriv " << i << " :\n";
+       } else  if ((e % 4) == 0) {
+	 if (e+4 < an->var_edges) {
+	     column_vector d = an->compute_internal_effector_derivative_c(coords,e);
+	     cout << "deriv " << e << " :\n";
 	     print_vec(d);
 	 
-	     int node = an->large_node(i+1);
-	     column_vector tail = (coords[node]+ coords[an->small_node(i+1)])/ 2.0;
+	     int node = an->large_node(e);
+	     column_vector tail = (coords[node]+ coords[an->small_node(e)])/ 2.0;
 	 
 	     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);       	 
 	     render_arrow(renderer,tail,d+tail);
-	   }
+	 }
        } else {
        }
      }
-
-     //     SDL_RenderPresent(renderer);
 }
 
 void draw_axes(SDL_Renderer* renderer) {

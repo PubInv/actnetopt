@@ -69,12 +69,13 @@ int TriLadder::edges_in_ladder(int n) {
 }
 
 int TriLadder::large_node(int e) {
-  return ((e % 2) == 0) ? (e/2)+1 : ((e+1)/2)+1 ;
+  return small_node(e) + (((e % 2) == 0) ? 1 : 2);
 }
 
 int TriLadder::small_node(int e) {
-  int L = large_node(e);
-  return ((e % 2) == 1) ? L - 2 : L - 1;
+  //  int L = large_node(e);
+  //  return ((e % 2) == 1) ? L - 2 : L - 1;
+  return e / 2;
 }
 
 // Note on edge numbering: Nodes are numbered in order of the
@@ -309,12 +310,12 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
   // let M be the directly moved joint.
   // let S be the "stable" joint connected to M by e.
 
-  int e = edge_number+1;
+  int e = edge_number;
   int M = large_node(e);
   int S = small_node(e);
   int P = (M+S)/2;
   // note these nodes should be three-in-a-row
-  if (debug) cout << "S,P,M:" << S << " " << P << " " << M << "\n";
+  if (debug) cout << "e,S,P,M:" << e << " " << S << " " << P << " " << M << "\n";
 
   column_vector m = cur_coords[M];
   column_vector p = cur_coords[P];
@@ -370,18 +371,20 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
   //  d_e_l(1) = f * (xd * ctheta + - yd * stheta);
   d_e_l(0) = f * (-yd );
   d_e_l(1) = f * (xd);
+  cout << "external: ";
+  print_vec(d_e_l);
   return d_e_l;
 }
 
+// The edge number is the full edge number, not numbered from the variable edges.
 column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cur_coords[],
 						  int edge_number) {
   // This is a preliminary attempt to code the internal derivative from "On Simple Planar Variable Geometry Trusses."
   // Given it's complexity, I suspect it will take some debugging.
   // This cannot be understood without reference to the diagram occuring in that paper.
-
-  int e = edge_number+1;
-  int ai = small_node(e);
-  int bi = large_node(e);
+  int e = edge_number;
+  int ai = small_node(e-2);
+  int bi = large_node(e-2);
   int ci = bi+1;
   int di = ci+1;
 
@@ -391,7 +394,12 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
   column_vector A = cur_coords[ai];
   column_vector B = cur_coords[bi];
   column_vector C = cur_coords[ci];
-  column_vector D = cur_coords[di];    
+  column_vector D = cur_coords[di];
+
+  cout << "A,B" << "\n";
+  print_vec(A);
+  print_vec(B);
+  cout << "=====\n";
   
   double a = distance_2d(B,C);
   double b = distance_2d(A,C);
@@ -403,19 +411,21 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
 
   column_vector X(2);
   X(0) = 100.0;
-  X(1) = 0.0;
+  X(1) = A(1);
 
+  // Since these are signed, we actually use addition here...
   double rho = get_angle(B,A,X);
   double alpha = get_angle(C,A,B);
 
   cout << "rho :" << rho*180/M_PI << "\n";
-   cout << "alpha :" << alpha*180/M_PI << "\n";      
-
-  
-
+  cout << "alpha :" << alpha*180/M_PI << "\n";      
+ 
   column_vector rot(2);
-  rot(0) = sin(rho-alpha);
-  rot(1) = -cos(rho-alpha);
+  double angle_XAB = rho + alpha;
+  rot(0) = sin(angle_XAB);
+  rot(1) = -cos(angle_XAB);
+  cout << " rho - alpha " << (angle_XAB)*180/M_PI << "\n";
+  print_vec(rot);
 
   column_vector e_minus_c(2);
   e_minus_c(0) = -(en(1) - C(1));
@@ -450,16 +460,32 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
 
   cout << "nw ne " << nw << " " << ne << "\n";
 
-  // These are the straight calculations, not considering the
-  double dchi_da = -nw/sw;
-  double dbeta_da = -ne/se;
+  // dchi_da "derivative of chi wrt a"
+  // dbeta_da "derivative of beta wrt a"
+  double dchi_da = nw/sw; 
+  double dbeta_da = ne/se;
+
+  double s_angle_abc = sense(A(0),A(1),B(0),B(1),C(0),C(1));
+  double s_angle_bcd = sense(B(0),B(1),C(0),C(1),D(0),D(1));
+  
+  int sense_angle_abc_beta = int_sign(s_angle_abc);
+  int sense_angle_bcd_chi = int_sign(s_angle_bcd);
+
+  dbeta_da = dbeta_da * sense_angle_abc_beta;
+  dchi_da = dchi_da * sense_angle_bcd_chi; 
+  
   cout << "dchi_da: " << dchi_da << "\n";
   cout << "dbeta_da: " << dbeta_da << "\n";    
 
+  cout << "sense_dchi_da: " << sense_angle_bcd_chi << "\n";
+  cout << "sense_dbeta_da: " << sense_angle_abc_beta << "\n";    
+  
   // There is a problem here that chi and beta are not treated
   // as signed values, but absolute values...but theta must be a signed
   // value measured against the x axis. I must use the chiratlity to determine a value.
-  double dtheta_da = dchi_da - dbeta_da;
+  // TODO: Simple addition here is NOT correct, I need to take into account other values.
+  double dtheta_da = -dchi_da + -dbeta_da;
+  
   cout << "dtheta_da: " << dtheta_da << "\n";
   print_vec(e_minus_c);
 
@@ -506,10 +532,17 @@ column_vector TriLadder::derivative (const column_vector& m) {
 // };
 
 // This is really a determinant of a 3x3 matrix with a column on the right
+// This is form (x0,y0,x1,y1,z0,z1)
 double sense(double a, double b, double d, double e, double g, double h) {
   return a*e - a*h - b*d + b*g + d*h - e*g;
 }
 
+int int_sign(double x) {
+  if (x == 0.0)
+    return 0;
+  else
+    return (x < 0.0) ? -1 : 1;
+}
 
 // This is an attempt to use FindCoords in the correct order to find all of the things
 

@@ -189,5 +189,6 @@ column_vector change_in_third_point(column_vector a,
 				    column_vector db
 				    );
 
+int int_sign(double x);
 
 #endif
