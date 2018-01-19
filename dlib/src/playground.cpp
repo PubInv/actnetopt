@@ -18,7 +18,7 @@ void physical_to_viewport(double px,double py,double *vx, double *vy);
 void viewport_to_physical(double px,double py,double *vx, double *vy);
 
 
-#define LADDER_NODES 10
+#define LADDER_NODES 8
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
@@ -138,9 +138,8 @@ public:
 	//	cout << " product : " << prod << "\n";
 	d(i) = prod;
       }
-      else if ((e % 4) == 2) {
-	/*      	if (e+4 < cur_an->var_edges) {
-      	  // at present we are not consideing internal nodes, so there derivative is zero, independent of configuration...
+      else if (((e % 4) == 0) || ((e % 2) == 0)) {
+	      	  // at present we are not consideing internal nodes, so there derivative is zero, independent of configuration...
       	  // possibly I need to make the middle length in order for this to work --- 0 is not right so long as
 	  cout << "sending in : "<< e << "\n"; 
       	  column_vector dx = cur_an->compute_internal_effector_derivative_c(coords,e);
@@ -155,10 +154,6 @@ public:
       	  double prod = dot(goal_direction,dx);
       	  cout << " product : " << prod << "\n";
       	  d(i) = prod;
-      	} else {
-      	  d(i) = 0.0;
-      	}
-	*/
       } else {
       	column_vector prod;
       	d(i) = 0.0;
@@ -202,14 +197,15 @@ void solve_inverse_problem(TriLadder *an) {
 		    uniform_matrix<double>(n,1, LOWER_BOUND),  // lower bound constraint
 		    uniform_matrix<double>(n,1, UPPER_BOUND),   // upper bound constraint
 		    INITIAL/5,    // initial trust region radius (rho_begin)
-		    1e-6,  // stopping trust region radius (rho_end)
+		    1e-5,  // stopping trust region radius (rho_end)
 		    10000   // max number of objective function evaluations
 		    );
   } else {
     find_min_box_constrained(
-			     //			     lbfgs_search_strategy(10),
-			     cg_search_strategy(),  			     
-			     objective_delta_stop_strategy(1e-9),
+			     bfgs_search_strategy(),
+			     // lbfgs_search_strategy(30),
+			     //cg_search_strategy(),  			     
+			     objective_delta_stop_strategy(1e-5),
 			     *Invert::objective,
 			     *Invert::derivative,
 			     sp,
@@ -217,15 +213,13 @@ void solve_inverse_problem(TriLadder *an) {
 			     uniform_matrix<double>(n,1, UPPER_BOUND)   // upper bound constraint
 			     );
   }
-  cout << "bobyqa solution:\n" << sp << endl;
   std::cout << "inv(x) " << inv(sp) << std::endl;    
 
    for (int i = 0; i < an->var_edges; i++) {
      if (debug)  std::cout << "distance edge" << i+1 << " :  " << sp(i) << std::endl;
-    an->distance(i+1) = sp(i);
+     an->distance(i+1) = sp(i);
   }
    if (debug)  std::cout << "inv(x) " << inv(sp) << std::endl;  
-  
 };
 
 
@@ -449,8 +443,7 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
 	 
 	 SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);       	 	 
 	 render_arrow(renderer,tail,d+tail);
-       } else  if ((e % 4) == 0) {
-	 if (e+4 < an->var_edges) {
+       } else  if (((e % 4) == 0) || ((e % 2) == 0) ) {
 	     column_vector d = an->compute_internal_effector_derivative_c(coords,e);
 	     cout << "deriv " << e << " :\n";
 	     print_vec(d);
@@ -460,7 +453,6 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
 	 
 	     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);       	 
 	     render_arrow(renderer,tail,d+tail);
-	 }
        } else {
        }
      }

@@ -126,6 +126,16 @@ column_vector compute_single_derivative_c(column_vector cur_coords[],
 column_vector compute_external_effector_derivative_c(column_vector cur_coords[],
 				   int edge_number);
 
+double compute_dtheta_internal_da(column_vector A,
+			 column_vector B,
+			 column_vector C,
+			 column_vector D,
+			 double a,
+			 double b,
+			 double c,
+			 double f,
+				     double g);
+
  column_vector compute_internal_effector_derivative_c(column_vector cur_coords[],
 								 int edge_number);
  
@@ -163,7 +173,9 @@ public:
 };
 
 // This is really a determinant of a 3x3 matrix with a column on the right
-double sense(double a, double b, double d, double e, double g, double h);
+double sense(double xa,double ya,double xb,double yb,double xc,double yc);
+
+double sense2(double a, double b, double d, double e, double g, double h);
 
 
 // This is an attempt to use FindCoords in the correct order to find all of the things

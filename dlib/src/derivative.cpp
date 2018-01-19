@@ -168,3 +168,146 @@ BOOST_AUTO_TEST_CASE( test_triangle_motion )
 
 }
 
+BOOST_AUTO_TEST_CASE( test_sense )
+{
+  column_vector A(2);
+  column_vector B(2);
+  column_vector C(2);
+
+
+  A(0) = 0.0;
+  A(1) = 0.0;
+  B(0) = 0.0;
+  B(1) = 4.0;
+  C(0) = 2.0;
+  C(1) = 2.0;
+  double s_angle_abc0 = -sense(A(0),A(1),B(0),B(1),C(0),C(1));
+  double s_angle_abc0x = -sense2(A(0),A(1),B(0),B(1),C(0),C(1));
+  cout << "s_angle_abc0 : " << s_angle_abc0 << "\n";
+  BOOST_CHECK( s_angle_abc0 >  0.0 );
+  BOOST_CHECK( s_angle_abc0 = s_angle_abc0x);  
+  
+
+  A(0) = 0.0;
+  A(1) = 0.0;
+  B(0) = 1.0;
+  B(1) = 1.5;
+  C(0) = 1.3;
+  C(1) = 0.75;
+
+  double s_angle_abc1 = -sense(A(0),A(1),B(0),B(1),C(0),C(1));
+  cout << "s_angle_abc1 : " << s_angle_abc1 << "\n";
+  BOOST_CHECK( s_angle_abc1 >  0.0 );
+
+}
+
+BOOST_AUTO_TEST_CASE( test_dtheta_internal_da )
+{
+  column_vector A(2);
+  column_vector B(2);
+  column_vector C(2);
+  column_vector D(2);  
+  A(0) = 0.0;
+  A(1) = 0.0;
+  B(0) = 0.0;
+  B(1) = 4.0;
+  C(0) = 2.0;
+  C(1) = 2.0;
+  D(0) = 2.0;
+  D(1) = 4.0;
+  double a = distance_2d(B,C);
+  double b = distance_2d(A,C);
+  double c = distance_2d(A,B);
+  double f = distance_2d(B,D);
+  double g = distance_2d(C,D);
+
+    TriLadder tl(LADDER_NODES,
+			   UPPER_BOUND,
+			   LOWER_BOUND,
+			   MEDIAN,
+			   INITIAL
+	       );
+
+  double dtheta_da = tl.compute_dtheta_internal_da(A,B,C,D,a,b,c,f,g);  
+  cout << "dtheta_da degrees: " << dtheta_da*180/M_PI << "\n";
+  BOOST_CHECK( dtheta_da > 0.0 );
+
+  // now check symmetry and sign change on other side of y-axis...
+  C(0) = -2.0;
+  D(0) = -2.0;
+  // These actually should not change...
+  a = distance_2d(B,C);
+  b = distance_2d(A,C);
+  c = distance_2d(A,B);
+  f = distance_2d(B,D);
+  g = distance_2d(C,D);
+
+  
+  double dtheta_da_neg = tl.compute_dtheta_internal_da(A,B,C,D,a,b,c,f,g);  
+  cout << "dtheta_da_neg degrees: " << dtheta_da_neg*180/M_PI << "\n";
+  BOOST_CHECK( dtheta_da_neg < 0.0 );
+  BOOST_CHECK( dtheta_da = -dtheta_da_neg );
+
+  B(1) = 3.0;
+  C(0) = 2.0;
+  D(0) = 2.0;
+  
+  a = distance_2d(B,C);
+  b = distance_2d(A,C);
+  c = distance_2d(A,B);
+  f = distance_2d(B,D);
+  g = distance_2d(C,D);
+
+  double dtheta_da_bal = tl.compute_dtheta_internal_da(A,B,C,D,a,b,c,f,g);
+  
+  cout << "dtheta_da_bal degrees: " << dtheta_da_bal*180/M_PI << "\n";
+  
+  BOOST_CHECK( dtheta_da_bal <  dtheta_da );
+  BOOST_CHECK( dtheta_da_bal > 0.0 );
+
+  A(0) = 0.0;
+  A(1) = 0.0;
+  B(0) = 0.0;
+  B(1) = 4.0;
+  C(0) = 2.0;
+  C(1) = 2.0;
+  D(0) = 2.0;
+  D(1) = 6.0;
+
+  
+  a = distance_2d(B,C);
+  b = distance_2d(A,C);
+  c = distance_2d(A,B);
+  f = distance_2d(B,D);
+  g = distance_2d(C,D);
+  
+  double dtheta_da_sym = tl.compute_dtheta_internal_da(A,B,C,D,a,b,c,f,g);
+  
+  cout << "dtheta_da_sym degrees: " << dtheta_da_sym*180/M_PI << "\n";
+
+  // Now this test a problem I am buggy with. The answer should definitely be positive.
+
+  A(0) = 0.0;
+  A(1) = 0.0;
+  B(0) = 1.0;
+  B(1) = 1.5;
+  C(0) = 1.3;
+  C(1) = 0.75;
+  D(0) = 2.6;
+  D(1) = 1.5;
+
+  a = distance_2d(B,C);
+  b = distance_2d(A,C);
+  c = distance_2d(A,B);
+  f = distance_2d(B,D);
+  g = distance_2d(C,D);
+
+  double dtheta_da_slnt = tl.compute_dtheta_internal_da(A,B,C,D,a,b,c,f,g);
+  
+  cout << "dtheta_da_slnt degrees: " << dtheta_da_slnt*180/M_PI << "\n";
+
+  BOOST_CHECK( dtheta_da_slnt > 0.0 );
+
+
+}
+

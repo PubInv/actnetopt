@@ -254,7 +254,7 @@ double TriLadder::compute_single_derivative_dtheta(column_vector cur_coords[],
   // print_vec(a);
   // print_vec(b);
   // print_vec(c);
-  cout << phi*180/PI << "\n";
+  //  cout << phi*180/PI << "\n";
   double dThetaDx = 1.0 / (len*sin(phi));
   
   return dThetaDx;
@@ -376,6 +376,65 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
   return d_e_l;
 }
 
+double TriLadder::compute_dtheta_internal_da(column_vector A,
+			 column_vector B,
+			 column_vector C,
+			 column_vector D,
+			 double a,
+			 double b,
+			 double c,
+			 double f,
+			 double g) {
+
+  //  cout << "a,b,c,f,g :" << a << " " << b << " "  << c << " " << f << " " << g << "\n";
+
+  double a_c_B = a*a + c*c - b*b;
+  double a_g_F = a*a + g*g - f*f;
+  
+  // no good way to name these...
+  double nw = 1/c - a_c_B/(2.0*a*a*c);
+  double sw = sqrt(1.0 - (a_c_B*a_c_B)/(4.0*a*a*c*c));
+  double ne = 1/g - a_g_F/(2.0*a*a*g);
+  double se = sqrt(1.0 - (a_g_F*a_g_F)/(4.0*a*a*g*g));
+
+  //  cout << "nw ne " << nw << " " << ne << "\n";
+
+  // dchi_da "derivative of chi wrt a"
+  // dbeta_da "derivative of beta wrt a"
+  double dchi_da = nw/sw; 
+  double dbeta_da = ne/se;
+
+  // Note this computes "does BC turn CW (<0) or CCW (>0) from AB,",
+  // which is the opposite of "how does BA rotate into BC".
+  double s_angle_abc = -sense(A(0),A(1),B(0),B(1),C(0),C(1));
+  double s_angle_bcd = -sense(B(0),B(1),C(0),C(1),D(0),D(1));
+
+  // I'm not sure this makes sense either...we need to decide
+  // the change in orientation of CD, which is absolute,
+  // in a different way.
+  int sense_angle_abc_beta = int_sign(s_angle_abc);
+  int sense_angle_bcd_chi = int_sign(s_angle_bcd);
+
+  dbeta_da = dbeta_da * sense_angle_abc_beta;
+  dchi_da = dchi_da * sense_angle_bcd_chi; 
+  
+  //  cout << "dchi_da: " << dchi_da*180/M_PI << "\n";
+  //  cout << "dbeta_da: " << dbeta_da*180/M_PI << "\n";    
+
+  //  cout << "sense_dchi_da: " << sense_angle_bcd_chi << "\n";
+  //  cout << "sense_dbeta_da: " << sense_angle_abc_beta << "\n";    
+  
+  // There is a problem here that chi and beta are not treated
+  // as signed values, but absolute values...but theta must be a signed
+  // value measured against the x axis. I must use the chiratlity to determine a value.
+  // TODO: Simple addition here is NOT correct, I need to take into account other values.
+  double dtheta_da = dchi_da + dbeta_da;
+  
+  //  cout << "dtheta_da: " << dtheta_da*180/M_PI << "\n";
+  return dtheta_da;
+}
+
+
 // The edge number is the full edge number, not numbered from the variable edges.
 column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cur_coords[],
 						  int edge_number) {
@@ -387,19 +446,26 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
   int bi = large_node(e-2);
   int ci = bi+1;
   int di = ci+1;
+  // this is a special case we are not prepared to handle yet!
+  if (di >= num_nodes) {
+    column_vector d_e_a(2);
+    d_e_a(0) = 0;
+    d_e_a(1) = 0;
+    return d_e_a;
+  }
 
-  cout << "e " << e << "\n";
-  cout << "ai bi ci di " << ai << " " << bi << " " << ci << " " << di << "\n";
+  //  cout << "e " << e << "\n";
+  //  cout << "ai bi ci di " << ai << " " << bi << " " << ci << " " << di << "\n";
 
   column_vector A = cur_coords[ai];
   column_vector B = cur_coords[bi];
   column_vector C = cur_coords[ci];
   column_vector D = cur_coords[di];
 
-  cout << "A,B" << "\n";
-  print_vec(A);
-  print_vec(B);
-  cout << "=====\n";
+  //  cout << "A,B" << "\n";
+  //  print_vec(A);
+  //  print_vec(B);
+  //  cout << "=====\n";
   
   double a = distance_2d(B,C);
   double b = distance_2d(A,C);
@@ -414,81 +480,54 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
   X(1) = A(1);
 
   // Since these are signed, we actually use addition here...
+
+  // I believe these need to be carefully calculated as signed angles...
   double rho = get_angle(B,A,X);
   double alpha = get_angle(C,A,B);
+  // The sign of alpha is inportant as to waht teh rotation about C will be.
 
-  cout << "rho :" << rho*180/M_PI << "\n";
-  cout << "alpha :" << alpha*180/M_PI << "\n";      
+  //  cout << "rho :" << rho*180/M_PI << "\n";
+  //  cout << "alpha :" << alpha*180/M_PI << "\n";      
  
   column_vector rot(2);
   double angle_XAB = rho + alpha;
+  // I am uncertain of this, I need to work it out more generally.
+  if (alpha > 0) angle_XAB = -angle_XAB;
+  
   rot(0) = sin(angle_XAB);
   rot(1) = -cos(angle_XAB);
-  cout << " rho - alpha " << (angle_XAB)*180/M_PI << "\n";
-  print_vec(rot);
+  //  cout << " rho + alpha " << (angle_XAB)*180/M_PI << "\n";
+  //  print_vec(rot);
 
   column_vector e_minus_c(2);
   e_minus_c(0) = -(en(1) - C(1));
   e_minus_c(1) = (en(0) - C(0));
 
 
-  cout << "rot:" << "\n";
-  print_vec(rot);
+  //  cout << "rot:" << "\n";
+  //  print_vec(rot);
   
-  cout << "e_minus_c:" << "\n";  
-  print_vec(e_minus_c);
+  //  cout << "e_minus_c:" << "\n";  
+  //  print_vec(e_minus_c);
   
 
   // using capital to represent negated terms...
   double b_c_A = b*b + c*c - a*a;
-  double a_c_B = a*a + c*c - b*b;
-  double a_g_F = a*a + g*g - f*f;
+  //  double a_c_B = a*a + c*c - b*b;
+  //  double a_g_F = a*a + g*g - f*f;
 
-  cout << "a,b,c,f,g " << a << " " << b << " " << c << " " << f << " " << g << "\n";
-  cout << "b_c_A " << b_c_A << "\n";
-  cout << "denom " << 4*b*b*c*c << "\n";  
-  cout << "LARGER THAN 1.0? " << ((b_c_A*b_c_A) / (4*b*b*c*c)) << "\n";
+  //  cout << "a,b,c,f,g " << a << " " << b << " " << c << " " << f << " " << g << "\n";
+  //  cout << "b_c_A " << b_c_A << "\n";
+  //  cout << "denom " << 4*b*b*c*c << "\n";  
+  //  cout << "LARGER THAN 1.0? " << ((b_c_A*b_c_A) / (4*b*b*c*c)) << "\n";
   double first_coeff = a / (c*sqrt( 1 - ((b_c_A*b_c_A) / (4*b*b*c*c))));
 
-  cout << "first_coeff: " << first_coeff << "\n";  
+  //  cout << "first_coeff: " << first_coeff << "\n";  
   
-  // no good way to name these...
-  double nw = 1/c - a_c_B/(2.0*a*a*c);
-  double sw = sqrt(1.0 - (a_c_B*a_c_B)/(4.0*a*a*c*c));
-  double ne = 1/g - a_g_F/(2.0*a*a*g);
-  double se = sqrt(1.0 - (a_g_F*a_g_F)/(4.0*a*a*g*g));
+  //  print_vec(e_minus_c);
 
-  cout << "nw ne " << nw << " " << ne << "\n";
-
-  // dchi_da "derivative of chi wrt a"
-  // dbeta_da "derivative of beta wrt a"
-  double dchi_da = nw/sw; 
-  double dbeta_da = ne/se;
-
-  double s_angle_abc = sense(A(0),A(1),B(0),B(1),C(0),C(1));
-  double s_angle_bcd = sense(B(0),B(1),C(0),C(1),D(0),D(1));
+  double dtheta_da = compute_dtheta_internal_da(A,B,C,D,a,b,c,f,g);
   
-  int sense_angle_abc_beta = int_sign(s_angle_abc);
-  int sense_angle_bcd_chi = int_sign(s_angle_bcd);
-
-  dbeta_da = dbeta_da * sense_angle_abc_beta;
-  dchi_da = dchi_da * sense_angle_bcd_chi; 
-  
-  cout << "dchi_da: " << dchi_da << "\n";
-  cout << "dbeta_da: " << dbeta_da << "\n";    
-
-  cout << "sense_dchi_da: " << sense_angle_bcd_chi << "\n";
-  cout << "sense_dbeta_da: " << sense_angle_abc_beta << "\n";    
-  
-  // There is a problem here that chi and beta are not treated
-  // as signed values, but absolute values...but theta must be a signed
-  // value measured against the x axis. I must use the chiratlity to determine a value.
-  // TODO: Simple addition here is NOT correct, I need to take into account other values.
-  double dtheta_da = -dchi_da + -dbeta_da;
-  
-  cout << "dtheta_da: " << dtheta_da << "\n";
-  print_vec(e_minus_c);
-
   // derivative of end effector wrt to change in length a...
   column_vector d_e_a(2);
   d_e_a = first_coeff*rot + dtheta_da*e_minus_c;
@@ -533,10 +572,16 @@ column_vector TriLadder::derivative (const column_vector& m) {
 
 // This is really a determinant of a 3x3 matrix with a column on the right
 // This is form (x0,y0,x1,y1,z0,z1)
-double sense(double a, double b, double d, double e, double g, double h) {
+double sense2(double a, double b, double d, double e, double g, double h) {
   return a*e - a*h - b*d + b*g + d*h - e*g;
 }
 
+// Note sense computes "does BC turn CW or CCW from AB?"
+// It does NOT compute the rotation of BA into BC.
+
+double sense(double xa,double ya,double xb,double yb,double xc,double yc) {
+  return (xb*yc + xa*yb + ya*xc) - (ya*xb + yb*xc + xa*yc);
+}
 int int_sign(double x) {
   if (x == 0.0)
     return 0;
@@ -685,18 +730,6 @@ void find_all_coords(TriLadder *an,column_vector coords[]) {
       
       fix_sense(desired_sense,f.a(0), f.a(1), f.b(0), f.b(1),y);
 
-      // column_vector  x(2);
-      // x = 1, 2;
-      // find_min_using_approximate_derivatives(bfgs_search_strategy(),
-      // 					     objective_delta_stop_strategy(1e-7),
-      // 					     f, x, -1);
-      // fix_sense(desired_sense,f.a(0), f.a(1), f.b(0), f.b(1),x);      
-
-      //      if (distance(x,y) > 0.01) {
-	//	cout << "dist " << distance(x,y) << "\n";
-	//	print_vec(x);
-	//	print_vec(y);
-      //      }
       
       column_vector  z(2);            
       if (!any_too_small(dab,f.dbc,f.dac)) {
@@ -706,43 +739,6 @@ void find_all_coords(TriLadder *an,column_vector coords[]) {
 	//	z = x;
       }
       z = y;
-
-      //      fix_sense(desired_sense,f.a(0), f.a(1), f.b(0), f.b(1),z);            
-      // double det = sense(f.a(0), f.a(1), f.b(0), f.b(1), z(0), z(1));
-      // // d > 0 => ccw, d < 0 => cw.
-      // // now how do we make this penalize for going the wrong way?
-      // bool found_sense = (det > 0) ? CCW : CW;
-
-      // if (debug_find) std::cout << "processing node: " << i << std::endl;
-      
-      // if (debug_find) std::cout << "det " << det << std::endl;
-      
-      // bool need_to_flip = (desired_sense != found_sense);
-
-      // if (need_to_flip) {
-      // 	if (debug_find) std::cout << "NEED TO FLIP" << std::endl;
-      // 	if (debug_find) std::cout << "start: " << z << std::endl;
-      // 	column_vector r(2);
-      
-      // 	// first we obtain the y = mx + b form..
-      // 	if ( (f.a(0)-f.b(0)) == 0) {
-      // 	  if (debug_find) std::cout << " SLOPE ZERO "  << std::endl;	  
-      // 	  // In this case, we have a vertical line, we can tell based on
-      // 	  // just where it is based on the x value of x and whether a is above
-      // 	  r = 2*f.a(0) - z(0),z(1);
-      // 	} else {
-      // 	  const double m = (f.a(1)-f.b(1)) / (f.a(0)-f.b(0));
-      // 	  const double b = f.a(1) - m * f.a(0);
-      // 	  const double d = (z(0) + (z(1) - b)*m)/(1+m*m);
-      // 	  const double xp = 2*d - z(0);
-      // 	  const double yp = 2*d*m - z(1) + 2 * b;
-      // 	  r = xp, yp;
-      // 	}
-      // 	if (debug_find) std::cout << "flipped: " <<  r  << std::endl;
-      // 	z(0) = r(0);
-      // 	z(1) = r(1);
-      // }
-      // if (debug_find) std::cout << " x " << x << std::endl;
 
       coords[i].set_size(2);
       coords[i](0) = z(0);
