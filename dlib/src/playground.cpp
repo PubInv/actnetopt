@@ -3,6 +3,7 @@
 #include <dlib/optimization.h>
 #include <stdio.h>
 #include <iostream>
+#include <limits.h>
 #include "TriLadder.h"
 
 
@@ -18,7 +19,7 @@ void physical_to_viewport(double px,double py,double *vx, double *vy);
 void viewport_to_physical(double px,double py,double *vx, double *vy);
 
 
-#define LADDER_NODES 8
+#define LADDER_NODES 26
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
@@ -36,6 +37,12 @@ void get_rcoords(column_vector v,int* x,int* y) {
        *x = (int) std::round(vx0);
        *y = (int) std::round(vy0);
 }
+
+// This is kludge -- not gettin find_min to work very well.
+// WARNING: This is probably a memory leak
+double* best_distances = new double[(LADDER_NODES-3)*2 +3];    
+
+double best_score;
 
 class Invert {
 public:
@@ -61,21 +68,21 @@ public:
 
   // This is currently computing the sum of the l2_norm of the goal point quandrances (square of distance).
   static double objective(const column_vector& ds) {
-    if (debug) std::cout << "CUR_AN " << cur_an << "\n";
-    if (debug) std::cout << "INPUTS" << std::endl;
+    //    if (debug) std::cout << "CUR_AN " << cur_an << "\n";
+    if (debug) std::cout << "OBJECTIVE INPUTS" << std::endl;
     for (int i = 0; i < cur_an->var_edges; ++i) {
-          if (debug) std::cout << i << " : " << ds(i) << std::endl;
+           if (debug) std::cout << i << " : " << ds(i) << std::endl;
 	  cur_an->distance(i+1) = ds(i);
     }
 
-    if (debug) std::cout << "DISTANCES" << std::endl;
+    //    if (debug) std::cout << "DISTANCES" << std::endl;
     
     column_vector coords[LADDER_NODES];
 
     // If I don't change an here, I'm not changing the coords!!
     find_all_coords(cur_an,coords);
     for(int i = 0; i < cur_an->num_nodes; i++) {
-      //      std::cout << " d["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
+       std::cout << " coords["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
     }
     
     double v = 0.0;
@@ -95,10 +102,20 @@ public:
       if (debug) std::cout << "Invert x " <<  x(0) <<  "," << x(1)  << std::endl;
       if (debug) std::cout << "Invert y " <<  y(0) <<  "," << y(1)  << std::endl;                  
       d = x - y;
-      if (debug) std::cout << "Invert d " <<  d(0) <<  "," << d(1) <<  " " << std::endl;      
-      v += l2_norm(d);
+      if (debug) std::cout << "Invert d " <<  d(0) <<  "," << d(1) <<  " " << std::endl;
+      v += distance_2d(x,y);
+      //      v += l2_norm(d);
     }
    std::cout << "Invert v " <<  v <<  " " << std::endl;
+
+   if (v < best_score) {
+     cout << "found best: " << v << "\n";
+    for (int i = 0; i < cur_an->var_edges; ++i) {
+      best_distances[i] = ds(i);
+    }
+    best_score = v;
+     
+   }
     return v;    
   }
 
@@ -107,60 +124,45 @@ public:
   static column_vector derivative(const column_vector& ds) {
     for (int i = 0; i < cur_an->var_edges; ++i) {
       if (debug) std::cout << i << " : " << ds(i) << std::endl;
+      // This is correct?  It should it just be "i"?
       cur_an->distance(i+1) = ds(i);
     }
     // If I don't change an here, I'm not changing the coords!!
     column_vector coords[LADDER_NODES];    
     find_all_coords(cur_an,coords);
     column_vector d(cur_an->var_edges);
+
+    column_vector g = cur_an->goals[0];
+    int idx = cur_an->goal_nodes[0];	
+    column_vector c = coords[idx];
+      
     for(int i = 0; i < cur_an->var_edges; i++) {
       // The true edge number is one higher than the index of the variable edges, since the first is fixed.
       int e = i + 1;
-      //       column_vector d = an->compute_single_derivative_c(coords,i);
+      column_vector dx(2);
       if (((e % 2) == 1)) {
-	// The true edge_number is one higher than
-  	column_vector dx = cur_an->compute_external_effector_derivative_c(coords,e);
-	//  	cout << "deriv " << i << " :\n";
-	// Now we have the directional change in terms of the (lone) end_effector.
-	// How does this change the objective function? In some sense it is the inner product
-	// of the the current end effector position with the derivative.
-	// We want to take the inner product, be sure to preserve the sign as negative if pointing the
-	// wrong way.
-	column_vector g = cur_an->goals[0];
-	int idx = cur_an->goal_nodes[0];	
-	column_vector c = coords[idx];
-
-	// Print out these values until we understand what is hapening here.
-	//	cout << " c, g " << c << " , " << g << "\n";
-	column_vector goal_direction = g - c;
-	//	cout << " direction " << goal_direction << "\n";	
-	double prod = dot(goal_direction,dx);
-	//	cout << " product : " << prod << "\n";
-	d(i) = prod;
+  	dx = cur_an->compute_external_effector_derivative_c(coords,e);
       }
-      else if (((e % 4) == 0) || ((e % 2) == 0)) {
-	      	  // at present we are not consideing internal nodes, so there derivative is zero, independent of configuration...
-      	  // possibly I need to make the middle length in order for this to work --- 0 is not right so long as
-	  cout << "sending in : "<< e << "\n"; 
-      	  column_vector dx = cur_an->compute_internal_effector_derivative_c(coords,e);
-      	  column_vector g = cur_an->goals[0];
-      	  int idx = cur_an->goal_nodes[0];	
-      	  column_vector c = coords[idx];
-
-      	  // Print out these values until we understand what is hapening here.
-      	  cout << " c, g " << c << " , " << g << "\n";
-      	  column_vector goal_direction = g - c;
-      	  cout << " direction " << goal_direction << "\n";	
-      	  double prod = dot(goal_direction,dx);
-      	  cout << " product : " << prod << "\n";
-      	  d(i) = prod;
-      } else {
-      	column_vector prod;
-      	d(i) = 0.0;
+      else if ((e % 2) == 0) {
+      	  dx = cur_an->compute_internal_effector_derivative_c(coords,e);
       }
+      // Print out these values until we understand what is hapening here.
+      cout << " c, g " << c << " , " << g << "\n";
+      column_vector goal_direction = c - g;
+      cout << "dx, direction: " << "\n";
+      print_vec(dx);      
+      print_vec(goal_direction);
+      double prod = dot(goal_direction,dx);
+      cout << " product : " << prod << "\n";
+      d(i) = prod;
     }
-    cout << "cur_an->var_edges = " << cur_an->var_edges << "\n";    
-    cout << "d = " << d << "\n";
+    cout << "cur_an->var_edges = " << cur_an->var_edges << "\n";
+
+    cout << "DERIVATIVES" << "\n";
+    for(int i = 0; i < cur_an->var_edges; i++) {
+      cout << "i " << i << " " << d(i) << "\n";
+    }
+
     return d;
   }
   
@@ -200,11 +202,25 @@ void solve_inverse_problem(TriLadder *an) {
 		    1e-5,  // stopping trust region radius (rho_end)
 		    10000   // max number of objective function evaluations
 		    );
+    std::cout << "inv(x) " << inv(sp) << std::endl;
+    for (int i = 0; i < an->var_edges; i++) {
+      if (debug)  std::cout << "distance edge" << i+1 << " :  " << sp(i) << std::endl;
+      an->distance(i+1) = sp(i);
+   }
+
+   if (debug)  std::cout << "inv(x) " << inv(sp) << std::endl;      
   } else {
-    find_min_box_constrained(
-			     bfgs_search_strategy(),
+    best_score = std::numeric_limits<float>::max();
+
+    for (int i = 0; i < an->var_edges; ++i) {
+	   best_distances[i] = an->distance(i+1);
+    }
+    
+    double score = find_min_box_constrained(
+			      bfgs_search_strategy(),
 			     // lbfgs_search_strategy(30),
-			     //cg_search_strategy(),  			     
+			     // cg_search_strategy(),
+			     //			     newton_search_strategy,
 			     objective_delta_stop_strategy(1e-5),
 			     *Invert::objective,
 			     *Invert::derivative,
@@ -212,14 +228,18 @@ void solve_inverse_problem(TriLadder *an) {
 			     uniform_matrix<double>(n,1, LOWER_BOUND),  // lower bound constraint
 			     uniform_matrix<double>(n,1, UPPER_BOUND)   // upper bound constraint
 			     );
-  }
-  std::cout << "inv(x) " << inv(sp) << std::endl;    
+    cout << "===============\n";
+    cout << "score = " << score << "\n";
+    cout << "best  = " << best_score << "\n";
+    for (int i = 0; i < an->var_edges; ++i) {
+      cout << i << " " << best_distances[i] << "\n";
+      an->distance(i+1) = best_distances[i];
 
-   for (int i = 0; i < an->var_edges; i++) {
-     if (debug)  std::cout << "distance edge" << i+1 << " :  " << sp(i) << std::endl;
-     an->distance(i+1) = sp(i);
+      cout << i << " " << sp(i) << "\n";
+    }
+    // WARNING: we should free best here...
   }
-   if (debug)  std::cout << "inv(x) " << inv(sp) << std::endl;  
+
 };
 
 
@@ -389,8 +409,8 @@ const int WIN_WIDTH = 640 * 2;
 const int WIN_HEIGHT = 480 * 2;
 
 // These are the size of the physical size
-const double w = 10.0;
-const double h = 10.0;
+const double w = (LADDER_NODES < 11) ? 10.0 : (LADDER_NODES < 21) ? 20.0 : 40.0;
+const double h = (LADDER_NODES < 11) ? 10.0 : (LADDER_NODES < 21) ? 20.0 : 40.0;
 
 
 void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
@@ -434,28 +454,19 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
      for(int i = 0; i < an->var_edges; i++) {
        //       column_vector d = an->compute_single_derivative_c(coords,i);
        int e = i + 1;
+       column_vector d;
        if ((e % 2) == 1) {
-	 column_vector d = an->compute_external_effector_derivative_c(coords,e);
-	 //	 cout << "deriv " << i << " :\n";
-	 //	 print_vec(d);
-	 int node = an->large_node(i+1);
-	 column_vector tail = (coords[node]+ coords[an->small_node(i+1)])/ 2.0;
-	 
+	 d = an->compute_external_effector_derivative_c(coords,e);
 	 SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);       	 	 
-	 render_arrow(renderer,tail,d+tail);
-       } else  if (((e % 4) == 0) || ((e % 2) == 0) ) {
-	     column_vector d = an->compute_internal_effector_derivative_c(coords,e);
-	     cout << "deriv " << e << " :\n";
-	     print_vec(d);
-	 
-	     int node = an->large_node(e);
-	     column_vector tail = (coords[node]+ coords[an->small_node(e)])/ 2.0;
-	 
-	     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);       	 
-	     render_arrow(renderer,tail,d+tail);
-       } else {
+       } else  if ((e % 2) == 0) {
+	  d = an->compute_internal_effector_derivative_c(coords,e);
+	  SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);       	 	  
        }
-     }
+       print_vec(d);
+       int node = an->large_node(e);
+       column_vector tail = (coords[node]+ coords[an->small_node(e)])/ 2.0;
+       render_arrow(renderer,tail,d+tail);
+     } 
 }
 
 void draw_axes(SDL_Renderer* renderer) {
@@ -557,6 +568,8 @@ void Input::readInput()
 	 mouseDown = true;
 	 x = m_event.button.x;
 	 y = m_event.button.y;
+
+	 cout << "XXXXXXXXXXXXXXXXXXXXX\n";
 	 
 	 //	 cout << x << "," << y << "\n";
 
@@ -731,6 +744,7 @@ int main( int argc, char* args[] )
   	gl(0) = px;
   	gl(1) = py;
   	an.goals[0] = gl;
+	cout  << "goal : " << gl << "\n";
 	
   	mainx(&an,coordsx);
 

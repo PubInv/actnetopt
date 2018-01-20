@@ -33,8 +33,8 @@ typedef matrix<double,0,1> column_vector;
 void print_vec(column_vector& vec);
 
 
-const bool debug_find = false;
-const bool debug = false;
+const bool debug_find = true;
+const bool debug = true;
 
 double distance_2d(column_vector a, column_vector b);
 
@@ -66,7 +66,7 @@ public:
 
   int large_node(int e);
   int small_node(int e);
-  
+  int edge_between(int ndh,int ndl);
 
   TriLadder(int nodes,
 	    double u,

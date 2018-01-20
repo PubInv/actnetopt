@@ -13,7 +13,7 @@
 #define BOOST_TEST_MODULE MyTest
 #include <boost/test/unit_test.hpp>
 
-#define LADDER_NODES 6
+#define LADDER_NODES 4
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
@@ -311,3 +311,45 @@ BOOST_AUTO_TEST_CASE( test_dtheta_internal_da )
 
 }
 
+BOOST_AUTO_TEST_CASE( find_coords )
+{
+  TriLadder tl(LADDER_NODES,
+			   UPPER_BOUND,
+			   LOWER_BOUND,
+			   MEDIAN,
+			   INITIAL
+	       );
+
+  cout << "START\n";
+  cout << "tl.num_nodes: " << tl.num_nodes << "\n";
+  column_vector* coords = new column_vector[tl.num_nodes];
+
+  const double SHORT = LOWER_BOUND;
+  const double LONG = UPPER_BOUND;
+
+  tl.distance(0) = INITIAL;
+  tl.distance(1) = LONG;
+  tl.distance(2) = SHORT;
+  tl.distance(3) = SHORT;
+  tl.distance(4) = LONG;
+  
+  find_all_coords(&tl,coords);
+
+  for(int i = 0; i < tl.num_nodes; i++) {
+    cout << "coordsv " << i+1 << " :\n";
+    print_vec(coords[i]);
+  }
+  for(int i = 0; i < tl.num_edges; i++) {
+    cout << "distance  " << i << " ";
+    cout << tl.distance(i) << "\n";
+  }
+
+  for(int i = 0; i < tl.num_edges; i++) {
+    int ai = tl.small_node(i);
+    int bi = tl.large_node(i);
+    cout << "distance  ai,bi :" << ai << "," << bi << " " << tl.edge_between(bi,ai) << " ";
+    cout << distance_2d(coords[ai],coords[bi]) << "\n";
+  }
+
+  BOOST_CHECK(true);
+}

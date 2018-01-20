@@ -78,6 +78,25 @@ int TriLadder::small_node(int e) {
   return e / 2;
 }
 
+// Compute the edge number between a higher and lower node.
+int TriLadder::edge_between(int ndh,int ndl) {
+  if (ndl >= ndh) {
+    cout << "ndh,ndl" << ndh << " " << ndl << "\n";
+    cout << "INTERNAL ERROR\n";
+    abort();
+  }
+  int d = ndh-ndl;
+  if (d == 1) {
+    return (ndh * 2) - 2;    
+  } else if (d == 2) {
+    return (ndh * 2) - 3;
+  } else {
+    cout << "ndh,ndl" << ndh << " " << ndl << "\n";    
+    cout << "INTERNAL ERROR\n";
+    abort();
+  }
+}
+
 // Note on edge numbering: Nodes are numbered in order of the
 // so that the lowest possible two nodes first.
 // So it order AB first.  Then it orders AC, since A+C < A+B.
@@ -448,9 +467,14 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
   int di = ci+1;
   // this is a special case we are not prepared to handle yet!
   if (di >= num_nodes) {
+    // This is where I should work tomorrow....basically, d_e_a is the vector
+    // of the penultimate pointing to the ultimate, normalized to 1 I guess.
     column_vector d_e_a(2);
-    d_e_a(0) = 0;
-    d_e_a(1) = 0;
+    int last_node = goal_nodes[0];
+    column_vector en = cur_coords[last_node];
+    column_vector pen = cur_coords[last_node-1];
+    double len = distance_2d(en,pen);
+    d_e_a = (en - pen) / len;
     return d_e_a;
   }
 
@@ -654,7 +678,7 @@ void fix_sense(bool desired_sense,double x0,double y0,double x1,double y1,column
       // now how do we make this penalize for going the wrong way?
       bool found_sense = (det > 0) ? CCW : CW;
 
-      if (debug_find) std::cout << "det " << det << std::endl;
+      //      if (debug_find) std::cout << "det " << det << std::endl;
       
       bool need_to_flip = (desired_sense != found_sense);
 
@@ -681,13 +705,14 @@ void fix_sense(bool desired_sense,double x0,double y0,double x1,double y1,column
 	z(0) = r(0);
 	z(1) = r(1);
       }
-      if (debug_find) std::cout << " z " << z << std::endl;
+      //      if (debug_find) std::cout << " z " << z << std::endl;
 }
 
 void find_all_coords(TriLadder *an,column_vector coords[]) {
     FindCoords f;
 
     // This should really be moved inot the TriLadder class in some way!
+    // WARNING -- THIS IS FIXED!!
     column_vector temp0(2);
     temp0 = 0, 0;
     coords[0] = temp0;
@@ -702,8 +727,8 @@ void find_all_coords(TriLadder *an,column_vector coords[]) {
     for(int i = fs; i < an->num_nodes; i++) {
       // Let's set up initial values
       // choose a starting point
+      cout << "i = " << i << "\n";
 
-      
       f.a.set_size(2);
       f.a(0) = coords[i-fs](0);
       f.a(1) = coords[i-fs](1);
@@ -718,19 +743,22 @@ void find_all_coords(TriLadder *an,column_vector coords[]) {
       if (debug_find) std::cout << "f.a " << f.a << std::endl;
       if (debug_find) std::cout << "f.b " << f.b << std::endl;
 
-
-      f.dac = an->distance(i-fs);
-      f.dbc = an->distance(i-(fs-1));
+      int e = an->edge_between(i,i-1);
+      cout << "edge " << e << " " << i << " " << i-1 << "\n";
+      f.dac = an->distance(e-1);
+      f.dbc = an->distance(e);
+      cout << "dac dbc " <<  f.dac << " " << f.dbc << "\n";
+      
       double dab = distance_2d(f.a,f.b);
 
-
+      
       column_vector  y(2);
 
       y = find_third_point_given_two_and_distances(desired_sense,dab,f.dbc,f.dac,f.a,f.b);
       
       fix_sense(desired_sense,f.a(0), f.a(1), f.b(0), f.b(1),y);
 
-      
+
       column_vector  z(2);            
       if (!any_too_small(dab,f.dbc,f.dac)) {
 	z = y;
@@ -740,6 +768,9 @@ void find_all_coords(TriLadder *an,column_vector coords[]) {
       }
       z = y;
 
+      cout << "z" << "\n";
+      
+      cout << f.a << " " << f.b << "\n";
       coords[i].set_size(2);
       coords[i](0) = z(0);
       coords[i](1) = z(1);
