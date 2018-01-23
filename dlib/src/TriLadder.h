@@ -33,8 +33,8 @@ typedef matrix<double,0,1> column_vector;
 void print_vec(column_vector& vec);
 
 
-const bool debug_find = true;
-const bool debug = true;
+const bool debug_find = false;
+const bool debug = false;
 
 double distance_2d(column_vector a, column_vector b);
 

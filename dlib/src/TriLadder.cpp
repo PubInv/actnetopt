@@ -333,8 +333,6 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
   int M = large_node(e);
   int S = small_node(e);
   int P = (M+S)/2;
-  // note these nodes should be three-in-a-row
-  if (debug) cout << "e,S,P,M:" << e << " " << S << " " << P << " " << M << "\n";
 
   column_vector m = cur_coords[M];
   column_vector p = cur_coords[P];
@@ -357,8 +355,6 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
 
   f = f * sgn(spm);
 
-  if (debug) cout << "f = " << f << "\n";
-
   // theta is angle about P of S into M
   // I worked the math in that paper out based on anticlockwise angles!
   //  double theta = -get_angle(s,p,m);
@@ -370,18 +366,17 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
   //  cout << "en :" << en << "\n";    
   //  cout << "pivot_to_en :" << pivot_to_en << "\n";
   //  cout << "p :" << p << "\n";  
-  double theta = -get_angle(xaxis+p,p,en);
+  //  double theta = -get_angle(xaxis+p,p,en);
   
-  double stheta = sin(theta);
-  double ctheta = cos(theta);
+  //  double stheta = sin(theta);
+  //  double ctheta = cos(theta);
 
-  if (debug) cout << "theta :" << theta*180/PI << "\n";
-  if (debug) cout << "stheta :" << stheta << "\n";
-  if (debug) cout << "ctheta :" << ctheta << "\n";
+  // if (debug) cout << "theta :" << theta*180/PI << "\n";
+  // if (debug) cout << "stheta :" << stheta << "\n";
+  // if (debug) cout << "ctheta :" << ctheta << "\n";
 
   double xd = (enx - x);
   double yd = (eny - y);
-  if (debug) cout << "xd, yd" << xd << "," << yd << "\n";
 
   // d_e_l is the "partial derivative of e with respect to l"
   column_vector d_e_l(2);
@@ -390,8 +385,6 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
   //  d_e_l(1) = f * (xd * ctheta + - yd * stheta);
   d_e_l(0) = f * (-yd );
   d_e_l(1) = f * (xd);
-  cout << "external: ";
-  print_vec(d_e_l);
   return d_e_l;
 }
 
@@ -437,8 +430,8 @@ double TriLadder::compute_dtheta_internal_da(column_vector A,
   dbeta_da = dbeta_da * sense_angle_abc_beta;
   dchi_da = dchi_da * sense_angle_bcd_chi; 
   
-  //  cout << "dchi_da: " << dchi_da*180/M_PI << "\n";
-  //  cout << "dbeta_da: " << dbeta_da*180/M_PI << "\n";    
+  cout << "dchi_da: " << dchi_da*180/M_PI << "\n";
+  cout << "dbeta_da: " << dbeta_da*180/M_PI << "\n";    
 
   //  cout << "sense_dchi_da: " << sense_angle_bcd_chi << "\n";
   //  cout << "sense_dbeta_da: " << sense_angle_abc_beta << "\n";    
@@ -549,11 +542,17 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
   //  cout << "first_coeff: " << first_coeff << "\n";  
   
   //  print_vec(e_minus_c);
-
+  
   double dtheta_da = compute_dtheta_internal_da(A,B,C,D,a,b,c,f,g);
   
   // derivative of end effector wrt to change in length a...
   column_vector d_e_a(2);
+  
+  cout << "first_term: " << first_coeff*rot << "\n";
+  cout << "second_term: " << dtheta_da*e_minus_c << "\n";
+  cout << "dtheta_da: " << dtheta_da*180/M_PI << "\n";
+  cout << "e_minus_c distance: " << distance_2d(en,C) << "\n";
+  
   d_e_a = first_coeff*rot + dtheta_da*e_minus_c;
   return d_e_a;
 }
@@ -727,7 +726,6 @@ void find_all_coords(TriLadder *an,column_vector coords[]) {
     for(int i = fs; i < an->num_nodes; i++) {
       // Let's set up initial values
       // choose a starting point
-      cout << "i = " << i << "\n";
 
       f.a.set_size(2);
       f.a(0) = coords[i-fs](0);
@@ -744,10 +742,8 @@ void find_all_coords(TriLadder *an,column_vector coords[]) {
       if (debug_find) std::cout << "f.b " << f.b << std::endl;
 
       int e = an->edge_between(i,i-1);
-      cout << "edge " << e << " " << i << " " << i-1 << "\n";
       f.dac = an->distance(e-1);
       f.dbc = an->distance(e);
-      cout << "dac dbc " <<  f.dac << " " << f.dbc << "\n";
       
       double dab = distance_2d(f.a,f.b);
 
@@ -768,9 +764,6 @@ void find_all_coords(TriLadder *an,column_vector coords[]) {
       }
       z = y;
 
-      cout << "z" << "\n";
-      
-      cout << f.a << " " << f.b << "\n";
       coords[i].set_size(2);
       coords[i](0) = z(0);
       coords[i](1) = z(1);

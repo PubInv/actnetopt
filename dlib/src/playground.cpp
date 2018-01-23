@@ -19,7 +19,7 @@ void physical_to_viewport(double px,double py,double *vx, double *vy);
 void viewport_to_physical(double px,double py,double *vx, double *vy);
 
 
-#define LADDER_NODES 26
+#define LADDER_NODES 12
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
@@ -409,8 +409,11 @@ const int WIN_WIDTH = 640 * 2;
 const int WIN_HEIGHT = 480 * 2;
 
 // These are the size of the physical size
-const double w = (LADDER_NODES < 11) ? 10.0 : (LADDER_NODES < 21) ? 20.0 : 40.0;
-const double h = (LADDER_NODES < 11) ? 10.0 : (LADDER_NODES < 21) ? 20.0 : 40.0;
+//const double w = (LADDER_NODES < 11) ? 10.0 : (LADDER_NODES < 21) ? 20.0 : 40.0;
+//const double h = (LADDER_NODES < 11) ? 10.0 : (LADDER_NODES < 21) ? 20.0 : 40.0;
+
+const double w = (LADDER_NODES / 10.0 ) * 12.0 ;
+const double h = (LADDER_NODES / 10.0 ) * 12.0 ;
 
 
 void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
