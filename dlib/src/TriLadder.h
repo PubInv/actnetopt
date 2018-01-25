@@ -90,7 +90,9 @@ public:
   //  typedef graph_traits<Graph>::vertex_iterator vertex_iter;
   //  IndexMap index;
 
-  column_vector goals[1];
+  //  column_vector goals[1];
+  std::vector<column_vector> goals;
+
 
   column_vector distance;
   
@@ -103,7 +105,7 @@ public:
   // This is a map into the goal position for each goal.
   // goal_nodes[a] = b => goals[a] should be considered node b.
   std::vector<int> goal_nodes;
-
+  std::vector<double> goal_weights;
 
   double gscore();
   double lscore();
@@ -123,8 +125,6 @@ double compute_single_derivative_dtheta(column_vector cur_coords[],
 column_vector compute_single_derivative_c(column_vector cur_coords[],
 				   int edge_number);
 
-column_vector compute_external_effector_derivative_c(column_vector cur_coords[],
-				   int edge_number);
 
 double compute_dtheta_internal_da(column_vector A,
 			 column_vector B,
@@ -135,9 +135,14 @@ double compute_dtheta_internal_da(column_vector A,
 			 double c,
 			 double f,
 				     double g);
+ 
+column_vector compute_external_effector_derivative_c(column_vector cur_coords[],
+						     int edge_number,
+						     int goal_node_number);
 
- column_vector compute_internal_effector_derivative_c(column_vector cur_coords[],
-								 int edge_number);
+column_vector compute_internal_effector_derivative_c(column_vector cur_coords[],
+						      int edge_number,
+						      int goal_node_number);
  
  
  

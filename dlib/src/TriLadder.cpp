@@ -24,11 +24,6 @@ using namespace dlib;
 // typedef matrix<double,0,1> column_vector;
 
 
-// TODO: This is very messy. My goal here is to test this out.
-// A) I need to use some sort of Vector.  This system uses column_vector;
-// I hardely know how to use that.
-// B) Maybe I should first test multiple variables in a simpler system first!
-// Can I solve 100 variables?
 void print_vec(column_vector& vec)
 {
   for(int i = 0; i < vec.size(); i++) {
@@ -158,16 +153,28 @@ TriLadder::TriLadder(int nodes,
     // modify the relaxed position by this amount...
     double mx = 0.1;
     double my = 1.0;
+
+    // Here for testing I adding a second goal of a middle node
+    // and fixing it to approximately a midpoint.
+    // {
+    // column_vector mg(2);
+    // mg(0) = bx/2;
+    // mg(1) = by/2;
+    // goals.push_back(mg);
+    // goal_nodes.push_back(num_nodes/2);
+    // goal_weights.push_back(1.0);
+    // }
+
     column_vector gl(2);
     gl(0) = bx+mx;
     gl(1) = by+my;
-    goals[0] = gl;
-    cout << "last_node = " << last_node << "\n";
-    print_vec(gl);
-
+    goals.push_back(gl);
     goal_nodes.push_back(num_nodes-1);
-    
-    //    index = get(vertex_index, g);
+    goal_weights.push_back(1.0);
+
+    cout << "goal_nodes[0] " << goal_nodes[0] << "\n";
+    cout << "goal_nodes[1] " << goal_nodes[1] << "\n";    
+
   }
   double TriLadder::gscore() {
     double v = 0.0;
@@ -186,7 +193,7 @@ TriLadder::TriLadder(int nodes,
       d = x - y;
       if (debug) std::cout << "Invert d " <<  d(0) <<  "," << d(1) <<  " " << std::endl;
       double vp = d(0)*d(0) + d(1)*d(1);
-      v += vp;
+      v += goal_weights[i]*vp;
     }
     return v;
   }
@@ -317,11 +324,13 @@ column_vector TriLadder::compute_single_derivative_c(column_vector cur_coords[],
 }
 
 column_vector TriLadder::compute_external_effector_derivative_c(column_vector cur_coords[],
-						  int edge_number) {
+								int edge_number,
+								int goal_node_number) {
   // First, let us set up our variables...
   // This nomenclature matches the paper "OnSimplePlanarVariableGeomertyTrusses"
   // e is the end effector
-  column_vector en = cur_coords[goal_nodes[0]];
+  column_vector en = cur_coords[goal_node_number];
+  
   double enx = en(0);
   double eny = en(1);
 
@@ -333,6 +342,24 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
   int M = large_node(e);
   int S = small_node(e);
   int P = (M+S)/2;
+
+
+  column_vector d_e_a(2);
+
+  cout << "External goal_node_number : " << goal_node_number << "\n";
+  cout << "S : " << S << "\n";
+
+  if (goal_node_number <= S) {
+    d_e_a(0) = 0.0;
+    d_e_a(1) = 0.0;
+    return d_e_a;
+  } else {
+    cout << " Else External \n";
+    cout << S << "\n";
+    cout << M << "\n";
+  }
+
+  print_vec(en);
 
   column_vector m = cur_coords[M];
   column_vector p = cur_coords[P];
@@ -350,6 +377,9 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
   // Unfortunately, we need to compute the sign of this...
   // We should be able to do this based on the sign of < SPM
   double spm = -get_angle(s,p,m);
+
+  cout << "spm = " << spm*180/M_PI << "\n";
+  
   double f0 = (a*a + c*c - b*b)/ (4*a*a * c*c);
   double f = b / (a*c*sqrt(1 - f0));
 
@@ -378,14 +408,13 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
   double xd = (enx - x);
   double yd = (eny - y);
 
-  // d_e_l is the "partial derivative of e with respect to l"
-  column_vector d_e_l(2);
+  // d_e_a is the "partial derivative of e with respect to l"
   // I think this is right, but I don't know what was wrong with my reasoning.
-  //  d_e_l(0) = f * (-xd * stheta + -yd * ctheta);
-  //  d_e_l(1) = f * (xd * ctheta + - yd * stheta);
-  d_e_l(0) = f * (-yd );
-  d_e_l(1) = f * (xd);
-  return d_e_l;
+  //  d_e_a(0) = f * (-xd * stheta + -yd * ctheta);
+  //  d_e_a(1) = f * (xd * ctheta + - yd * stheta);
+  d_e_a(0) = f * (-yd );
+  d_e_a(1) = f * (xd);
+  return d_e_a;
 }
 
 double TriLadder::compute_dtheta_internal_da(column_vector A,
@@ -430,8 +459,8 @@ double TriLadder::compute_dtheta_internal_da(column_vector A,
   dbeta_da = dbeta_da * sense_angle_abc_beta;
   dchi_da = dchi_da * sense_angle_bcd_chi; 
   
-  cout << "dchi_da: " << dchi_da*180/M_PI << "\n";
-  cout << "dbeta_da: " << dbeta_da*180/M_PI << "\n";    
+  //  cout << "dchi_da: " << dchi_da*180/M_PI << "\n";
+  // cout << "dbeta_da: " << dbeta_da*180/M_PI << "\n";    
 
   //  cout << "sense_dchi_da: " << sense_angle_bcd_chi << "\n";
   //  cout << "sense_dbeta_da: " << sense_angle_abc_beta << "\n";    
@@ -449,48 +478,55 @@ double TriLadder::compute_dtheta_internal_da(column_vector A,
 
 // The edge number is the full edge number, not numbered from the variable edges.
 column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cur_coords[],
-						  int edge_number) {
+								int edge_number,
+								int goal_node_number) {
   // This is a preliminary attempt to code the internal derivative from "On Simple Planar Variable Geometry Trusses."
   // Given it's complexity, I suspect it will take some debugging.
   // This cannot be understood without reference to the diagram occuring in that paper.
+  column_vector en = cur_coords[goal_node_number];	   
   int e = edge_number;
   int ai = small_node(e-2);
   int bi = large_node(e-2);
   int ci = bi+1;
   int di = ci+1;
   // this is a special case we are not prepared to handle yet!
-  if (di >= num_nodes) {
-    // This is where I should work tomorrow....basically, d_e_a is the vector
-    // of the penultimate pointing to the ultimate, normalized to 1 I guess.
-    column_vector d_e_a(2);
-    int last_node = goal_nodes[0];
-    column_vector en = cur_coords[last_node];
+
+  // WARNING: This is probably wrong -- we can't quite treat this as a special case
+  // if there are multiple
+  column_vector d_e_a(2);
+  cout << "goal_node_number : " << goal_node_number << "\n";
+  cout << "bi : " << bi << "\n";
+
+  if (goal_node_number <= bi) {
+    d_e_a(0) = 0.0;
+    d_e_a(1) = 0.0;
+    return d_e_a;
+  } else if (goal_node_number == ci) {
+    int last_node = ci;
     column_vector pen = cur_coords[last_node-1];
     double len = distance_2d(en,pen);
     d_e_a = (en - pen) / len;
     return d_e_a;
+  } else {
+    cout << " Else clause \n";
+    cout << ci << "\n";
+    cout << di << "\n";
   }
 
-  //  cout << "e " << e << "\n";
-  //  cout << "ai bi ci di " << ai << " " << bi << " " << ci << " " << di << "\n";
-
+  print_vec(en);
+  
   column_vector A = cur_coords[ai];
   column_vector B = cur_coords[bi];
   column_vector C = cur_coords[ci];
   column_vector D = cur_coords[di];
 
-  //  cout << "A,B" << "\n";
-  //  print_vec(A);
-  //  print_vec(B);
-  //  cout << "=====\n";
-  
   double a = distance_2d(B,C);
   double b = distance_2d(A,C);
   double c = distance_2d(A,B);
   double f = distance_2d(B,D);
   double g = distance_2d(C,D);
 
-  column_vector en = cur_coords[goal_nodes[0]];
+  //  column_vector en = cur_coords[goal_nodes[0]];
 
   column_vector X(2);
   X(0) = 100.0;
@@ -546,12 +582,11 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
   double dtheta_da = compute_dtheta_internal_da(A,B,C,D,a,b,c,f,g);
   
   // derivative of end effector wrt to change in length a...
-  column_vector d_e_a(2);
   
-  cout << "first_term: " << first_coeff*rot << "\n";
-  cout << "second_term: " << dtheta_da*e_minus_c << "\n";
-  cout << "dtheta_da: " << dtheta_da*180/M_PI << "\n";
-  cout << "e_minus_c distance: " << distance_2d(en,C) << "\n";
+  // cout << "first_term: " << first_coeff*rot << "\n";
+  // cout << "second_term: " << dtheta_da*e_minus_c << "\n";
+  // cout << "dtheta_da: " << dtheta_da*180/M_PI << "\n";
+  // cout << "e_minus_c distance: " << distance_2d(en,C) << "\n";
   
   d_e_a = first_coeff*rot + dtheta_da*e_minus_c;
   return d_e_a;

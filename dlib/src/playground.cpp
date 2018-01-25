@@ -19,7 +19,7 @@ void physical_to_viewport(double px,double py,double *vx, double *vy);
 void viewport_to_physical(double px,double py,double *vx, double *vy);
 
 
-#define LADDER_NODES 12
+#define LADDER_NODES 20
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
@@ -82,7 +82,7 @@ public:
     // If I don't change an here, I'm not changing the coords!!
     find_all_coords(cur_an,coords);
     for(int i = 0; i < cur_an->num_nodes; i++) {
-       std::cout << " coords["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
+      //       std::cout << " coords["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
     }
     
     double v = 0.0;
@@ -90,6 +90,8 @@ public:
       int idx = cur_an->goal_nodes[i];
       if (debug) std::cout << "idx " <<  idx  << std::endl;      
       column_vector g = cur_an->goals[i];
+      cout << "goal " << i << "\n";
+      print_vec(g);
       column_vector c = coords[idx];      
       column_vector x(2);
       x(0) = g(0);
@@ -103,7 +105,8 @@ public:
       if (debug) std::cout << "Invert y " <<  y(0) <<  "," << y(1)  << std::endl;                  
       d = x - y;
       if (debug) std::cout << "Invert d " <<  d(0) <<  "," << d(1) <<  " " << std::endl;
-      v += distance_2d(x,y);
+      v += cur_an->goal_weights[i]*distance_2d(x,y);
+      cout << "i v" << i << " " << v << "\n";
       //      v += l2_norm(d);
     }
    std::cout << "Invert v " <<  v <<  " " << std::endl;
@@ -132,6 +135,7 @@ public:
     find_all_coords(cur_an,coords);
     column_vector d(cur_an->var_edges);
 
+
     column_vector g = cur_an->goals[0];
     int idx = cur_an->goal_nodes[0];	
     column_vector c = coords[idx];
@@ -140,13 +144,32 @@ public:
       // The true edge number is one higher than the index of the variable edges, since the first is fixed.
       int e = i + 1;
       column_vector dx(2);
-      if (((e % 2) == 1)) {
-  	dx = cur_an->compute_external_effector_derivative_c(coords,e);
+      dx(0) = 0.0;
+      dx(1) = 0.0;
+
+      for(int j = 0; j < cur_an->goals.size(); j++) {
+	column_vector d;
+	cout << " e = " << e << "\n";
+	if ((e % 2) == 1) {
+	  d = cur_an->compute_external_effector_derivative_c(coords,e,cur_an->goal_nodes[j]);
+	} else  if ((e % 2) == 0) {
+	  d = cur_an->compute_internal_effector_derivative_c(coords,e,cur_an->goal_nodes[j]);
+	}
+	cout << "derivative  j d " << j << "\n";
+	if ((d(0) > 100.0) || (abs(d(1)) > 10.0)) {
+	  cout << "CRISIS!\n";
+	  abort();
+	}
+
+	print_vec(d);
+	print_vec(dx);
+	cout << "weight " << cur_an->goal_weights[j] << "\n";
+	dx += d * cur_an->goal_weights[j];
       }
-      else if ((e % 2) == 0) {
-      	  dx = cur_an->compute_internal_effector_derivative_c(coords,e);
-      }
-      // Print out these values until we understand what is hapening here.
+      
+      print_vec(dx);
+
+       // Print out these values until we understand what is hapening here.
       cout << " c, g " << c << " , " << g << "\n";
       column_vector goal_direction = c - g;
       cout << "dx, direction: " << "\n";
@@ -158,10 +181,10 @@ public:
     }
     cout << "cur_an->var_edges = " << cur_an->var_edges << "\n";
 
-    cout << "DERIVATIVES" << "\n";
-    for(int i = 0; i < cur_an->var_edges; i++) {
-      cout << "i " << i << " " << d(i) << "\n";
-    }
+    // cout << "DERIVATIVES" << "\n";
+    // for(int i = 0; i < cur_an->var_edges; i++) {
+    //   cout << "i " << i << " " << d(i) << "\n";
+    // }
 
     return d;
   }
@@ -217,8 +240,8 @@ void solve_inverse_problem(TriLadder *an) {
     }
     
     double score = find_min_box_constrained(
-			      bfgs_search_strategy(),
-			     // lbfgs_search_strategy(30),
+					    // bfgs_search_strategy(),
+			     lbfgs_search_strategy(30),
 			     // cg_search_strategy(),
 			     //			     newton_search_strategy,
 			     objective_delta_stop_strategy(1e-5),
@@ -228,14 +251,16 @@ void solve_inverse_problem(TriLadder *an) {
 			     uniform_matrix<double>(n,1, LOWER_BOUND),  // lower bound constraint
 			     uniform_matrix<double>(n,1, UPPER_BOUND)   // upper bound constraint
 			     );
-    cout << "===============\n";
-    cout << "score = " << score << "\n";
-    cout << "best  = " << best_score << "\n";
-    for (int i = 0; i < an->var_edges; ++i) {
-      cout << i << " " << best_distances[i] << "\n";
-      an->distance(i+1) = best_distances[i];
 
-      cout << i << " " << sp(i) << "\n";
+    // I uses this to get rid of the warning
+    score = score + 0.0;
+    //    cout << "===============\n";
+    //    cout << "score = " << score << "\n";
+    //    cout << "best  = " << best_score << "\n";
+    for (int i = 0; i < an->var_edges; ++i) {
+      //      cout << i << " " << best_distances[i] << "\n";
+      an->distance(i+1) = best_distances[i];
+      //      cout << i << " " << sp(i) << "\n";
     }
     // WARNING: we should free best here...
   }
@@ -453,23 +478,41 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);       
      }
 
-     SDL_SetRenderDrawColor(renderer, 255, 255, 0, 200);       
+     SDL_SetRenderDrawColor(renderer, 255, 255, 0, 200);
+
      for(int i = 0; i < an->var_edges; i++) {
-       //       column_vector d = an->compute_single_derivative_c(coords,i);
+       column_vector d_full(2);
+       d_full(0) = 0.0;
+       d_full(1) = 0.0;
        int e = i + 1;
-       column_vector d;
-       if ((e % 2) == 1) {
-	 d = an->compute_external_effector_derivative_c(coords,e);
-	 SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);       	 	 
-       } else  if ((e % 2) == 0) {
-	  d = an->compute_internal_effector_derivative_c(coords,e);
-	  SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);       	 	  
+       
+       for(int j = 0; j < an->goals.size(); j++) {
+	   column_vector d;
+	   cout << " e = " << e << "\n";
+	   if ((e % 2) == 1) {
+	     d = an->compute_external_effector_derivative_c(coords,e,an->goal_nodes[j]);
+	   } else  if ((e % 2) == 0) {
+	     d = an->compute_internal_effector_derivative_c(coords,e,an->goal_nodes[j]);
+	   }
+	   cout << "goal j d " << j << "\n";
+           print_vec(d);
+	   if ((d(0) > 100.0) || (abs(d(1)) > 100.0)) {
+	     cout << "CRISIS!\n";
+	     abort();
+	   }
+	   d_full = d_full + d * an->goal_weights[j];
        }
-       print_vec(d);
+       print_vec(d_full);
        int node = an->large_node(e);
        column_vector tail = (coords[node]+ coords[an->small_node(e)])/ 2.0;
-       render_arrow(renderer,tail,d+tail);
-     } 
+       if ((e % 2) == 1) {
+	 SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);       	 	 
+       } else  if ((e % 2) == 0) {
+	 SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);       	 	  
+       }
+       
+       render_arrow(renderer,tail,d_full+tail);
+     }
 }
 
 void draw_axes(SDL_Renderer* renderer) {
@@ -746,6 +789,7 @@ int main( int argc, char* args[] )
   	column_vector gl(2);
   	gl(0) = px;
   	gl(1) = py;
+
   	an.goals[0] = gl;
 	cout  << "goal : " << gl << "\n";
 	
