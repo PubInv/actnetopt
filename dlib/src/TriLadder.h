@@ -68,6 +68,8 @@ public:
   int small_node(int e);
   int edge_between(int ndh,int ndl);
 
+  void add_goal_node(int num, double x,double y, double w);
+
   TriLadder(int nodes,
 	    double u,
 	    double l,

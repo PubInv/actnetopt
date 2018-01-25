@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <iostream>
 #include "TriLadder.h"
+#include "Invert.h"
 
 
 #include <math.h>
@@ -13,7 +14,7 @@
 #define BOOST_TEST_MODULE MyTest
 #include <boost/test/unit_test.hpp>
 
-#define LADDER_NODES 4
+#define LADDER_NODES 10
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
@@ -352,4 +353,130 @@ BOOST_AUTO_TEST_CASE( find_coords )
   }
 
   BOOST_CHECK(true);
+}
+
+void print_vector_with_indices(column_vector d) {
+  for(int i = 0; i < d.size(); i++) {
+    cout << "i " << i << " " << d(i) << "\n";
+  }
+}
+
+TriLadder *Invert::cur_an = 0;
+
+BOOST_AUTO_TEST_CASE( two_node_derivative_behaves_accurately )
+{
+  TriLadder an(LADDER_NODES,
+			   UPPER_BOUND,
+			   LOWER_BOUND,
+			   MEDIAN,
+			   INITIAL
+	       );
+
+  int last_node = an.num_nodes - 1;
+  double bx = ((last_node % 2) == 0) ? 0.0 : an.median_d * cos(30.0*PI/180);
+  double by = (an.median_d/2.0) * last_node;
+  
+  double mx = 1.0;
+  double my = 1.0;
+  an.add_goal_node(an.num_nodes-1,bx+mx,by+my,1.0);    
+
+  for(int i = 0; i < an.goal_nodes.size(); i++) {
+    cout << "goal_nodes[" << i << "] " << an.goal_nodes[i] << "\n";
+  }
+
+
+  cout << "START\n";
+  cout << "an.num_nodes: " << an.num_nodes << "\n";
+  column_vector* coords = new column_vector[an.num_nodes];
+
+  const double SHORT = LOWER_BOUND;
+  const double LONG = UPPER_BOUND;
+
+  an.distance(0) = INITIAL;
+  an.distance(1) = LONG;
+  an.distance(2) = SHORT;
+  an.distance(3) = SHORT;
+  an.distance(4) = LONG;
+  
+  find_all_coords(&an,coords);
+
+  Invert inv;
+  inv.an = &an;
+  inv.set_cur_an();
+  
+  cout << "==================\n";
+  
+  column_vector ds(an.var_edges);
+  for (int i = 0; i < an.var_edges; ++i) {
+      if (debug) std::cout << i << " : " << ds(i) << std::endl;
+      // This is correct?  It should it just be "i"?
+      cout << i << " " << an.distance(i+1) << "\n";
+      ds(i) = an.distance(i+1);
+  }
+  cout << "==================\n";
+  column_vector derivatives0 = inv.derivative(ds);
+
+  cout << "DERIVATIVES" << "\n";
+  for(int i = 0; i < an.var_edges; i++) {
+    cout << "i " << i << " " << derivatives0(i) << "\n";
+  }
+
+  cout << "SECOND NODE ADDED\n";
+  
+  an.add_goal_node(an.num_nodes/2,bx/2,by/2,1.0);
+  
+  column_vector derivatives1 = inv.derivative(ds);
+  
+  for(int i = 0; i < an.var_edges; i++) {
+    cout << "i " << i << " " << derivatives1(i) << "\n";
+  }
+    
+  BOOST_CHECK(true);
+}
+
+BOOST_AUTO_TEST_CASE( Objective_function_appears_sensible )
+{
+  TriLadder an(LADDER_NODES,
+			   UPPER_BOUND,
+			   LOWER_BOUND,
+			   MEDIAN,
+			   INITIAL
+	       );
+
+  int last_node = an.num_nodes - 1;
+  double bx = ((last_node % 2) == 0) ? 0.0 : an.median_d * cos(30.0*PI/180);
+  double by = (an.median_d/2.0) * last_node;
+  
+  double mx = 10.0;
+  double my = 10.0;
+  an.add_goal_node(an.num_nodes-1,bx+mx,by+my,1.0);    
+  for(int i = 0; i < an.goal_nodes.size(); i++) {
+    cout << "goal_nodes[" << i << "] " << an.goal_nodes[i] << "\n";
+  }
+  column_vector* coords = new column_vector[an.num_nodes];
+  
+  find_all_coords(&an,coords);
+
+  Invert inv;
+  inv.an = &an;
+  inv.set_cur_an();
+  
+  column_vector ds(an.var_edges);
+  for (int i = 0; i < an.var_edges; ++i) {
+      if (debug) std::cout << i << " : " << ds(i) << std::endl;
+      cout << i << " " << an.distance(i+1) << "\n";
+      ds(i) = an.distance(i+1);
+  }
+  
+  cout << "==================\n";
+  double score0 = inv.objective(ds);
+  cout << "score: " << score0 << "\n";
+
+  an.add_goal_node(an.num_nodes/2,bx+mx,by+my,1.0);    
+
+  cout << "==================\n";
+  double score1 = inv.objective(ds);
+  cout << "score: " << score1 << "\n";
+  
+  BOOST_CHECK(score1 > score0);
 }

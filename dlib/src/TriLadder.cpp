@@ -92,6 +92,18 @@ int TriLadder::edge_between(int ndh,int ndl) {
   }
 }
 
+
+    // Here for testing I adding a second goal of a middle node
+    // and fixing it to approximately a midpoint.
+void TriLadder::add_goal_node(int num,double x,double y, double w)    {
+      column_vector mg(2);
+      mg(0) = x;
+      mg(1) = y;
+      goals.push_back(mg);
+      goal_nodes.push_back(num);
+      goal_weights.push_back(w);
+    }
+
 // Note on edge numbering: Nodes are numbered in order of the
 // so that the lowest possible two nodes first.
 // So it order AB first.  Then it orders AC, since A+C < A+B.
@@ -147,34 +159,6 @@ TriLadder::TriLadder(int nodes,
       lower_bound(i) = lower_bound_d;
       upper_bound(i) = upper_bound_d;            
     }
-    int last_node = num_nodes - 1;
-    double bx = ((last_node % 2) == 0) ? 0.0 : median_d * cos(30.0*PI/180);
-    double by = (median_d/2.0) * last_node;
-    // modify the relaxed position by this amount...
-    double mx = 0.1;
-    double my = 1.0;
-
-    // Here for testing I adding a second goal of a middle node
-    // and fixing it to approximately a midpoint.
-    // {
-    // column_vector mg(2);
-    // mg(0) = bx/2;
-    // mg(1) = by/2;
-    // goals.push_back(mg);
-    // goal_nodes.push_back(num_nodes/2);
-    // goal_weights.push_back(1.0);
-    // }
-
-    column_vector gl(2);
-    gl(0) = bx+mx;
-    gl(1) = by+my;
-    goals.push_back(gl);
-    goal_nodes.push_back(num_nodes-1);
-    goal_weights.push_back(1.0);
-
-    cout << "goal_nodes[0] " << goal_nodes[0] << "\n";
-    cout << "goal_nodes[1] " << goal_nodes[1] << "\n";    
-
   }
   double TriLadder::gscore() {
     double v = 0.0;
@@ -250,7 +234,6 @@ double TriLadder::compute_single_derivative_dtheta(column_vector cur_coords[],
   
   // We add one because the variable edges are not the same as the num_edges
   int e = edge_number + 1;
-  cout << "edge  "<< e << "\n";  
   // Case split on if the edge is an outside edge or not
   // A B C are a triangle.  A and B are fixed; BC is the changing line
   // (the one specified by edge_number.) phi is angle ABC.
@@ -346,20 +329,17 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
 
   column_vector d_e_a(2);
 
-  cout << "External goal_node_number : " << goal_node_number << "\n";
-  cout << "S : " << S << "\n";
-
   if (goal_node_number <= S) {
     d_e_a(0) = 0.0;
     d_e_a(1) = 0.0;
     return d_e_a;
   } else {
-    cout << " Else External \n";
-    cout << S << "\n";
-    cout << M << "\n";
+    //    cout << " Else External \n";
+    //    cout << S << "\n";
+    //    cout << M << "\n";
   }
 
-  print_vec(en);
+  //  print_vec(en);
 
   column_vector m = cur_coords[M];
   column_vector p = cur_coords[P];
@@ -378,8 +358,6 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
   // We should be able to do this based on the sign of < SPM
   double spm = -get_angle(s,p,m);
 
-  cout << "spm = " << spm*180/M_PI << "\n";
-  
   double f0 = (a*a + c*c - b*b)/ (4*a*a * c*c);
   double f = b / (a*c*sqrt(1 - f0));
 
@@ -494,8 +472,6 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
   // WARNING: This is probably wrong -- we can't quite treat this as a special case
   // if there are multiple
   column_vector d_e_a(2);
-  cout << "goal_node_number : " << goal_node_number << "\n";
-  cout << "bi : " << bi << "\n";
 
   if (goal_node_number <= bi) {
     d_e_a(0) = 0.0;
@@ -508,12 +484,11 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
     d_e_a = (en - pen) / len;
     return d_e_a;
   } else {
-    cout << " Else clause \n";
-    cout << ci << "\n";
-    cout << di << "\n";
+    //    cout << " Else clause \n";
+    //    cout << ci << "\n";
+    //    cout << di << "\n";
   }
 
-  print_vec(en);
   
   column_vector A = cur_coords[ai];
   column_vector B = cur_coords[bi];
