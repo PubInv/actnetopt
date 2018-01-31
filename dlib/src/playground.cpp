@@ -20,7 +20,7 @@ void physical_to_viewport(double px,double py,double *vx, double *vy);
 void viewport_to_physical(double px,double py,double *vx, double *vy);
 
 
-#define LADDER_NODES 40
+#define LADDER_NODES 30
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
@@ -42,6 +42,8 @@ void get_rcoords(column_vector v,int* x,int* y) {
 
 
 TriLadder *Invert::cur_an = 0;
+
+
 
 
 void solve_inverse_problem(TriLadder *an) {
@@ -145,7 +147,7 @@ int mainx(TriLadder *an,column_vector* coords)
 	  solve_inverse_problem(an);
 
 	  for (int i = 0; i < an->num_edges; ++i) {
-	    std::cout << "mainx" << i << " : " << an->distance(i) << std::endl;
+	    //	    std::cout << "mainx" << i << " : " << an->distance(i) << std::endl;
 	  }
 
 	  find_all_coords(an,coords);
@@ -351,8 +353,8 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
 	   }
 	   d_full = d_full + (d * an->goal_weights[j]);
        }
-       cout << "full: ";
-       print_vec(d_full);
+       //       cout << "full: ";
+       //       print_vec(d_full);
        int node = an->large_node(e);
        column_vector tail = (coords[node]+ coords[an->small_node(e)])/ 2.0;
        if ((e % 2) == 1) {
@@ -591,7 +593,8 @@ int main( int argc, char* args[] )
   double bx = ((last_node % 2) == 0) ? 0.0 : an.median_d * cos(30.0*PI/180);
   double by = (an.median_d/2.0) * last_node;
   
-  an.add_goal_node(an.num_nodes/2,bx/2,by/2,1.0);
+  //  an.add_goal_node(an.num_nodes*1/3,1*bx/3+-2.0,1*by/3,0.5);
+  //  an.add_goal_node(an.num_nodes*2/3,2*bx/3+ 5.0,2*by/3,0.5);  
   double mx = 1.0;
   double my = 1.0;
   an.add_goal_node(an.num_nodes-1,bx+mx,by+my,1.0);    
@@ -652,8 +655,14 @@ int main( int argc, char* args[] )
   	an.goals[an.goals.size() - 1] = gl;	
 	cout  << "goal : " << gl << "\n";
 	best_score = std::numeric_limits<float>::max();	
-	
+	auto start = std::chrono::high_resolution_clock::now();
   	mainx(&an,coordsx);
+	auto elapsed = std::chrono::high_resolution_clock::now() - start;
+
+	long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+	long long milliseconds = microseconds/ 1000.0;
+
+	cout << "optimization tim: ms = " << milliseconds << "\n";
 
 	render_all(renderer,&an,coordsx);
        

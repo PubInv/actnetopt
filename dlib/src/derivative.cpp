@@ -5,6 +5,7 @@
 #include <iostream>
 #include "TriLadder.h"
 #include "Invert.h"
+#include "Obstacle.h"
 
 
 #include <math.h>
@@ -479,4 +480,22 @@ BOOST_AUTO_TEST_CASE( Objective_function_appears_sensible )
   cout << "score: " << score1 << "\n";
   
   BOOST_CHECK(score1 > score0);
+}
+
+BOOST_AUTO_TEST_CASE( Create_an_obstacle )
+{
+  Obstacle o;
+  o.radius = 1.0;
+  o.center = column_vector(2);
+  o.center(0) = 0.0;
+  o.center(1) = 4.0;
+  for(int i = 0; i < 5; i++ ) {
+    column_vector x(2);
+    x(0) = 0.0;
+    x(1) = i*1.0;
+    cout << i << "f " << o.f(x) << "\n";
+  }
+  for(int i = 0; i < 5; i++ ) {
+    cout << i << "p " << o.partial(i*1.0) << "\n";
+  }
 }

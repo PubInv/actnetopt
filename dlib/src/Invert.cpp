@@ -47,11 +47,11 @@ Invert::Invert() {
       int idx = cur_an->goal_nodes[i];
       if (debug) std::cout << "idx " <<  idx  << std::endl;      
       column_vector g = cur_an->goals[i];
-      cout << "goal " << idx << "\n";
-      print_vec(g);
+      //      cout << "goal " << idx << "\n";
+      //      print_vec(g);
       column_vector c = coords[idx];
-      cout << "coords " << idx << "\n";
-      print_vec(c);
+      //      cout << "coords " << idx << "\n";
+      //      print_vec(c);
       
       column_vector x(2);
       x(0) = g(0);
@@ -61,22 +61,22 @@ Invert::Invert() {
       y(1) = c(1);
       
       column_vector d(2);
-      if (debug) std::cout << "Invert x " <<  x(0) <<  "," << x(1)  << std::endl;
-      if (debug) std::cout << "Invert y " <<  y(0) <<  "," << y(1)  << std::endl;                  
+      //      if (debug) std::cout << "Invert x " <<  x(0) <<  "," << x(1)  << std::endl;
+      //      if (debug) std::cout << "Invert y " <<  y(0) <<  "," << y(1)  << std::endl;                  
       d = x - y;
       if (debug) std::cout << "Invert d " <<  d(0) <<  "," << d(1) <<  " " << std::endl;
-      cout << " weight " << cur_an->goal_weights[i] << "\n";
+      //      cout << " weight " << cur_an->goal_weights[i] << "\n";
       v += (cur_an->goal_weights[i]*distance_2d(x,y));
-      cout << " distance " << distance_2d(x,y) << "\n";      
-      cout << " v " << v << "\n";
+      //      cout << " distance " << distance_2d(x,y) << "\n";      
+      //      cout << " v " << v << "\n";
       //      cout << "i v" << i << " " << v << "\n";
       //      v += l2_norm(d);
     }
-   std::cout << "Invert v " <<  v <<  " " << std::endl;
-   std::cout << "best_score " <<  best_score <<  " " << std::endl;   
+    //   std::cout << "Invert v " <<  v <<  " " << std::endl;
+    //   std::cout << "best_score " <<  best_score <<  " " << std::endl;   
 
    if (v < best_score) {
-     cout << "found best: " << v << "\n";
+     //     cout << "found best: " << v << "\n";
     for (int i = 0; i < cur_an->var_edges; ++i) {
       best_distances[i] = ds(i);
     }
