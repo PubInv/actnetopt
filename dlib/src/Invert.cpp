@@ -1,4 +1,5 @@
 #include "Invert.h"
+#include "Obstacle.h"
 
 using namespace std;
 using namespace dlib;
@@ -16,8 +17,9 @@ Invert::Invert() {
     return objective(ds);
   }
 
-  void  Invert::set_cur_an() {
+  void  Invert::set_cur_an(Obstacle o) {
     cur_an = an;
+    cur_an->obstacle = o;
     if (best_distances == 0) {
      best_distances = new double[(cur_an->num_nodes-3)*2 +3];
     }
@@ -72,6 +74,27 @@ Invert::Invert() {
       //      cout << "i v" << i << " " << v << "\n";
       //      v += l2_norm(d);
     }
+
+    // now we must add in the increase to the object caused by the obstacle!!
+    for(int j = 0; j < cur_an->num_nodes; j++) {
+      // Now, does the partial derivative of this node exist?
+      double di = distance_2d(coords[j],cur_an->obstacle.center);
+      double p = cur_an->obstacle.partial(di);
+	if (p != 0.0) {
+	  cout << "Node " << j << " derivative: " << p << "\n";
+	  column_vector nd = coords[j];
+	  cout << "nd :" << "\n";
+	  print_vec(nd);
+	  double cost = cur_an->obstacle.f(nd);
+	  cout << "cost " << j << " " << cost << "\n";
+	  //	  v += (cur_an->obstacle.weight * cost);
+	  v += cost;	  
+	}
+    }
+
+
+
+    
     //   std::cout << "Invert v " <<  v <<  " " << std::endl;
     //   std::cout << "best_score " <<  best_score <<  " " << std::endl;   
 
@@ -137,6 +160,51 @@ Invert::Invert() {
 	prod += dot(goal_direction,dx);
       }
       d(i) = prod;
+
+      // Now for this edge, we will compute the contribution from obstacle inteference.
+      // This can occur for any node which is after the edge in the kinematic chain.
+      // The basic plan here is to run through all nodes and compute the
+      // partial derivative of a change in distance. If there is no intersection,
+      // this will be zero. If it is non-zero, we need to compute partial derivative
+      // of the change in distance given the change in direction induced by the change
+      // in the edge length. (There will technically be a recomputation of
+      // something computed above which could be memoized, but I will not worry
+      // about that now.
+
+      double d_obst = 0.0;
+      
+      // first we will run through all nodes.
+      int first_node = cur_an->large_node(e);
+      // Note this creates a n^2 operation in the number of nodes---
+      // this is ripe for optimization.
+      for(int j = first_node; j < cur_an->num_nodes; j++) {
+	// Now, does the partial derivative of this node exist?
+	double di = distance_2d(coords[j],cur_an->obstacle.center);
+	double p = cur_an->obstacle.partial(di);
+	if (p != 0.0) {
+	  //	  cout << "Node " << j << " derivative: " << p << "\n";
+	  column_vector nd = coords[j];
+	  //	  cout << "nd :" << "\n";
+	  //	  print_vec(nd);
+	  column_vector d;
+	  if ((e % 2) == 1) {
+	    d = cur_an->compute_external_effector_derivative_c(coords,e,j);
+	  } else  if ((e % 2) == 0) {
+	    d = cur_an->compute_internal_effector_derivative_c(coords,e,j);
+	  }
+	  //	  print_vec(d);
+	  // now d is a direction vector, we dot it with (nd - c)...
+	  column_vector n_to_center = cur_an->obstacle.center - nd;
+	  double direction = dot(n_to_center,d);
+	  //	  d_obst += d_obst + (cur_an->obstacle.weight * direction * p);
+	  d_obst +=  ( direction * p);
+	}
+      }
+      if (d_obst != 0.0) {
+	cout << "d(i) " << d(i) << "\n";
+	cout << "d_obst " << d_obst << "\n";
+	d(i) += d_obst;
+      }
     }
     // cout << "DERIVATIVES" << "\n";
     // for(int i = 0; i < cur_an->var_edges; i++) {

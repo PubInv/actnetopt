@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <iostream>
 #include "TriLadder.h"
+#include "Obstacle.h"
 
 #include <math.h>
 
@@ -37,16 +38,15 @@ public:
   // For the purposes of the paper I will call this the "simple distance score" or sds.
   double operator() ( const column_vector& ds) const;
 
-  void set_cur_an();
-
-  
-
+  void set_cur_an(Obstacle obstacle);
   // This is currently computing the sum of the l2_norm of the goal point quandrances (square of distance).
   static double objective(const column_vector& ds);
 
   // compute the derivatives of the objective as the configuration ds.
   // NOTE: At present this only works with ONE goal node
   static column_vector derivative(const column_vector& ds);
+
+  Obstacle ob;
   
 };
 

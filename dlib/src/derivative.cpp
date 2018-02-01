@@ -403,7 +403,14 @@ BOOST_AUTO_TEST_CASE( two_node_derivative_behaves_accurately )
 
   Invert inv;
   inv.an = &an;
-  inv.set_cur_an();
+  // We'll put an obstacle far away since we aren't ready to deal with that here yet.
+  Obstacle obstacle;
+  obstacle.radius = 0.0;
+  obstacle.center = column_vector(2);
+  obstacle.center(0) = 1000.0;
+  obstacle.center(1) = 1000.0;
+
+  inv.set_cur_an(obstacle);
   
   cout << "==================\n";
   
@@ -460,7 +467,12 @@ BOOST_AUTO_TEST_CASE( Objective_function_appears_sensible )
 
   Invert inv;
   inv.an = &an;
-  inv.set_cur_an();
+  Obstacle obstacle;
+  obstacle.radius = 0.0;
+  obstacle.center = column_vector(2);
+  obstacle.center(0) = 1000.0;
+  obstacle.center(1) = 1000.0;
+  inv.set_cur_an(obstacle);
   
   column_vector ds(an.var_edges);
   for (int i = 0; i < an.var_edges; ++i) {

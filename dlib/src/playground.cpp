@@ -6,6 +6,7 @@
 #include <limits.h>
 // #include "TriLadder.h"
 #include "Invert.h"
+#include "Obstacle.h"
 
 
 #include <math.h>
@@ -43,10 +44,10 @@ void get_rcoords(column_vector v,int* x,int* y) {
 
 TriLadder *Invert::cur_an = 0;
 
+Obstacle obstacle;
 
 
-
-void solve_inverse_problem(TriLadder *an) {
+void solve_inverse_problem(TriLadder *an,Obstacle ob) {
   column_vector sp(an->var_edges);
   column_vector lb(an->var_edges);
   column_vector ub(an->var_edges);      
@@ -62,7 +63,8 @@ void solve_inverse_problem(TriLadder *an) {
   
   Invert inv;
   inv.an = an;
-  inv.set_cur_an();
+  inv.set_cur_an(obstacle);
+  inv.ob = ob;
 
   int n = an->var_edges;
 
@@ -122,7 +124,7 @@ void solve_inverse_problem(TriLadder *an) {
 
 // ----------------------------------------------------------------------------------------
 
-int mainx(TriLadder *an,column_vector* coords)
+int mainx(TriLadder *an,column_vector* coords,Obstacle ob)
 {
     try
     {
@@ -144,7 +146,7 @@ int mainx(TriLadder *an,column_vector* coords)
 	  //	  column_vector* coordsx = new column_vector[an->num_nodes];
 	  
 	  find_all_coords(an,coords);
-	  solve_inverse_problem(an);
+	  solve_inverse_problem(an,ob);
 
 	  for (int i = 0; i < an->num_edges; ++i) {
 	    //	    std::cout << "mainx" << i << " : " << an->distance(i) << std::endl;
@@ -153,7 +155,7 @@ int mainx(TriLadder *an,column_vector* coords)
 	  find_all_coords(an,coords);
 	  Invert inv;
 	  inv.an = an;
-	  inv.set_cur_an();
+	  inv.set_cur_an(obstacle);
 	  column_vector sp(an->var_edges);
 	  for (int i = 0; i < an->var_edges; i++) {
 	    sp(i) = an->distance(i + 1);
@@ -293,7 +295,7 @@ const double w = (LADDER_NODES / 10.0 ) * 12.0 ;
 const double h = (LADDER_NODES / 10.0 ) * 12.0 ;
 
 
-void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
+void draw_net(SDL_Renderer* renderer,  TriLadder *cur_an,column_vector* coords) {
     // Set render color to red ( background will be rendered in this color )
     // SDL_SetRenderDrawColor( renderer, 255, 255, 255, SDL_ALPHA_OPAQUE );
 
@@ -306,7 +308,7 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
 
     // need to develop complete rendering, but will do something
     // halfway at present...
-     for(int j = 0; j < an->num_nodes; j++) {
+     for(int j = 0; j < cur_an->num_nodes; j++) {
        int k = j - 1;
        int h = j - 2;
        if (k >= 0) {
@@ -332,18 +334,18 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
 
      SDL_SetRenderDrawColor(renderer, 255, 255, 0, 200);
 
-     for(int i = 0; i < an->var_edges; i++) {
+     for(int i = 0; i < cur_an->var_edges; i++) {
        column_vector d_full(2);
        d_full(0) = 0.0;
        d_full(1) = 0.0;
        int e = i + 1;
        
-       for(int j = 0; j < an->goals.size(); j++) {
+       for(int j = 0; j < cur_an->goals.size(); j++) {
 	   column_vector d;
 	   if ((e % 2) == 1) {
-	     d = an->compute_external_effector_derivative_c(coords,e,an->goal_nodes[j]);
+	     d = cur_an->compute_external_effector_derivative_c(coords,e,cur_an->goal_nodes[j]);
 	   } else  if ((e % 2) == 0) {
-	     d = an->compute_internal_effector_derivative_c(coords,e,an->goal_nodes[j]);
+	     d = cur_an->compute_internal_effector_derivative_c(coords,e,cur_an->goal_nodes[j]);
 	   }
 	   if ((d(0) > 1000.0) || (abs(d(1)) > 1000.0)) {
 
@@ -351,19 +353,59 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *an,column_vector* coords) {
 	     print_vec(d);
 	     abort();
 	   }
-	   d_full = d_full + (d * an->goal_weights[j]);
+	   d_full = d_full + (d * cur_an->goal_weights[j]);
        }
+
+
+       // Note: This is experimental
+
+      double d_obst = 0.0;
+      // first we will run through all nodes.
+      int first_node = cur_an->large_node(e);
+      // Note this creates a n^2 operation in the number of nodes---
+      // this is ripe for optimization.
+      for(int j = first_node; j < cur_an->num_nodes; j++) {
+	// Now, does the partial derivative of this node exist?
+	double di = distance_2d(coords[j],cur_an->obstacle.center);
+	double p = cur_an->obstacle.partial(di);
+	if (p != 0.0) {
+	  cout << "Node " << j << " derivative: " << p << "\n";
+	  column_vector nd = coords[j];
+	  cout << "nd :" << "\n";
+	  print_vec(nd);
+	  column_vector d;
+	  cout << "e :" << e << "\n";
+	  if ((e % 2) == 1) {
+	    d = cur_an->compute_external_effector_derivative_c(coords,e,j);
+	  } else  if ((e % 2) == 0) {
+	    d = cur_an->compute_internal_effector_derivative_c(coords,e,j);
+	  }
+	  cout << " motion deivative \n";
+	  print_vec(d);
+	  // now d is a direction vector, we dot it with (nd - c)...
+	  column_vector n_to_center = cur_an->obstacle.center - nd;
+	  double direction = dot(n_to_center,d);
+	  cout << "value " << j << " " << direction * p << "\n";
+	  //	  d_obst += d_obst + obstacle.weight * direction * p;
+	  d_obst += (direction * p);
+	}
+      }
+       
        //       cout << "full: ";
        //       print_vec(d_full);
-       int node = an->large_node(e);
-       column_vector tail = (coords[node]+ coords[an->small_node(e)])/ 2.0;
+       int node = cur_an->large_node(e);
+       column_vector tail = (coords[node]+ coords[cur_an->small_node(e)])/ 2.0;
        if ((e % 2) == 1) {
 	 SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);       	 	 
        } else  if ((e % 2) == 0) {
 	 SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);       	 	  
        }
-       
        render_arrow(renderer,tail,d_full+tail);
+
+       SDL_SetRenderDrawColor(renderer, 255, 0, 255, 255);       	 	         
+       render_arrow(renderer,tail,d_obst+tail);
+
+       
      }
 }
 
@@ -559,9 +601,9 @@ void viewport_to_physical(double px,double py,double *vx, double *vy) {
     *vy = y;
 }
 
-void render_all(SDL_Renderer* renderer, TriLadder *an,column_vector* coordsx) {
-  	// Clear winow
-  	//	SDL_RenderClear( renderer );
+void render_all(SDL_Renderer* renderer, TriLadder *an,column_vector* coordsx,Obstacle obstacle) {
+  // Clear winow
+  //	SDL_RenderClear( renderer );
   SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
   SDL_RenderClear(renderer);
   draw_axes(renderer);
@@ -569,6 +611,34 @@ void render_all(SDL_Renderer* renderer, TriLadder *an,column_vector* coordsx) {
 	
 
   draw_net(renderer,an,coordsx);
+  // Here we render the obstacle
+
+  // now we will create a box containing the circle in physical space...
+  double r = obstacle.radius;
+  double x0 = obstacle.center(0) - r;
+  double y0 = obstacle.center(1) - r;
+  double x1 = obstacle.center(0) + r;
+  double y1 = obstacle.center(1) + r;
+  // Now we will translate the viewport...
+  double vx0,vy0;
+  double vx1,vy1;
+  physical_to_viewport(x0,y0,&vx0,&vy0);
+  physical_to_viewport(x1,y1,&vx1,&vy1);
+
+  SDL_Rect srcrect;  
+  srcrect.w = std::abs(vx0-vx1);
+  srcrect.h = std::abs(vy0-vy1);
+
+  double ax = (vx0+vx1)/2.0;
+  double ay = (vy0+vy1)/2.0;
+  
+  srcrect.x = ax-(srcrect.w/2.0);
+  srcrect.y = ay-(srcrect.h/2.0);
+
+  
+  SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);              
+  SDL_RenderDrawRect(renderer, &srcrect);
+  
   SDL_RenderPresent(renderer);       				
 }
 
@@ -582,7 +652,21 @@ int main( int argc, char* args[] )
   	viewport_to_physical(vx,vy,&px,&py);
   	physical_to_viewport(px,py,&vx,&vy);	
   }
-  TriLadder an = TriLadder(LADDER_NODES,
+
+
+  // This needs to be generalized but for now I'm going to
+  // just add an obstacle.  If I can successfully work around
+  // an obstacle, that will be strong evidence that I have a valuable system.
+  obstacle.radius = 2.0;
+  //  double r = obstacle.radius;
+  obstacle.center = column_vector(2);
+  obstacle.center(0) = 0.0;
+  obstacle.center(1) = 20.0;
+  obstacle.weight = 0.5;
+
+
+
+       TriLadder an = TriLadder(LADDER_NODES,
 			   UPPER_BOUND,
 			   LOWER_BOUND,
 			   MEDIAN,
@@ -605,7 +689,7 @@ int main( int argc, char* args[] )
   
   column_vector* coordsx = new column_vector[an.num_nodes];
 
-  mainx(&an,coordsx);
+  mainx(&an,coordsx,obstacle);
 
   // for(int i = 0; i < an.num_nodes; i++) {
   //   cout << "X" <<  i << "\n";
@@ -627,8 +711,9 @@ int main( int argc, char* args[] )
     SDL_Renderer* renderer = NULL;
     renderer =  SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED);
 
-    render_all(renderer,&an,coordsx);
-	
+    render_all(renderer,&an,coordsx,obstacle);
+
+    
     SDL_Event spud;
 
     Input input(&mousedown_function);
@@ -649,6 +734,7 @@ int main( int argc, char* args[] )
   	double py;
   	viewport_to_physical(vx,vy,&px,&py);
   	column_vector gl(2);
+
   	gl(0) = px;
   	gl(1) = py;
 
@@ -656,7 +742,7 @@ int main( int argc, char* args[] )
 	cout  << "goal : " << gl << "\n";
 	best_score = std::numeric_limits<float>::max();	
 	auto start = std::chrono::high_resolution_clock::now();
-  	mainx(&an,coordsx);
+  	mainx(&an,coordsx,obstacle);
 	auto elapsed = std::chrono::high_resolution_clock::now() - start;
 
 	long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
@@ -664,7 +750,7 @@ int main( int argc, char* args[] )
 
 	cout << "optimization tim: ms = " << milliseconds << "\n";
 
-	render_all(renderer,&an,coordsx);
+	render_all(renderer,&an,coordsx,obstacle);
        
   	input.mouseDown = false;
       }

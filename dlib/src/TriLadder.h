@@ -6,7 +6,7 @@
 #include <dlib/optimization.h>
 #include <stdio.h>
 #include <iostream>
-
+#include "Obstacle.h"
 
 #include <math.h>
 
@@ -50,7 +50,8 @@ public:
   // Making this a const seems to destry to the implicit
   // copy assignment; I have no idea why
 
-
+ Obstacle obstacle;
+ 
   int num_nodes;   // = LADDER_NODES;
   int num_edges; //  = (num_nodes-3)*2 + 3;
   int var_edges;   // = num_edges-1;
@@ -152,6 +153,8 @@ column_vector compute_internal_effector_derivative_c(column_vector cur_coords[],
 // Probably this will have to call compute_single_derivative for each edge.
 column_vector derivative (const column_vector& m);
 
+
+
 };
 
 typedef enum { CW, CCW } Chirality;
@@ -209,5 +212,6 @@ column_vector change_in_third_point(column_vector a,
 				    );
 
 int int_sign(double x);
+
 
 #endif

@@ -28,6 +28,7 @@ public:
   double f(column_vector x);
   // partial derivative of contribution to the objective function for this obstable for this node
   double partial(double d);
+  double weight= 1.0;
 };
 
 #endif
