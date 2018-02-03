@@ -141,25 +141,9 @@ TriLadder::TriLadder(int nodes,
     node_fixing_order = new int[num_nodes];
     coords = new column_vector[num_nodes];      
 
-    cout << "TTT\n";
     fixed_nodes.set_size(2);
     fixed_nodes(0) = A;
     fixed_nodes(1) = B;
-    cout << "TTTT1\n";	  
-    //    fixed_nodes[1] = B;
-
-    // node_fixing_order[0] = A;
-    // node_fixing_order[1] = B;
-    // node_fixing_order[2] = C;
-    // node_fixing_order[3] = D;
-    // node_fixing_order[4] = E;
-    // node_fixing_order[5] = F;
-    
-    //    num_edges = sizeof(edge_array)/sizeof(edge_array[0]);
-    
-    // declare a graph object
-    //    Graph gg(num_nodes);
-    //    g = gg;
 
     // add the edges to the graph object
     distance.set_size(num_edges);
@@ -186,8 +170,6 @@ TriLadder::TriLadder(int nodes,
       y(0) = coords[idx](0);
       y(1) = coords[idx](1);
       column_vector d;
-      //      std::cout << "Invert x " <<  x(0) <<  "," << x(1)  << std::endl;
-      //      std::cout << "Invert y " <<  y(0) <<  "," << y(1)  << std::endl;                  
       d = x - y;
       if (debug) std::cout << "Invert d " <<  d(0) <<  "," << d(1) <<  " " << std::endl;
       double vp = d(0)*d(0) + d(1)*d(1);
@@ -235,89 +217,22 @@ double get_angle(column_vector a, column_vector b, column_vector c) {
   //  cout << "phi" << angle*180/PI << "\n";  
   return angle;
 }
-// The goal of this is to compute a single derivative vector for the
-// change in length to edge number edge_number.
-// x and y are room for us to put in values.
-// We compute the vector of positional change based on an actuator length
-// change because it is inherently interesting; however, for minimization
-// we in fact need to compute from this the change of the objective function.
-// However, we hope that will be easy. We could instead compute the
-// change in the objective function directly.
-double TriLadder::compute_single_derivative_dtheta(column_vector cur_coords[],
-					     int edge_number) {
-  
-  // We add one because the variable edges are not the same as the num_edges
-  int e = edge_number + 1;
-  // Case split on if the edge is an outside edge or not
-  // A B C are a triangle.  A and B are fixed; BC is the changing line
-  // (the one specified by edge_number.) phi is angle ABC.
 
-  int C = large_node(e);
-  //  cout << "C " << C << "\n";    
-  column_vector c = cur_coords[C];    
-  int B = small_node(e);
-  //   cout << "B " << B << "\n";  
-  column_vector b = cur_coords[B];
 
-  int A;
-  if ((C - 1) == B) {
-    A = C - 2;
-  } else { 
-    A = C - 1;
-  }
-  
-  //  cout << "A " << A << "\n";
-  column_vector a = cur_coords[A];
-
-  double len = distance_2d(a,c);
-  
-  double phi = get_angle(a,b,c);
-
-  // cout << A << " " << B << " " << C << " a,b,c\n";
-  // print_vec(a);
-  // print_vec(b);
-  // print_vec(c);
-  //  cout << phi*180/PI << "\n";
-  double dThetaDx = 1.0 / (len*sin(phi));
-  
-  return dThetaDx;
-  
+// under the current numbering, externals are odd...
+bool external_edge(int edge) {
+  return ((edge % 2) == 1);
 }
-column_vector TriLadder::compute_single_derivative_c(column_vector cur_coords[],
-						  int edge_number) {
-  int e = edge_number + 1;
-  int C = large_node(e);
-  int B = small_node(e);
-  int A;
-  if ((C - 1) == B) {
-    A = C - 2;
-  } else { 
-    A = C - 1;
-  }
-  double dtheta = compute_single_derivative_dtheta(cur_coords,edge_number);
-
-  // Now that we have dtheta, we want to compute the dCx/dtheta and dCy/dtheta
-  // dtheta is the rotation of C into A
-  // dCx,dCy are perpendicular to AC and proportional to dtheta and
-  // the sign depends where C, B, and A are.
-  // one way to do this is to rotate C into A about B and see how the
-  // values change to deterimne the sign.
-
-  column_vector c = cur_coords[C];    
-  column_vector b = cur_coords[B];
-  column_vector a = cur_coords[A];
-  column_vector bc = c - b;
-  double len = distance_2d(b,c);
-  bc = normalize(bc);
-  double phi = atan2(bc(1), bc(0));
-  double alpha = PI/2.0 - phi;
-  double dy = cos(alpha)*len;
-  double dx = sin(alpha)*len;
-  column_vector d(2);
-  // do we just multiply by dtheta?  
-  d(0) = dx*dtheta;
-  d(1) = dy*dtheta;
-  return d;
+column_vector TriLadder::compute_goal_derivative_c(column_vector cur_coords[],
+								int edge_number,
+								int goal_node_number) {
+  return (external_edge(edge_number)) ?
+	  compute_external_effector_derivative_c(cur_coords,
+						 edge_number,
+						 goal_node_number)
+	  : compute_internal_effector_derivative_c(cur_coords,
+						   edge_number,
+						   goal_node_number);
 }
 
 column_vector TriLadder::compute_external_effector_derivative_c(column_vector cur_coords[],
@@ -385,17 +300,6 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
   xaxis(1) = 0.0;
 
   column_vector pivot_to_en = en - p;
-  //  cout << "en :" << en << "\n";    
-  //  cout << "pivot_to_en :" << pivot_to_en << "\n";
-  //  cout << "p :" << p << "\n";  
-  //  double theta = -get_angle(xaxis+p,p,en);
-  
-  //  double stheta = sin(theta);
-  //  double ctheta = cos(theta);
-
-  // if (debug) cout << "theta :" << theta*180/PI << "\n";
-  // if (debug) cout << "stheta :" << stheta << "\n";
-  // if (debug) cout << "ctheta :" << ctheta << "\n";
 
   double xd = (enx - x);
   double yd = (eny - y);
@@ -442,25 +346,12 @@ double TriLadder::compute_dtheta_internal_da(column_vector A,
   double s_angle_abc = -sense(A(0),A(1),B(0),B(1),C(0),C(1));
   double s_angle_bcd = -sense(B(0),B(1),C(0),C(1),D(0),D(1));
 
-  // I'm not sure this makes sense either...we need to decide
-  // the change in orientation of CD, which is absolute,
-  // in a different way.
   int sense_angle_abc_beta = int_sign(s_angle_abc);
   int sense_angle_bcd_chi = int_sign(s_angle_bcd);
 
   dbeta_da = dbeta_da * sense_angle_abc_beta;
   dchi_da = dchi_da * sense_angle_bcd_chi; 
   
-  //  cout << "dchi_da: " << dchi_da*180/M_PI << "\n";
-  // cout << "dbeta_da: " << dbeta_da*180/M_PI << "\n";    
-
-  //  cout << "sense_dchi_da: " << sense_angle_bcd_chi << "\n";
-  //  cout << "sense_dbeta_da: " << sense_angle_abc_beta << "\n";    
-  
-  // There is a problem here that chi and beta are not treated
-  // as signed values, but absolute values...but theta must be a signed
-  // value measured against the x axis. I must use the chiratlity to determine a value.
-  // TODO: Simple addition here is NOT correct, I need to take into account other values.
   double dtheta_da = dchi_da + dbeta_da;
   
   //  cout << "dtheta_da: " << dtheta_da*180/M_PI << "\n";
@@ -528,9 +419,6 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
   double alpha = get_angle(C,A,B);
   // The sign of alpha is inportant as to waht teh rotation about C will be.
 
-  //  cout << "rho :" << rho*180/M_PI << "\n";
-  //  cout << "alpha :" << alpha*180/M_PI << "\n";      
- 
   column_vector rot(2);
   double angle_XAB = rho + alpha;
   // I am uncertain of this, I need to work it out more generally.
@@ -545,58 +433,15 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
   e_minus_c(0) = -(en(1) - C(1));
   e_minus_c(1) = (en(0) - C(0));
 
-
-  //  cout << "rot:" << "\n";
-  //  print_vec(rot);
-  
-  //  cout << "e_minus_c:" << "\n";  
-  //  print_vec(e_minus_c);
-  
-
   // using capital to represent negated terms...
   double b_c_A = b*b + c*c - a*a;
-  //  double a_c_B = a*a + c*c - b*b;
-  //  double a_g_F = a*a + g*g - f*f;
-
-  //  cout << "a,b,c,f,g " << a << " " << b << " " << c << " " << f << " " << g << "\n";
-  //  cout << "b_c_A " << b_c_A << "\n";
-  //  cout << "denom " << 4*b*b*c*c << "\n";  
-  //  cout << "LARGER THAN 1.0? " << ((b_c_A*b_c_A) / (4*b*b*c*c)) << "\n";
   double first_coeff = a / (c*sqrt( 1 - ((b_c_A*b_c_A) / (4*b*b*c*c))));
-
-  //  cout << "first_coeff: " << first_coeff << "\n";  
-  
-  //  print_vec(e_minus_c);
-  
   double dtheta_da = compute_dtheta_internal_da(A,B,C,D,a,b,c,f,g);
-  
-  // derivative of end effector wrt to change in length a...
-  
-  // cout << "first_term: " << first_coeff*rot << "\n";
-  // cout << "second_term: " << dtheta_da*e_minus_c << "\n";
-  // cout << "dtheta_da: " << dtheta_da*180/M_PI << "\n";
-  // cout << "e_minus_c distance: " << distance_2d(en,C) << "\n";
   
   d_e_a = first_coeff*rot + dtheta_da*e_minus_c;
   return d_e_a;
 }
 
-// I think this is the form actually required by functions such as find_min_box_constrained
-// Probably this will have to call compute_single_derivative for each edge.
-column_vector TriLadder::derivative (const column_vector& m) {
-    // make us a column vector of length 2
-    column_vector res(var_edges);
-    for (int i = 0; i < var_edges; ++i) {
-      //      double x;
-      //      double y;
-      double dtheta = compute_single_derivative_dtheta(coords,i);
-
-      //      double ds = compute_d_score_from_vector(x,y);
-      //      res(i) = ds;
-      res(i) = dtheta;
-    }
-    return res;
-}
 
   double FindCoords::operator() ( const column_vector& x) const
   {
@@ -804,26 +649,23 @@ void find_all_coords(TriLadder *an,column_vector coords[]) {
 
 
 
-void   test_find_third_point_given_two_and_distances() {
-    column_vector a(2);
-    column_vector b(2);
-    column_vector c(2);
-    column_vector x(2);            
-    a(0) = 0.0;
-    a(1) = 0.0;
-    b(0) = 1.3;
-    b(1) = 0.75;
-    c(0) = 2.0;
-    c(1) = 0.0;
-    double dab = distance_2d(a,b);
-    double dbc = distance_2d(b,c);
-    double dca = distance_2d(c,a);
+// void   test_find_third_point_given_two_and_distances() {
+//     column_vector a(2);
+//     column_vector b(2);
+//     column_vector c(2);
+//     column_vector x(2);            
+//     a(0) = 0.0;
+//     a(1) = 0.0;
+//     b(0) = 1.3;
+//     b(1) = 0.75;
+//     c(0) = 2.0;
+//     c(1) = 0.0;
+//     double dab = distance_2d(a,b);
+//     double dbc = distance_2d(b,c);
+//     double dca = distance_2d(c,a);
     
-    x = find_third_point_given_two_and_distances(CCW,dab,dbc,dca,a,b);
-    print_vec(c);
-    print_vec(x);
-    cout << "XXXXXXXXXX\n";
-}
+//     x = find_third_point_given_two_and_distances(CCW,dab,dbc,dca,a,b);
+// }
 
 column_vector change_in_third_point(column_vector a,
 				    column_vector b,

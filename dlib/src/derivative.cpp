@@ -32,7 +32,7 @@
 #define BOOST_TEST_MODULE MyTest
 #include <boost/test/unit_test.hpp>
 
-#define LADDER_NODES 10
+#define TRUSS_NODES 10
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
@@ -41,7 +41,7 @@
 
 BOOST_AUTO_TEST_CASE( test_angle )
 {
-  TriLadder tl(LADDER_NODES,
+  TriLadder tl(TRUSS_NODES,
 			   UPPER_BOUND,
 			   LOWER_BOUND,
 			   MEDIAN,
@@ -69,60 +69,6 @@ BOOST_AUTO_TEST_CASE( test_angle )
   double epsilon = 0.0001;
   double target = -45.0;
   BOOST_CHECK(abs((theta * 180 /PI) - target) < epsilon);
-
-  BOOST_CHECK(true);
-}
-
-
-BOOST_AUTO_TEST_CASE( my_test )
-{
-  TriLadder tl(LADDER_NODES,
-			   UPPER_BOUND,
-			   LOWER_BOUND,
-			   MEDIAN,
-			   INITIAL
-	       );
-  cout << "object made\n";
-  column_vector* coords = new column_vector[tl.num_nodes];  
-  find_all_coords(&tl,coords);
-  // for(int i = 0; i < tl.num_nodes*4; i++) {
-  //   cout << i << " L " <<  tl.large_node(i) << "\n";
-  // }
-  // for(int i = 0; i < tl.num_nodes*4; i++) {
-  //   cout << i << " S " <<  tl.small_node(i) << "\n";          
-  // }
-
-  
-  // Edge 1: negative
-  // Edge 2: positive
-  for(int i = 0; i < tl.var_edges; i++) {
-    double dtheta = tl.compute_single_derivative_dtheta(coords,i);
-    cout << i+1 << " : " << dtheta << "\n";
-  }
-  //  std::cout << x << "," << y << "\n";
-
-  BOOST_CHECK(true);
-}
-
-BOOST_AUTO_TEST_CASE( node_derivative )
-{
-  TriLadder tl(LADDER_NODES,
-			   UPPER_BOUND,
-			   LOWER_BOUND,
-			   MEDIAN,
-			   INITIAL
-	       );
-  cout << "START\n";
-  column_vector* coords = new column_vector[tl.num_nodes];  
-  find_all_coords(&tl,coords);
-
-  for(int i = 0; i < tl.var_edges; i++) {
-    column_vector d = tl.compute_single_derivative_c(coords,i);
-    cout << "deriv " << i+1 << " :\n";
-    print_vec(d);
-
-  }
-  //  std::cout << x << "," << y << "\n";
 
   BOOST_CHECK(true);
 }
@@ -220,119 +166,9 @@ BOOST_AUTO_TEST_CASE( test_sense )
 
 }
 
-BOOST_AUTO_TEST_CASE( test_dtheta_internal_da )
-{
-  column_vector A(2);
-  column_vector B(2);
-  column_vector C(2);
-  column_vector D(2);  
-  A(0) = 0.0;
-  A(1) = 0.0;
-  B(0) = 0.0;
-  B(1) = 4.0;
-  C(0) = 2.0;
-  C(1) = 2.0;
-  D(0) = 2.0;
-  D(1) = 4.0;
-  double a = distance_2d(B,C);
-  double b = distance_2d(A,C);
-  double c = distance_2d(A,B);
-  double f = distance_2d(B,D);
-  double g = distance_2d(C,D);
-
-    TriLadder tl(LADDER_NODES,
-			   UPPER_BOUND,
-			   LOWER_BOUND,
-			   MEDIAN,
-			   INITIAL
-	       );
-
-  double dtheta_da = tl.compute_dtheta_internal_da(A,B,C,D,a,b,c,f,g);  
-  cout << "dtheta_da degrees: " << dtheta_da*180/M_PI << "\n";
-  BOOST_CHECK( dtheta_da > 0.0 );
-
-  // now check symmetry and sign change on other side of y-axis...
-  C(0) = -2.0;
-  D(0) = -2.0;
-  // These actually should not change...
-  a = distance_2d(B,C);
-  b = distance_2d(A,C);
-  c = distance_2d(A,B);
-  f = distance_2d(B,D);
-  g = distance_2d(C,D);
-
-  
-  double dtheta_da_neg = tl.compute_dtheta_internal_da(A,B,C,D,a,b,c,f,g);  
-  cout << "dtheta_da_neg degrees: " << dtheta_da_neg*180/M_PI << "\n";
-  BOOST_CHECK( dtheta_da_neg < 0.0 );
-  BOOST_CHECK( dtheta_da = -dtheta_da_neg );
-
-  B(1) = 3.0;
-  C(0) = 2.0;
-  D(0) = 2.0;
-  
-  a = distance_2d(B,C);
-  b = distance_2d(A,C);
-  c = distance_2d(A,B);
-  f = distance_2d(B,D);
-  g = distance_2d(C,D);
-
-  double dtheta_da_bal = tl.compute_dtheta_internal_da(A,B,C,D,a,b,c,f,g);
-  
-  cout << "dtheta_da_bal degrees: " << dtheta_da_bal*180/M_PI << "\n";
-  
-  BOOST_CHECK( dtheta_da_bal <  dtheta_da );
-  BOOST_CHECK( dtheta_da_bal > 0.0 );
-
-  A(0) = 0.0;
-  A(1) = 0.0;
-  B(0) = 0.0;
-  B(1) = 4.0;
-  C(0) = 2.0;
-  C(1) = 2.0;
-  D(0) = 2.0;
-  D(1) = 6.0;
-
-  
-  a = distance_2d(B,C);
-  b = distance_2d(A,C);
-  c = distance_2d(A,B);
-  f = distance_2d(B,D);
-  g = distance_2d(C,D);
-  
-  double dtheta_da_sym = tl.compute_dtheta_internal_da(A,B,C,D,a,b,c,f,g);
-  
-  cout << "dtheta_da_sym degrees: " << dtheta_da_sym*180/M_PI << "\n";
-
-  // Now this test a problem I am buggy with. The answer should definitely be positive.
-
-  A(0) = 0.0;
-  A(1) = 0.0;
-  B(0) = 1.0;
-  B(1) = 1.5;
-  C(0) = 1.3;
-  C(1) = 0.75;
-  D(0) = 2.6;
-  D(1) = 1.5;
-
-  a = distance_2d(B,C);
-  b = distance_2d(A,C);
-  c = distance_2d(A,B);
-  f = distance_2d(B,D);
-  g = distance_2d(C,D);
-
-  double dtheta_da_slnt = tl.compute_dtheta_internal_da(A,B,C,D,a,b,c,f,g);
-  
-  cout << "dtheta_da_slnt degrees: " << dtheta_da_slnt*180/M_PI << "\n";
-
-  BOOST_CHECK( dtheta_da_slnt > 0.0 );
-
-
-}
-
 BOOST_AUTO_TEST_CASE( find_coords )
 {
-  TriLadder tl(LADDER_NODES,
+  TriLadder tl(TRUSS_NODES,
 			   UPPER_BOUND,
 			   LOWER_BOUND,
 			   MEDIAN,
@@ -379,11 +215,11 @@ void print_vector_with_indices(column_vector d) {
   }
 }
 
-TriLadder *Invert::cur_an = 0;
+TriLadder *Invert::global_truss = 0;
 
 BOOST_AUTO_TEST_CASE( two_node_derivative_behaves_accurately )
 {
-  TriLadder an(LADDER_NODES,
+  TriLadder an(TRUSS_NODES,
 			   UPPER_BOUND,
 			   LOWER_BOUND,
 			   MEDIAN,
@@ -427,7 +263,7 @@ BOOST_AUTO_TEST_CASE( two_node_derivative_behaves_accurately )
   obstacle.center(0) = 1000.0;
   obstacle.center(1) = 1000.0;
 
-  inv.set_cur_an(obstacle);
+  inv.set_global_truss(obstacle);
   
   cout << "==================\n";
   
@@ -461,7 +297,7 @@ BOOST_AUTO_TEST_CASE( two_node_derivative_behaves_accurately )
 
 BOOST_AUTO_TEST_CASE( Objective_function_appears_sensible )
 {
-  TriLadder an(LADDER_NODES,
+  TriLadder an(TRUSS_NODES,
 			   UPPER_BOUND,
 			   LOWER_BOUND,
 			   MEDIAN,
@@ -489,7 +325,7 @@ BOOST_AUTO_TEST_CASE( Objective_function_appears_sensible )
   obstacle.center = column_vector(2);
   obstacle.center(0) = 1000.0;
   obstacle.center(1) = 1000.0;
-  inv.set_cur_an(obstacle);
+  inv.set_global_truss(obstacle);
   
   column_vector ds(an.var_edges);
   for (int i = 0; i < an.var_edges; ++i) {

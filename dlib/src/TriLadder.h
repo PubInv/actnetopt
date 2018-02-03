@@ -154,6 +154,10 @@ double compute_dtheta_internal_da(column_vector A,
 			 double c,
 			 double f,
 				     double g);
+
+column_vector compute_goal_derivative_c(column_vector cur_coords[],
+								int edge_number,
+						   int goal_node_number);
  
 column_vector compute_external_effector_derivative_c(column_vector cur_coords[],
 						     int edge_number,

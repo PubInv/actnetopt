@@ -1,48 +1,122 @@
-//Using SDL and standard IO
+// playground.cpp -- Interactive tool for testing configuration of a robotic manipulator via gradient techniquies 
+// Copyright (C) Robert L. Read, 2018
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #include <SDL.h>
 #include <dlib/optimization.h>
 #include <stdio.h>
 #include <iostream>
 #include <limits.h>
-// #include "TriLadder.h"
 #include "Invert.h"
 #include "Obstacle.h"
-
-
+#include "TriLadder.h"
 #include <math.h>
 
-#define PI 3.14159265
+// ToDos:
+// *) Clean up the code
+// *) Implement a circle render for drawing the obstacle
+// *) Support multiple obstacles
+// *) Create an API-level separation between the playground/rendered and the solver!
 
 using namespace std;
 using namespace dlib;
 
-
-void physical_to_viewport(double px,double py,double *vx, double *vy);
-void viewport_to_physical(double px,double py,double *vx, double *vy);
-
-
-#define LADDER_NODES 30
+#define TRUSS_NODES 30
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
 #define INITIAL 1.5
+#define CRISIS_DERIVATIVE_LEVEL 1000.0
 
 #define USE_DERIVATIVES 1
 
+const int WIN_WIDTH = 640 * 2;
+const int WIN_HEIGHT = WIN_WIDTH;
+
+
+const double w_physical = (TRUSS_NODES / 10.0 ) * 12.0 ;
+const double h_physical = (TRUSS_NODES / 10.0 ) * 12.0 ;
+
+double physical_to_viewport_x(double px) {
+    double x = px;
+     // first scale appropriately
+    x = x * (WIN_WIDTH / (2.0 * w_physical));
+     // now move to origin....
+    x += WIN_WIDTH/2.0;
+    return x;
+}
+double physical_to_viewport_y(double py) {
+    double y = py;
+    // first scale appropriately
+    y = y * (WIN_HEIGHT / (2.0 * h_physical));
+    
+    // now move to origin....
+    y = (-y) + WIN_HEIGHT/2.0;
+    return y;
+}
+
+void physical_to_viewport(double px,double py,double *vx, double *vy) {
+    *vx = physical_to_viewport_x(px);
+    *vy = physical_to_viewport_x(py);    
+}
+
+
+double viewport_to_physical_x(double px) {
+    // Let's assume our play space is from -10 to + 10, centered on the origin...
+    double x = px;
+
+    // now move to origin...    
+    x = x - (WIN_WIDTH / (2.0 ));
+
+    // then unscale..
+    x = x / (WIN_WIDTH / (2.0*w_physical));
+    return x;
+}
+
+double viewport_to_physical_y(double py) {
+    // Let's assume our play space is from -10 to + 10, centered on the origin...
+    double y = py;
+
+    // now move to origin...    
+    y = y - (WIN_HEIGHT / (2.0 ));
+
+    // then unscale..
+    y = - y / (WIN_HEIGHT / (2.0*h_physical));    
+    
+    return y;
+}
+
+void viewport_to_physical(double vx,double vy,double *px, double *py) {
+    *px = viewport_to_physical_x(vx);
+    *py = viewport_to_physical_y(vy);    
+}
+
 void get_rcoords(column_vector v,int* x,int* y) {
-       double px0 = v(0);
-       double py0 = v(1);
-       double vx0;
-       double vy0; 
-       physical_to_viewport(px0,py0,&vx0,&vy0);
-       
+       double vx0 = physical_to_viewport_x(v(0));
+       double vy0 = physical_to_viewport_y(v(1)); 
        *x = (int) std::round(vx0);
        *y = (int) std::round(vy0);
 }
 
 
-
-TriLadder *Invert::cur_an = 0;
+// Sadly, the way the objective and deriviate functions are called
+// the do not allow general "client" data to be passed in, and they are static.
+// So keeping a global variable is the only effective way to maintain information
+// for solving the "forward" problem.
+// Therefore "global_truss" is global.
+TriLadder *Invert::global_truss = 0;
 
 Obstacle obstacle;
 
@@ -59,11 +133,10 @@ void solve_inverse_problem(TriLadder *an,Obstacle ob) {
     lb(i) = an->lower_bound(i);
     ub(i) = an->upper_bound(i);    
   }
-  std::cout << "OUT LOOP" <<  std::endl;
   
   Invert inv;
   inv.an = an;
-  inv.set_cur_an(obstacle);
+  inv.set_global_truss(obstacle);
   inv.ob = ob;
 
   int n = an->var_edges;
@@ -79,7 +152,6 @@ void solve_inverse_problem(TriLadder *an,Obstacle ob) {
 		    1e-5,  // stopping trust region radius (rho_end)
 		    10000   // max number of objective function evaluations
 		    );
-    std::cout << "inv(x) " << inv(sp) << std::endl;
     for (int i = 0; i < an->var_edges; i++) {
       if (debug)  std::cout << "distance edge" << i+1 << " :  " << sp(i) << std::endl;
       an->distance(i+1) = sp(i);
@@ -94,7 +166,7 @@ void solve_inverse_problem(TriLadder *an,Obstacle ob) {
     }
     
     double score = find_min_box_constrained(
-					    // bfgs_search_strategy(),
+      			    // bfgs_search_strategy(),
 			     lbfgs_search_strategy(30),
 			     // cg_search_strategy(),
 			     //			     newton_search_strategy,
@@ -108,15 +180,9 @@ void solve_inverse_problem(TriLadder *an,Obstacle ob) {
 
     // I uses this to get rid of the warning
     score = score + 0.0;
-    //    cout << "===============\n";
-    //    cout << "score = " << score << "\n";
-    //    cout << "best  = " << best_score << "\n";
     for (int i = 0; i < an->var_edges; ++i) {
-      //      cout << i << " " << best_distances[i] << "\n";
       an->distance(i+1) = best_distances[i];
-      //      cout << i << " " << sp(i) << "\n";
     }
-    // WARNING: we should free best here...
   }
 
 };
@@ -155,7 +221,7 @@ int mainx(TriLadder *an,column_vector* coords,Obstacle ob)
 	  find_all_coords(an,coords);
 	  Invert inv;
 	  inv.an = an;
-	  inv.set_cur_an(obstacle);
+	  inv.set_global_truss(obstacle);
 	  column_vector sp(an->var_edges);
 	  for (int i = 0; i < an->var_edges; i++) {
 	    sp(i) = an->distance(i + 1);
@@ -202,17 +268,11 @@ void draw_rect(SDL_Renderer* renderer,SDL_Rect r) {
 }
 void render_vector(SDL_Renderer* renderer, 
 		   column_vector v0, column_vector v1) {
-       double px0 = v0(0);
-       double py0 = v0(1);
-       double vx0;
-       double vy0; 
-       physical_to_viewport(px0,py0,&vx0,&vy0);
-       
-       double px1 = v1(0);
-       double py1 = v1(1);
-       double vx1;
-       double vy1; 
-       physical_to_viewport(px1,py1,&vx1,&vy1);
+       double vx0 = physical_to_viewport_x(v0(0));
+       double vy0 = physical_to_viewport_y(v0(1));       
+
+       double vx1 = physical_to_viewport_x(v1(0));
+       double vy1 = physical_to_viewport_y(v1(1));       
 
        int x0 = (int) std::round(vx0);
        int y0 = (int) std::round(vy0);
@@ -221,94 +281,69 @@ void render_vector(SDL_Renderer* renderer,
        int y1 = (int) std::round(vy1);
        
        SDL_RenderDrawLine(renderer, x0, y0, x1, y1);
+}
+
+void render_from_angle(SDL_Renderer* renderer, column_vector bk,column_vector hd, double angle) {
+  column_vector bk1 = rotate_point<double>(hd,bk,angle);
+
+    double bkx0 = bk1(0);
+    double bky0 = bk1(1);
+    // double bkx0_v;
+    // double bky0_v;
+    // physical_to_viewport(bkx0,bky0,&bkx0_v,&bky0_v);
+    double bkx0_v = physical_to_viewport_x(bkx0); 
+    double bky0_v = physical_to_viewport_y(bky0);
+    
+    int bx0 = (int) std::round(bkx0_v);
+    int by0 = (int) std::round(bky0_v);
+    double vx1 = physical_to_viewport_x(hd(0));
+    double vy1 = physical_to_viewport_y(hd(1));       
+    int x1 = (int) std::round(vx1);
+    int y1 = (int) std::round(vy1);
+       
+    SDL_RenderDrawLine(renderer, bx0, by0, x1, y1);
 }
 void render_arrow(SDL_Renderer* renderer, 
 		  column_vector v0, column_vector v1,double headf = 0.2) {
-       double px0 = v0(0);
-       double py0 = v0(1);
-       double vx0;
-       double vy0; 
-       physical_to_viewport(px0,py0,&vx0,&vy0);
-       
-       double px1 = v1(0);
-       double py1 = v1(1);
-       double vx1;
-       double vy1; 
-       physical_to_viewport(px1,py1,&vx1,&vy1);
+  double vx0 = physical_to_viewport_x(v0(0));
+  double vy0 = physical_to_viewport_y(v0(1));       
 
-       int x0 = (int) std::round(vx0);
-       int y0 = (int) std::round(vy0);
+  double vx1 = physical_to_viewport_x(v1(0));
+  double vy1 = physical_to_viewport_y(v1(1));       
        
-       int x1 = (int) std::round(vx1);
-       int y1 = (int) std::round(vy1);
-       
-       SDL_RenderDrawLine(renderer, x0, y0, x1, y1);
-       // Now to draw the arrow head we create the vector pointing backwards...
-       {
-       column_vector bk = (v1 - v0)*headf + v1;
-       column_vector bk1 = rotate_point<double>(v1,bk,150*PI/180);
 
-       double bkx0 = bk1(0);
-       double bky0 = bk1(1);
-       double bkx0_v;
-       double bky0_v;
-       physical_to_viewport(bkx0,bky0,&bkx0_v,&bky0_v);       
-       int bx0 = (int) std::round(bkx0_v);
-       int by0 = (int) std::round(bky0_v);
+  int x0 = (int) std::round(vx0);
+  int y0 = (int) std::round(vy0);
        
-       SDL_RenderDrawLine(renderer, bx0, by0, x1, y1);
-       }
-       {
-       column_vector bk = (v1 - v0)*headf + v1;
-       column_vector bk1 = rotate_point<double>(v1,bk,-150*PI/180);
+  int x1 = (int) std::round(vx1);
+  int y1 = (int) std::round(vy1);
+       
+  SDL_RenderDrawLine(renderer, x0, y0, x1, y1);
+  // Now to draw the arrow head we create the vector pointing backwards...
 
-       double bkx0 = bk1(0);
-       double bky0 = bk1(1);
-       double bkx0_v;
-       double bky0_v;
-       physical_to_viewport(bkx0,bky0,&bkx0_v,&bky0_v);       
-       int bx0 = (int) std::round(bkx0_v);
-       int by0 = (int) std::round(bky0_v);
-       
-       SDL_RenderDrawLine(renderer, bx0, by0, x1, y1);
-       }
-       // Then we shorten it to the head lenghth..
-       // then we rotate and render 45 degrees in each direction.
-       SDL_RenderDrawLine(renderer, x0, y0, x1, y1);       
+  column_vector bk = (v1 - v0)*headf + v1;
+  
+  double angle = 150*PI/180;
+  render_from_angle(renderer,bk,v1,angle);
+  render_from_angle(renderer,bk,v1,-angle);
+  
+  SDL_RenderDrawLine(renderer, x0, y0, x1, y1);      
 }
 void render_coords(SDL_Renderer* renderer, 
-		   column_vector* coords, int i, int j) {
+       column_vector* coords, int i, int j) {
        column_vector v0 = coords[i];
        column_vector v1 = coords[j];
        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);       
        render_vector(renderer,v0,v1);
 }
 
-const int WIN_WIDTH = 640 * 2;
-const int WIN_HEIGHT = 480 * 2;
-
-// These are the size of the physical size
-//const double w = (LADDER_NODES < 11) ? 10.0 : (LADDER_NODES < 21) ? 20.0 : 40.0;
-//const double h = (LADDER_NODES < 11) ? 10.0 : (LADDER_NODES < 21) ? 20.0 : 40.0;
-
-const double w = (LADDER_NODES / 10.0 ) * 12.0 ;
-const double h = (LADDER_NODES / 10.0 ) * 12.0 ;
 
 
-void draw_net(SDL_Renderer* renderer,  TriLadder *cur_an,column_vector* coords) {
-    // Set render color to red ( background will be rendered in this color )
-    // SDL_SetRenderDrawColor( renderer, 255, 255, 255, SDL_ALPHA_OPAQUE );
+void draw_net(SDL_Renderer* renderer,  TriLadder *global_truss,column_vector* coords) {
 
-    // Clear winow
-    //    SDL_RenderClear( renderer );
-
-    // Set render color to blue ( rect will be rendered in this color )
-    //    SDL_SetRenderDrawColor( renderer, 0, 0, 0, SDL_ALPHA_OPAQUE );
-    //    SDL_RenderClear(renderer);
-
-    // need to develop complete rendering, but will do something
+  // need to develop complete rendering, but will do something
     // halfway at present...
-     for(int j = 0; j < cur_an->num_nodes; j++) {
+     for(int j = 0; j < global_truss->num_nodes; j++) {
        int k = j - 1;
        int h = j - 2;
        if (k >= 0) {
@@ -334,26 +369,27 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *cur_an,column_vector* coords) 
 
      SDL_SetRenderDrawColor(renderer, 255, 255, 0, 200);
 
-     for(int i = 0; i < cur_an->var_edges; i++) {
+     for(int i = 0; i < global_truss->var_edges; i++) {
        column_vector d_full(2);
        d_full(0) = 0.0;
        d_full(1) = 0.0;
        int e = i + 1;
        
-       for(int j = 0; j < cur_an->goals.size(); j++) {
+       for(int j = 0; j < global_truss->goals.size(); j++) {
 	   column_vector d;
 	   if ((e % 2) == 1) {
-	     d = cur_an->compute_external_effector_derivative_c(coords,e,cur_an->goal_nodes[j]);
+	     d = global_truss->compute_external_effector_derivative_c(coords,e,global_truss->goal_nodes[j]);
 	   } else  if ((e % 2) == 0) {
-	     d = cur_an->compute_internal_effector_derivative_c(coords,e,cur_an->goal_nodes[j]);
+	     d = global_truss->compute_internal_effector_derivative_c(coords,e,global_truss->goal_nodes[j]);
 	   }
-	   if ((d(0) > 1000.0) || (abs(d(1)) > 1000.0)) {
 
+	   // This helps to catch internal coding errors in finding the derivatives.
+	   if ((d(0) > CRISIS_DERIVATIVE_LEVEL) || (abs(d(1)) > CRISIS_DERIVATIVE_LEVEL)) {
 	     cout << "CRISIS!\n";
 	     print_vec(d);
 	     abort();
 	   }
-	   d_full = d_full + (d * cur_an->goal_weights[j]);
+	   d_full = d_full + (d * global_truss->goal_weights[j]);
        }
 
 
@@ -361,13 +397,13 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *cur_an,column_vector* coords) 
 
       double d_obst = 0.0;
       // first we will run through all nodes.
-      int first_node = cur_an->large_node(e);
+      int first_node = global_truss->large_node(e);
       // Note this creates a n^2 operation in the number of nodes---
       // this is ripe for optimization.
-      for(int j = first_node; j < cur_an->num_nodes; j++) {
+      for(int j = first_node; j < global_truss->num_nodes; j++) {
 	// Now, does the partial derivative of this node exist?
-	double di = distance_2d(coords[j],cur_an->obstacle.center);
-	double p = cur_an->obstacle.partial(di);
+	double di = distance_2d(coords[j],global_truss->obstacle.center);
+	double p = global_truss->obstacle.partial(di);
 	if (p != 0.0) {
 	  cout << "Node " << j << " derivative: " << p << "\n";
 	  column_vector nd = coords[j];
@@ -376,14 +412,14 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *cur_an,column_vector* coords) 
 	  column_vector d;
 	  cout << "e :" << e << "\n";
 	  if ((e % 2) == 1) {
-	    d = cur_an->compute_external_effector_derivative_c(coords,e,j);
+	    d = global_truss->compute_external_effector_derivative_c(coords,e,j);
 	  } else  if ((e % 2) == 0) {
-	    d = cur_an->compute_internal_effector_derivative_c(coords,e,j);
+	    d = global_truss->compute_internal_effector_derivative_c(coords,e,j);
 	  }
 	  cout << " motion deivative \n";
 	  print_vec(d);
 	  // now d is a direction vector, we dot it with (nd - c)...
-	  column_vector n_to_center = cur_an->obstacle.center - nd;
+	  column_vector n_to_center = global_truss->obstacle.center - nd;
 	  double direction = dot(n_to_center,d);
 	  cout << "value " << j << " " << direction * p << "\n";
 	  //	  d_obst += d_obst + obstacle.weight * direction * p;
@@ -393,8 +429,8 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *cur_an,column_vector* coords) 
        
        //       cout << "full: ";
        //       print_vec(d_full);
-       int node = cur_an->large_node(e);
-       column_vector tail = (coords[node]+ coords[cur_an->small_node(e)])/ 2.0;
+       int node = global_truss->large_node(e);
+       column_vector tail = (coords[node]+ coords[global_truss->small_node(e)])/ 2.0;
        if ((e % 2) == 1) {
 	 SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);       	 	 
        } else  if ((e % 2) == 0) {
@@ -404,42 +440,23 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *cur_an,column_vector* coords) 
 
        SDL_SetRenderDrawColor(renderer, 255, 0, 255, 255);       	 	         
        render_arrow(renderer,tail,d_obst+tail);
-
-       
      }
+}
+
+void draw_physical_line(SDL_Renderer* renderer,double px0,double py0,double px1,double py1) {
+      {
+       double vx0 = physical_to_viewport_x(px0);
+       double vy0 = physical_to_viewport_y(py0);       
+       double vx1 = physical_to_viewport_x(px1);
+       double vy1 = physical_to_viewport_y(py1);       
+       SDL_RenderDrawLine(renderer, vx0, vy0, vx1, vy1);       
+      }
 }
 
 void draw_axes(SDL_Renderer* renderer) {
       SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
-      {
-       double px0 = -w;
-       double py0 = 0.0;
-       double vx0;
-       double vy0; 
-       physical_to_viewport(px0,py0,&vx0,&vy0);
-       
-       double px1 = w;
-       double py1 = 0.0;
-       double vx1;
-       double vy1; 
-       physical_to_viewport(px1,py1,&vx1,&vy1);
-       SDL_RenderDrawLine(renderer, vx0, vy0, vx1, vy1);       
-      }
-      {
-       double px0 = 0.0;
-       double py0 = h;
-       double vx0;
-       double vy0; 
-       physical_to_viewport(px0,py0,&vx0,&vy0);
-       
-       double px1 = 0.0;
-       double py1 = -h;
-       double vx1;
-       double vy1; 
-       physical_to_viewport(px1,py1,&vx1,&vy1);
-       SDL_RenderDrawLine(renderer, vx0, vy0, vx1, vy1);       
-      }
-
+      draw_physical_line(renderer,-w_physical,0.0,w_physical,0.0);
+      draw_physical_line(renderer,0.0,h_physical,0.0,-h_physical);      
 }
 
 
@@ -504,20 +521,13 @@ void Input::readInput()
 
       if (m_event.type == SDL_MOUSEBUTTONDOWN)
       {
-	//         m_keysHeld[m_event.key.keysym.sym] = true;
 	 mouseDown = true;
 	 x = m_event.button.x;
 	 y = m_event.button.y;
-
-	 cout << "XXXXXXXXXXXXXXXXXXXXX\n";
-	 
-	 //	 cout << x << "," << y << "\n";
-
       }
 
       if (m_event.type == SDL_MOUSEBUTTONUP)
       {
-	//         m_keysHeld[m_event.key.keysym.sym] = false;
 	 mouseDown = false;	 
       }
       if (m_event.type == SDL_KEYDOWN)
@@ -560,46 +570,61 @@ int sdl_EventFilter(void*      userdata,
 void mousedown_function() {
 }
 
+typedef int32_t s32;
 
-void physical_to_viewport(double px,double py,double *vx, double *vy) {
+
+// Thanks to: Scotty Stepens https://stackoverflow.com/questions/38334081/howto-draw-circles-arcs-and-vector-graphics-in-sdl
+void DrawCircle(SDL_Renderer *Renderer, s32 _x, s32 _y, s32 radius)
+{ 
+   s32 x = radius - 1;
+   s32 y = 0;
+   s32 tx = 1;
+   s32 ty = 1;
+   s32 err = tx - (radius << 1); // shifting bits left by 1 effectively
+                                 // doubles the value. == tx - diameter
+   while (x >= y)
+   {
+      //  Each of the following renders an octant of the circle
+      SDL_RenderDrawPoint(Renderer, _x + x, _y - y);
+      SDL_RenderDrawPoint(Renderer, _x + x, _y + y);
+      SDL_RenderDrawPoint(Renderer, _x - x, _y - y);
+      SDL_RenderDrawPoint(Renderer, _x - x, _y + y);
+      SDL_RenderDrawPoint(Renderer, _x + y, _y - x);
+      SDL_RenderDrawPoint(Renderer, _x + y, _y + x);
+      SDL_RenderDrawPoint(Renderer, _x - y, _y - x);
+      SDL_RenderDrawPoint(Renderer, _x - y, _y + x);
+
+      if (err <= 0)
+      {
+         y++;
+         err += ty;
+         ty += 2;
+      }
+      else if (err > 0)
+      {
+         x--;
+         tx += 2;
+         err += tx - (radius << 1);
+      }
+   }
+}
+// SDL doesn't have a circle drawing routine...
+void render_circle(SDL_Renderer* renderer,double px, double py, double radius) {
+  // now we will create a box containing the circle in physical space...
+  double r = radius;
+  double x0 = px - r;
+  //  double y0 = py - r;
+  double x1 = px + r;
+  double vx0 = physical_to_viewport_x(x0);
+  double vx1 = physical_to_viewport_x(x1);  
   
-    // Let's assume our play space is from -10 to + 10, centered on the origin...
- 
-    double x = px;
-    double y = py;
-    // first scale appropriately
-    x = x * (WIN_WIDTH / (2.0 * w));
-    y = y * (WIN_HEIGHT / (2.0 * h));
-    
-    // now move to origin....
-    x += WIN_WIDTH/2.0;
-    y = (-y) + WIN_HEIGHT/2.0;
-
-    // These adjust our weird grid background to the origin...
-    //    y = y + WIN_HEIGHT / (2.0 *(2.0 * h));
-    //    x = x + WIN_WIDTH / (2.0 * (2.0 * w)) ;
-    
-    *vx = x;
-    *vy = y;
+  double vx = physical_to_viewport_x(px);
+  double vy = physical_to_viewport_y(py);
+  
+  //  physical_to_viewport(px,py,&vx,&vy);
+  DrawCircle(renderer,vx,vy,std::abs(vx0-vx1)/2);
 }
 
-void viewport_to_physical(double px,double py,double *vx, double *vy) {
-  
-    // Let's assume our play space is from -10 to + 10, centered on the origin...
-    double x = px;
-    double y = py;
-
-        // now move to origin...    
-    x = x - (WIN_WIDTH / (2.0 ));
-    y = y - (WIN_HEIGHT / (2.0 ));
-
-    // then unscale..
-    x = x / (WIN_WIDTH / (2.0*w));
-    y = - y / (WIN_HEIGHT / (2.0*h));    
-    
-    *vx = x;
-    *vy = y;
-}
 
 void render_all(SDL_Renderer* renderer, TriLadder *an,column_vector* coordsx,Obstacle obstacle) {
   // Clear winow
@@ -608,65 +633,27 @@ void render_all(SDL_Renderer* renderer, TriLadder *an,column_vector* coordsx,Obs
   SDL_RenderClear(renderer);
   draw_axes(renderer);
   // now we want to try to find coordinates in the physical space...
-	
 
   draw_net(renderer,an,coordsx);
   // Here we render the obstacle
+  render_circle(renderer,obstacle.center(0),obstacle.center(1),obstacle.radius);
 
-  // now we will create a box containing the circle in physical space...
-  double r = obstacle.radius;
-  double x0 = obstacle.center(0) - r;
-  double y0 = obstacle.center(1) - r;
-  double x1 = obstacle.center(0) + r;
-  double y1 = obstacle.center(1) + r;
-  // Now we will translate the viewport...
-  double vx0,vy0;
-  double vx1,vy1;
-  physical_to_viewport(x0,y0,&vx0,&vy0);
-  physical_to_viewport(x1,y1,&vx1,&vy1);
-
-  SDL_Rect srcrect;  
-  srcrect.w = std::abs(vx0-vx1);
-  srcrect.h = std::abs(vy0-vy1);
-
-  double ax = (vx0+vx1)/2.0;
-  double ay = (vy0+vy1)/2.0;
-  
-  srcrect.x = ax-(srcrect.w/2.0);
-  srcrect.y = ay-(srcrect.h/2.0);
-
-  
-  SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);              
-  SDL_RenderDrawRect(renderer, &srcrect);
-  
-  SDL_RenderPresent(renderer);       				
+  SDL_RenderPresent(renderer);
 }
 
 int main( int argc, char* args[] )
 {
-  {
-    	double vx = 0.0;
-  	double vy = 0.0;
-  	double px;
-  	double py;
-  	viewport_to_physical(vx,vy,&px,&py);
-  	physical_to_viewport(px,py,&vx,&vy);	
-  }
-
 
   // This needs to be generalized but for now I'm going to
   // just add an obstacle.  If I can successfully work around
   // an obstacle, that will be strong evidence that I have a valuable system.
   obstacle.radius = 2.0;
-  //  double r = obstacle.radius;
   obstacle.center = column_vector(2);
-  obstacle.center(0) = 0.0;
-  obstacle.center(1) = 20.0;
-  obstacle.weight = 0.5;
+  obstacle.center(0) = 5.0;
+  obstacle.center(1) = 15.0;
+  obstacle.weight = 4.0;
 
-
-
-       TriLadder an = TriLadder(LADDER_NODES,
+  TriLadder an = TriLadder(TRUSS_NODES,
 			   UPPER_BOUND,
 			   LOWER_BOUND,
 			   MEDIAN,
@@ -674,29 +661,26 @@ int main( int argc, char* args[] )
 			   );
 
   int last_node = an.num_nodes - 1;
-  double bx = ((last_node % 2) == 0) ? 0.0 : an.median_d * cos(30.0*PI/180);
+  double bx = ((last_node % 2) == 0) ? 0.0 : an.median_d * cos(30.0*M_PI/180);
   double by = (an.median_d/2.0) * last_node;
-  
+
+  // These are examples of adding different goals...
   //  an.add_goal_node(an.num_nodes*1/3,1*bx/3+-2.0,1*by/3,0.5);
   //  an.add_goal_node(an.num_nodes*2/3,2*bx/3+ 5.0,2*by/3,0.5);  
   double mx = 1.0;
   double my = 1.0;
-  an.add_goal_node(an.num_nodes-1,bx+mx,by+my,1.0);    
-
-  for(int i = 0; i < an.goal_nodes.size(); i++) {
-    cout << "goal_nodes[" << i << "] " << an.goal_nodes[i] << "\n";
+  an.add_goal_node(an.num_nodes-1,bx+mx,by+my,1.0);
+  
+  if (debug) {
+    for(int i = 0; i < an.goal_nodes.size(); i++) {
+      cout << "goal_nodes[" << i << "] " << an.goal_nodes[i] << "\n";
+    }
   }
   
   column_vector* coordsx = new column_vector[an.num_nodes];
 
   mainx(&an,coordsx,obstacle);
 
-  // for(int i = 0; i < an.num_nodes; i++) {
-  //   cout << "X" <<  i << "\n";
-  //   print_vec(coordsx[i]);
-  // }
-  // cout << '\n';
-  
     SDL_Window* window = NULL;
     window = SDL_CreateWindow
     (
@@ -713,9 +697,6 @@ int main( int argc, char* args[] )
 
     render_all(renderer,&an,coordsx,obstacle);
 
-    
-    SDL_Event spud;
-
     Input input(&mousedown_function);
     int n = 0;
     bool running = true;
@@ -726,25 +707,18 @@ int main( int argc, char* args[] )
   	running = false;
       }
       if (input.mouseDown) {
-
-
-  	double vx = input.x;
-  	double vy = input.y;
-  	double px;
-  	double py;
-  	viewport_to_physical(vx,vy,&px,&py);
   	column_vector gl(2);
-
-  	gl(0) = px;
-  	gl(1) = py;
+  	gl(0) = viewport_to_physical_x(input.x);
+  	gl(1) = viewport_to_physical_y(input.y);
 
   	an.goals[an.goals.size() - 1] = gl;	
 	cout  << "goal : " << gl << "\n";
 	best_score = std::numeric_limits<float>::max();	
 	auto start = std::chrono::high_resolution_clock::now();
+	
   	mainx(&an,coordsx,obstacle);
+	
 	auto elapsed = std::chrono::high_resolution_clock::now() - start;
-
 	long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
 	long long milliseconds = microseconds/ 1000.0;
 
@@ -757,8 +731,9 @@ int main( int argc, char* args[] )
       SDL_Delay( 10 );
       n++;
     }
-    SDL_WaitEvent(&spud);
-    cout << "type" << spud.type << "\n";
+    SDL_Event key_event;    
+    SDL_WaitEvent(&key_event);
+    cout << "Exit key " << key_event.type << "\n";
 
     SDL_DestroyWindow(window);
     SDL_Quit();

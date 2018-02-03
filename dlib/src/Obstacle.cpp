@@ -40,11 +40,8 @@ double dirac(double d) {
 
 // return the objective function contribution for a node at x for this obstacle
 double Obstacle::f(column_vector x) {
-  double f = 0.0;
   double d = distance_2d(x,center);
-  f = (1.0/(1.0 + d*d) + 1)*H(radius-d);
-  
-  return f*weight;
+  return weight *  (1.0/(1.0 + d*d) + 1)*H(radius-d);
 }
 
   // partial derivative of contribution to the objective function for this obstable for this node

@@ -28,8 +28,6 @@
 
 #include <math.h>
 
-#define PI 3.14159265
-
 using namespace std;
 using namespace dlib;
 
@@ -45,7 +43,7 @@ class Invert {
 public:
 
   TriLadder *an;
-  static TriLadder *cur_an;  
+  static TriLadder *global_truss;  
   Invert();
   
   // This function weights how close our values are to the goals.
@@ -54,7 +52,7 @@ public:
   // For the purposes of the paper I will call this the "simple distance score" or sds.
   double operator() ( const column_vector& ds) const;
 
-  void set_cur_an(Obstacle obstacle);
+  void set_global_truss(Obstacle obstacle);
   // This is currently computing the sum of the l2_norm of the goal point quandrances (square of distance).
   static double objective(const column_vector& ds);
 
