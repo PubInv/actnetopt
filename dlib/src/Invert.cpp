@@ -66,23 +66,9 @@ Invert::Invert() {
     double v = 0.0;
     for(int i = 0; i < global_truss->goal_nodes.size(); i++) {
       int idx = global_truss->goal_nodes[i];
-      if (debug) std::cout << "idx " <<  idx  << std::endl;      
       column_vector g = global_truss->goals[i];
       column_vector c = coords[idx];
-      column_vector x(2);
-      x(0) = g(0);
-      x(1) = g(1);
-      column_vector y(2);
-      y(0) = c(0);
-      y(1) = c(1);
-      
-      column_vector d(2);
-
-      d = x - y;
-      
-      if (debug) std::cout << "Invert d " <<  d(0) <<  "," << d(1) <<  " " << std::endl;
-
-      v += (global_truss->goal_weights[i]*distance_2d(x,y));
+      v += (global_truss->goal_weights[i]*distance_2d(g,c));
     }
 
     // now we must add in the increase to the object caused by the obstacle!!
@@ -118,15 +104,13 @@ Invert::Invert() {
    column_vector *coords = new column_vector[global_truss->num_nodes];
     find_all_coords(global_truss,coords);
     column_vector d(global_truss->var_edges);
-
-
       
     for(int i = 0; i < global_truss->var_edges; i++) {
       // The true edge number is one higher than the index of the variable edges, since the first is fixed.
       int e = i + 1;
       column_vector dx(2);
-      dx(0) = 0.0;
-      dx(1) = 0.0;
+      dx = 0.0,0.0;
+
       double prod = 0.0;
       for(int j = 0; j < global_truss->goals.size(); j++) {
 
@@ -142,7 +126,9 @@ Invert::Invert() {
 	  abort();
 	}
 
-	dx += (d * global_truss->goal_weights[j]);
+	// Which of thise is right?  Must be the latter?!?
+	//	dx += (d * global_truss->goal_weights[j]);
+	dx = (d * global_truss->goal_weights[j]);	
 	column_vector goal_direction = c - g;
 	prod += dot(goal_direction,dx);
       }
@@ -169,16 +155,16 @@ Invert::Invert() {
 	double di = distance_2d(coords[j],global_truss->obstacle.center);
 	double p = global_truss->obstacle.partial(di);
 	if (p != 0.0) {
-	  column_vector nd = coords[j];
-	  column_vector d = global_truss->compute_goal_derivative_c(coords,e,j);	  
+	  column_vector deriv_v = global_truss->compute_goal_derivative_c(coords,e,j);	  
 
-	  column_vector n_to_center = global_truss->obstacle.center - nd;
-	  double direction = dot(n_to_center,d);
+	  column_vector n_to_center = global_truss->obstacle.center - coords[j];
+
+	  // What is "d" here!!! OMG!
+	  double direction = dot(n_to_center,deriv_v);
 	  d_obst +=  ( direction * p);
 	}
       }
       if (d_obst != 0.0) {
-
 	d(i) += d_obst;
       }
     }

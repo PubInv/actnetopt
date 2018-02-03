@@ -50,8 +50,8 @@ template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
-void physical_to_viewport(double px,double py,double *vx, double *vy);
-void viewport_to_physical(double px,double py,double *vx, double *vy);
+// void physical_to_viewport(double px,double py,double *vx, double *vy);
+// void viewport_to_physical(double px,double py,double *vx, double *vy);
 
 // const bool debug_find = false;
 // const bool debug = false;
@@ -82,8 +82,6 @@ int TriLadder::large_node(int e) {
 }
 
 int TriLadder::small_node(int e) {
-  //  int L = large_node(e);
-  //  return ((e % 2) == 1) ? L - 2 : L - 1;
   return e / 2;
 }
 
@@ -206,15 +204,12 @@ double get_angle(column_vector a, column_vector b, column_vector c) {
   Vc = normalize(Vc);
   double aangle = atan2(Va(1), Va(0));
   double cangle = atan2(Vc(1), Vc(0));
-  //  cout << "VA" << aangle*180/PI << "\n";
-  //  cout << "VC" << cangle*180/PI << "\n";
   
   double angle = aangle - cangle;
-  //  cout << angle*180/PI << "\n";
+
   if (angle >= PI) angle = -(2*PI - angle);
   if (angle <= -PI) angle = 2*PI + angle;
 
-  //  cout << "phi" << angle*180/PI << "\n";  
   return angle;
 }
 
@@ -262,14 +257,8 @@ column_vector TriLadder::compute_external_effector_derivative_c(column_vector cu
     d_e_a(0) = 0.0;
     d_e_a(1) = 0.0;
     return d_e_a;
-  } else {
-    //    cout << " Else External \n";
-    //    cout << S << "\n";
-    //    cout << M << "\n";
   }
-
-  //  print_vec(en);
-
+  
   column_vector m = cur_coords[M];
   column_vector p = cur_coords[P];
   column_vector s = cur_coords[S];  
@@ -323,8 +312,6 @@ double TriLadder::compute_dtheta_internal_da(column_vector A,
 			 double f,
 			 double g) {
 
-  //  cout << "a,b,c,f,g :" << a << " " << b << " "  << c << " " << f << " " << g << "\n";
-
   double a_c_B = a*a + c*c - b*b;
   double a_g_F = a*a + g*g - f*f;
   
@@ -334,10 +321,6 @@ double TriLadder::compute_dtheta_internal_da(column_vector A,
   double ne = 1/g - a_g_F/(2.0*a*a*g);
   double se = sqrt(1.0 - (a_g_F*a_g_F)/(4.0*a*a*g*g));
 
-  //  cout << "nw ne " << nw << " " << ne << "\n";
-
-  // dchi_da "derivative of chi wrt a"
-  // dbeta_da "derivative of beta wrt a"
   double dchi_da = nw/sw; 
   double dbeta_da = ne/se;
 
@@ -354,7 +337,6 @@ double TriLadder::compute_dtheta_internal_da(column_vector A,
   
   double dtheta_da = dchi_da + dbeta_da;
   
-  //  cout << "dtheta_da: " << dtheta_da*180/M_PI << "\n";
   return dtheta_da;
 }
 
@@ -388,11 +370,7 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
     double len = distance_2d(en,pen);
     d_e_a = (en - pen) / len;
     return d_e_a;
-  } else {
-    //    cout << " Else clause \n";
-    //    cout << ci << "\n";
-    //    cout << di << "\n";
-  }
+  } 
 
   
   column_vector A = cur_coords[ai];
@@ -426,8 +404,6 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
   
   rot(0) = sin(angle_XAB);
   rot(1) = -cos(angle_XAB);
-  //  cout << " rho + alpha " << (angle_XAB)*180/M_PI << "\n";
-  //  print_vec(rot);
 
   column_vector e_minus_c(2);
   e_minus_c(0) = -(en(1) - C(1));
@@ -442,8 +418,18 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
   return d_e_a;
 }
 
+void TriLadder::set_fixed_coords(column_vector coords[]) {
+    column_vector temp0(2);
+    temp0 = 0, 0;
+    coords[0] = temp0;
 
-  double FindCoords::operator() ( const column_vector& x) const
+    column_vector temp1(2);
+    temp1 = 1.3, 0.75;
+    coords[1] = temp1;
+}
+
+
+double FindCoords::operator() ( const column_vector& x) const
   {
     column_vector y(2);
     y  = x(0), x(1);
@@ -460,20 +446,13 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
       pow(sqrt(an) - dac,2) +
       pow(sqrt(bn) - dbc,2);
   }
-// };
-
-// This is really a determinant of a 3x3 matrix with a column on the right
-// This is form (x0,y0,x1,y1,z0,z1)
-double sense2(double a, double b, double d, double e, double g, double h) {
-  return a*e - a*h - b*d + b*g + d*h - e*g;
-}
 
 // Note sense computes "does BC turn CW or CCW from AB?"
 // It does NOT compute the rotation of BA into BC.
-
 double sense(double xa,double ya,double xb,double yb,double xc,double yc) {
   return (xb*yc + xa*yb + ya*xc) - (ya*xb + yb*xc + xa*yc);
 }
+
 int int_sign(double x) {
   if (x == 0.0)
     return 0;
@@ -527,10 +506,7 @@ column_vector find_third_point_given_two_and_distances(Chirality sense,double da
   x += pa(0);
   y += pa(1);
   column_vector c(2);
-  c(0) = x;
-  c(1) = y;
-  if (debug_find_third) print_vec(c);
-  if (debug_find_third) cout << "======\n";
+  c = x,y;
   return c;
 }
 
@@ -570,24 +546,16 @@ void fix_sense(bool desired_sense,double x0,double y0,double x1,double y1,column
 	  r = xp, yp;
 	}
 	if (debug_find) std::cout << "flipped: " <<  r  << std::endl;
-	z(0) = r(0);
-	z(1) = r(1);
+	z = r;
+      } else { // nothing to do
       }
-      //      if (debug_find) std::cout << " z " << z << std::endl;
 }
+
 
 void find_all_coords(TriLadder *an,column_vector coords[]) {
     FindCoords f;
 
-    // This should really be moved inot the TriLadder class in some way!
-    // WARNING -- THIS IS FIXED!!
-    column_vector temp0(2);
-    temp0 = 0, 0;
-    coords[0] = temp0;
-
-    column_vector temp1(2);
-    temp1 = 1.3, 0.75;
-    coords[1] = temp1;
+    an->set_fixed_coords(coords);
     
     // Basic structure: Iteratively find coordinates based on simple triangulations.
     // This only works for actuator networks in which we can
@@ -597,14 +565,12 @@ void find_all_coords(TriLadder *an,column_vector coords[]) {
       // choose a starting point
 
       f.a.set_size(2);
-      f.a(0) = coords[i-fs](0);
-      f.a(1) = coords[i-fs](1);
-      f.b.set_size(2);
-      f.b(0) = coords[i-(fs-1)](0);
-      f.b(1) = coords[i-(fs-1)](1);
+      f.a = coords[i-fs];
 
-      Chirality desired_sense = ((i % 2) == 0) ? CCW : CW;
-      f.chi = desired_sense;
+      f.b.set_size(2);
+      f.b = coords[i-(fs-1)];
+
+      f.chi = ((i % 2) == 0) ? CCW : CW;
 
       // and minimize the function
       if (debug_find) std::cout << "f.a " << f.a << std::endl;
@@ -615,103 +581,23 @@ void find_all_coords(TriLadder *an,column_vector coords[]) {
       f.dbc = an->distance(e);
       
       double dab = distance_2d(f.a,f.b);
-
-      
       column_vector  y(2);
 
-      y = find_third_point_given_two_and_distances(desired_sense,dab,f.dbc,f.dac,f.a,f.b);
+      y = find_third_point_given_two_and_distances(f.chi,dab,f.dbc,f.dac,f.a,f.b);
       
-      fix_sense(desired_sense,f.a(0), f.a(1), f.b(0), f.b(1),y);
+      fix_sense(f.chi,f.a(0), f.a(1), f.b(0), f.b(1),y);
 
 
-      column_vector  z(2);            
-      if (!any_too_small(dab,f.dbc,f.dac)) {
-	z = y;
-      } else {
-	cout << "TOO SMALL! \n";
-	//	z = x;
-      }
-      z = y;
+      if (any_too_small(dab,f.dbc,f.dac)) {
+	cout << "TOO SMALL! \n";	
+      } 
 
       coords[i].set_size(2);
-      coords[i](0) = z(0);
-      coords[i](1) = z(1);
-      
-      // print argmin
-      // Now take x and make it the first coord...
-      
-      if (debug_find) std::cout << "f(x) " << f(z) << std::endl;
+      coords[i] = y;
+      if (debug_find) std::cout << "f(y) " << f(y) << std::endl;
     }
     for (int i = 0; i < an->num_nodes; i++) {
       if (debug_find) std::cout << i << " =  " << an->coords[i] << std::endl;      
     }
 };
 
-
-
-// void   test_find_third_point_given_two_and_distances() {
-//     column_vector a(2);
-//     column_vector b(2);
-//     column_vector c(2);
-//     column_vector x(2);            
-//     a(0) = 0.0;
-//     a(1) = 0.0;
-//     b(0) = 1.3;
-//     b(1) = 0.75;
-//     c(0) = 2.0;
-//     c(1) = 0.0;
-//     double dab = distance_2d(a,b);
-//     double dbc = distance_2d(b,c);
-//     double dca = distance_2d(c,a);
-    
-//     x = find_third_point_given_two_and_distances(CCW,dab,dbc,dca,a,b);
-// }
-
-column_vector change_in_third_point(column_vector a,
-				    column_vector b,
-				    column_vector c,
-				    column_vector da,
-				    column_vector db
-				    ) {
-  // This is the translation of the midpoint of a and b
-  column_vector dm(2);
-  dm = (da + db)/2;
-  column_vector m(2);
-  m = (a+b)/2;
-  column_vector mp(2);
-  mp = m+dm;
-
-  // tc is c translated, but not rotated
-  column_vector tc(2);
-  tc = c + dm;
-  
-  column_vector dzr(2);
-  column_vector bp(2);
-  bp = b + dm;
-  column_vector bpp(2);
-  bpp = b + db;
-  // now theta is the angle bpp->m->bp
-  // Sadly as always we have to worry about the sign here...
-  double dot_product = dot(bpp-mp,bp-mp);
-  if (debug) cout << "intermediate " << dot_product << "\n";
-  
-  double distance_product = distance_2d(mp,bp)*distance_2d(mp,bpp);
-  if (debug) cout << "d " << distance_product << "\n";
-
-  bool prod_equal = (dot_product >= distance_product);
-  
-  if (debug) cout << "prod_equal " << prod_equal << "\n";
-  
-  double theta = (dot_product >= distance_product) ? 0.0 : acos(dot(bpp-mp,bp-mp)/(distance_2d(mp,bp)*distance_2d(mp,bpp)));
-  
-  if (debug) cout << "theta :" << theta*180/PI << "\n";
-  
-  column_vector cp(2);
-  cp = rotate_point<double>(mp,tc,theta);
-  column_vector dc(2);
-  dc = cp - c;
-  print_vec(tc); 
-  print_vec(dc);
-  cout << "====\n";
-  return dc;
-}

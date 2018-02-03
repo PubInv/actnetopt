@@ -74,65 +74,6 @@ BOOST_AUTO_TEST_CASE( test_angle )
 }
 
 
-BOOST_AUTO_TEST_CASE( test_triangle_motion )
-{
-  // First, we define a triangle as three points
-  column_vector a(2);
-  column_vector b(2);
-  column_vector c(2);
-  a(0) = 0.0;
-  a(1) = 0.0;
-
-  b(0) = 3.0;
-  b(1) = 3.0;
-
-  c(0) = 3.0;
-  c(1) = 0.0;
-
-
-  // These are target points...
-  column_vector ta(2);
-  column_vector tb(2);
-  ta(0) = 0.5;
-  ta(1) = 0.0;
-  tb(0) = 3.5;
-  tb(1) = 3.0;
-
-  double theta = PI*0.05;
-  column_vector mp(2);
-  mp(0) = 1.0;
-  mp(1) = 1.0;
-  ta = rotate_point<double>(mp,ta,theta);
-  tb = rotate_point<double>(mp,tb,theta);    
-    
-  column_vector da(2);
-  column_vector db(2);
-  da = ta-a;
-  db = tb-b;
-  cout << "da/db\n";
-  print_vec(da);
-  print_vec(db);  
-  
-  // Then we send in the triangle and the motion of two points
-  column_vector dc(2);
-  dc = change_in_third_point(a,b,c,da,db);
-  cout << "DC = " << dc << "\n";
-  // We get back a new triangle and differential of the third point..
-  // We check that the distances are all the same...
-  // We check that points have been properly moved.
-  column_vector ap(2);
-  column_vector bp(2);
-  column_vector cp(2);
-  ap = a + da;
-  bp = b + db;
-  cp = c + dc;
-  
-  BOOST_CHECK_CLOSE( distance_2d(a,b), distance_2d(ap,bp),.0001 );
-  BOOST_CHECK_CLOSE( distance_2d(b,c), distance_2d(bp,cp),.0001 );
-  BOOST_CHECK_CLOSE( distance_2d(c,a), distance_2d(cp,ap),.0001 );  
-
-}
-
 BOOST_AUTO_TEST_CASE( test_sense )
 {
   column_vector A(2);
@@ -147,10 +88,10 @@ BOOST_AUTO_TEST_CASE( test_sense )
   C(0) = 2.0;
   C(1) = 2.0;
   double s_angle_abc0 = -sense(A(0),A(1),B(0),B(1),C(0),C(1));
-  double s_angle_abc0x = -sense2(A(0),A(1),B(0),B(1),C(0),C(1));
+  //  double s_angle_abc0x = -sense2(A(0),A(1),B(0),B(1),C(0),C(1));
   cout << "s_angle_abc0 : " << s_angle_abc0 << "\n";
   BOOST_CHECK( s_angle_abc0 >  0.0 );
-  BOOST_CHECK( s_angle_abc0 = s_angle_abc0x);  
+  //  BOOST_CHECK( s_angle_abc0 = s_angle_abc0x);  
   
 
   A(0) = 0.0;

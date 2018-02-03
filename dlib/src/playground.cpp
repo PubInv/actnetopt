@@ -371,8 +371,7 @@ void draw_net(SDL_Renderer* renderer,  TriLadder *global_truss,column_vector* co
 
      for(int i = 0; i < global_truss->var_edges; i++) {
        column_vector d_full(2);
-       d_full(0) = 0.0;
-       d_full(1) = 0.0;
+       d_full = 0.0,0.0;
        int e = i + 1;
        
        for(int j = 0; j < global_truss->goals.size(); j++) {
@@ -649,8 +648,7 @@ int main( int argc, char* args[] )
   // an obstacle, that will be strong evidence that I have a valuable system.
   obstacle.radius = 2.0;
   obstacle.center = column_vector(2);
-  obstacle.center(0) = 5.0;
-  obstacle.center(1) = 15.0;
+  obstacle.center = -2.0, 10.0;
   obstacle.weight = 4.0;
 
   TriLadder an = TriLadder(TRUSS_NODES,

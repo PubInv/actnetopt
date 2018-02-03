@@ -167,6 +167,9 @@ column_vector compute_internal_effector_derivative_c(column_vector cur_coords[],
 						      int edge_number,
 						      int goal_node_number);
  
+ void set_fixed_coords(column_vector coords[]);
+
+};
  
  
 // I think this is the form actually required by functions such as find_min_box_constrained
@@ -174,8 +177,6 @@ column_vector compute_internal_effector_derivative_c(column_vector cur_coords[],
 column_vector derivative (const column_vector& m);
 
 
-
-};
 
 typedef enum { CW, CCW } Chirality;
 
