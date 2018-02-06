@@ -1,6 +1,6 @@
 #include <SDL.h>
-#include "playground.h"
-#include "Obstacle.h"
+#include "playground.hpp"
+#include "Obstacle.hpp"
 #include <stdio.h>
 #include <iostream>
 
@@ -34,26 +34,8 @@ int main( int argc, char* args[] )
       }
       if (input.mouseDown) {
 	handle_goal_target(an,coordsx,input.x,input.y);
-  	// column_vector gl(2);
-  	// gl(0) = viewport_to_physical_x(input.x);
-  	// gl(1) = viewport_to_physical_y(input.y);
-
-  	// an->goals[an->goals.size() - 1] = gl;	
-	// cout  << "goal : " << gl << "\n";
-	// best_score = std::numeric_limits<float>::max();	
-	// auto start = std::chrono::high_resolution_clock::now();
-	
-  	// mainx(an,coordsx,obstacle);
-	
-	// auto elapsed = std::chrono::high_resolution_clock::now() - start;
-	// long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-	// long long milliseconds = microseconds/ 1000.0;
-
-	// cout << "optimization tim: ms = " << milliseconds << "\n";
-
-	// render_all(renderer,an,coordsx,obstacle);
-       
-  	// input.mouseDown = false;
+	render_all(an,coordsx,obstacle);
+	input.mouseDown = false;	
       }
       SDL_Delay( 10 );
       n++;

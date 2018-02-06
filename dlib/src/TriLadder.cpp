@@ -23,7 +23,7 @@
 
 #define PI 3.14159265
 
-#include "TriLadder.h"
+#include "TriLadder.hpp"
 
 using namespace std;
 using namespace dlib;

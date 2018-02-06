@@ -22,7 +22,7 @@
 #include <dlib/optimization.h>
 #include <stdio.h>
 #include <iostream>
-#include "Obstacle.h"
+#include "Obstacle.hpp"
 
 #include <math.h>
 

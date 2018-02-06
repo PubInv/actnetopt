@@ -11,9 +11,9 @@
 #include <memory>
 #include <cstdlib>
 #include <restbed>
-#include "TriLadder.h"
-#include "Obstacle.h"
-#include "playground.h"
+#include "TriLadder.hpp"
+#include "Obstacle.hpp"
+#include "playground.hpp"
 #include <dlib/optimization.h>
 
 using namespace std;
@@ -40,9 +40,7 @@ void post_method_handler( const shared_ptr< Session > session )
 	int x = 500;
 	int y = 500;
 
-	cout << "SPUD-A\n";	
 	handle_goal_target(an,coordsx,x,y);
-	cout << "SPUD-B\n";
 	
 	for(int i = 0; i < an->num_nodes; i++) {
 	  std::cout << " d["<< i << "]" << coordsx[i](0) << "," << coordsx[i](1) << std::endl;

@@ -23,8 +23,8 @@
 #include <dlib/optimization.h>
 #include <stdio.h>
 #include <iostream>
-#include "TriLadder.h"
-#include "Obstacle.h"
+#include "TriLadder.hpp"
+#include "Obstacle.hpp"
 
 #include <math.h>
 

@@ -13,15 +13,15 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#include "playground.h"
+#include "playground.hpp"
 #include <SDL.h>
 #include <dlib/optimization.h>
 #include <stdio.h>
 #include <iostream>
 #include <limits.h>
-#include "Invert.h"
-#include "Obstacle.h"
-#include "TriLadder.h"
+#include "Invert.hpp"
+#include "Obstacle.hpp"
+#include "TriLadder.hpp"
 #include <math.h>
 
 // ToDos:
@@ -596,20 +596,6 @@ void render_circle(SDL_Renderer* renderer,double px, double py, double radius) {
 }
 
 
-void render_all(SDL_Renderer* renderer, TriLadder *an,column_vector* coordsx,Obstacle obstacle) {
-  // Clear winow
-  //	SDL_RenderClear( renderer );
-  SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
-  SDL_RenderClear(renderer);
-  draw_axes(renderer);
-  // now we want to try to find coordinates in the physical space...
-
-  draw_net(renderer,an,coordsx);
-  // Here we render the obstacle
-  render_circle(renderer,obstacle.center(0),obstacle.center(1),obstacle.radius);
-
-  SDL_RenderPresent(renderer);
-}
 
 
 // TODO: reorganized this so that initialization is in a separate routine
@@ -652,46 +638,67 @@ TriLadder *init_TriLadder() {
 
 SDL_Renderer* renderer = NULL;
 SDL_Window* window = NULL;
+void render_all(TriLadder *an,column_vector* coordsx,Obstacle obstacle) {
+  // Clear winow
+  //	SDL_RenderClear( renderer );
+  SDL_SetRenderDrawColor( renderer, 0, 0, 0, 255 );
+  SDL_RenderClear(renderer);
+  draw_axes(renderer);
+  // now we want to try to find coordinates in the physical space...
 
+  draw_net(renderer,an,coordsx);
+  // Here we render the obstacle
+  render_circle(renderer,obstacle.center(0),obstacle.center(1),obstacle.radius);
+
+  SDL_RenderPresent(renderer);
+}
+
+
+void handle_goal_target_physical(TriLadder *an,  column_vector* coordsx,double x, double y) {
+  cout << "Interpreted as double!\n";
+  column_vector gl(2);
+  gl(0) = x;
+  gl(1) = y;
+  handle_goal_target(an,coordsx,gl);  
+}
 void handle_goal_target(TriLadder *an,  column_vector* coordsx,int x, int y) {
   cout << "SPUD-C\n";
-    	column_vector gl(2);
+  column_vector gl(2);
   cout << "SPUD-D\n";	
-  	gl(0) = viewport_to_physical_x(x);
-  	gl(1) = viewport_to_physical_y(y);
-  cout << "SPUD-E\n";		
+  gl(0) = viewport_to_physical_x(x);
+  gl(1) = viewport_to_physical_y(y);
+  handle_goal_target(an,coordsx,gl);
+}
 
-  	an->goals[an->goals.size() - 1] = gl;
-  cout << "SPUD-F\n";			
-	cout  << "goal : " << gl << "\n";
-  cout << "SPUD-G\n";				
-	best_score = std::numeric_limits<float>::max();	
-	auto start = std::chrono::high_resolution_clock::now();
+void handle_goal_target(TriLadder *an,  column_vector* coordsx,column_vector gl) {
+  an->goals[an->goals.size() - 1] = gl;
+  cout  << "goal : " << gl << "\n";
+  best_score = std::numeric_limits<float>::max();	
+  auto start = std::chrono::high_resolution_clock::now();
 	
-  	mainx(an,coordsx,obstacle);
+  mainx(an,coordsx,obstacle);
 	
-	auto elapsed = std::chrono::high_resolution_clock::now() - start;
-	long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-	long long milliseconds = microseconds/ 1000.0;
+  auto elapsed = std::chrono::high_resolution_clock::now() - start;
+  long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+  long long milliseconds = microseconds/ 1000.0;
 
-	cout << "optimization tim: ms = " << milliseconds << "\n";
-	render_all(renderer,an,coordsx,obstacle);
-	//  	input.mouseDown = false;
+  cout << "optimization tim: ms = " << milliseconds << "\n";
+  
 }
 
 void init_renderer(TriLadder *an,column_vector* coordsx,Obstacle obstacle) {
 
 
-    window = SDL_CreateWindow
+  window = SDL_CreateWindow
     (
-        "Actuator Network Optimization", SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
-        WIN_WIDTH,
-        WIN_HEIGHT,
-        SDL_WINDOW_SHOWN
-    );
-    renderer =  SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED);
-    render_all(renderer,an,coordsx,obstacle);    
+     "Actuator Network Optimization", SDL_WINDOWPOS_UNDEFINED,
+     SDL_WINDOWPOS_UNDEFINED,
+     WIN_WIDTH,
+     WIN_HEIGHT,
+     SDL_WINDOW_SHOWN
+     );
+  renderer =  SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED);
+  render_all(an,coordsx,obstacle);    
 }
 
 void close_renderer() {

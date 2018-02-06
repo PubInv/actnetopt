@@ -1,7 +1,7 @@
 #ifndef PLAYGROUND_H
 #define PLAYGROUND_H 1
 
-#include "TriLadder.h"
+#include "TriLadder.hpp"
 
 TriLadder *init_TriLadder();
 void render_all(SDL_Renderer* renderer, TriLadder *an,column_vector* coordsx,Obstacle obstacle);
@@ -47,7 +47,10 @@ private:
 
 void mousedown_function();
 void handle_goal_target(TriLadder *an,column_vector* coordsx,int x,int y);
+void handle_goal_target_physical(TriLadder *an,column_vector* coordsx,double x,double y);
+void handle_goal_target(TriLadder *an,column_vector* coordsx,column_vector gl);
 void init_renderer(TriLadder *an,column_vector* coordsx,Obstacle obstacle);
 void close_renderer();
+void render_all(TriLadder *an,column_vector* coordsx,Obstacle obstacle);
 
 #endif

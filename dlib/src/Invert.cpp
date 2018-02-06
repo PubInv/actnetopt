@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "Invert.h"
-#include "Obstacle.h"
+#include "Invert.hpp"
+#include "Obstacle.hpp"
 
 using namespace std;
 using namespace dlib;

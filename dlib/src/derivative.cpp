@@ -20,9 +20,9 @@
 #include <dlib/optimization.h>
 #include <stdio.h>
 #include <iostream>
-#include "TriLadder.h"
-#include "Invert.h"
-#include "Obstacle.h"
+#include "TriLadder.hpp"
+#include "Invert.hpp"
+#include "Obstacle.hpp"
 
 
 #include <math.h>
