@@ -301,7 +301,7 @@ function cartesian_fnc(stm,v) {
 const POWELL = 0;
 const L_BFGS = 1;
 const CG = 2;
-function invert(stm,v,strategy = POWELL) {
+function invert(stm,v,strategy = CG) {
 //    console.log(stm,v);
 
     var X0 = [];
@@ -617,7 +617,6 @@ describe('optimize', function() {
 
 	var coords = invert(m,variables);
 
-	console.log("MMMMM",m);
 	var cur = 0; 
 	for(var i = 3; i < 20; i++) {
 	    coords['c'] = new THREE.Vector2(i,3);
@@ -681,7 +680,7 @@ describe('optimize', function() {
 	m.goals[0] = { nd: 'c',
 		       // Note: 3,3 fails!
 		       // Note going even as high as 6 makes inversion fail.
-		       pos: new THREE.Vector2(6,3),
+		       pos: new THREE.Vector2(3,3),
 		       wt: 3 };
 
 	m.d = ANO.create_lengths_object(m.model,m.nodeset,1.5);
@@ -693,8 +692,6 @@ describe('optimize', function() {
 			  });
 //	m.lvariables = variables;
 	
-
-	
 	console.log("variables", variables);
 	console.log("vanems",vnames);
  	m.cvariables = variables;		
@@ -704,18 +701,18 @@ describe('optimize', function() {
 	    return g;
 	}
 
-	var solution = ANO.opt.minimize_L_BFGS(v => optimize_goals(m,v,vnames),
-				       grad_opt,
-    					       variables);
+//	var solution = ANO.opt.minimize_L_BFGS(v => optimize_goals(m,v,vnames),
+//				       grad_opt,
+//    					       variables);
 
 //    var solution = ANO.opt.minimize_GradientDescent(v => optimize_goals(m,v,vnames),
 //						    grad_opt,
 //						    variables);
     
-//	var solution = opt.minimize_Powell(v => optimize_goals(m,v,vnames),variables);
+	var solution = opt.minimize_Powell(v => optimize_goals(m,v,vnames),variables);
     
 	console.log("FINAL solution",solution);
-	console.log("FINAL m",m.d);
+//	console.log("FINAL m",m.d);
 	variables = [];
 	vnames = [];
 	Object.keys(m.d).forEach(e =>

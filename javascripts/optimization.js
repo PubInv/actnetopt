@@ -41,6 +41,10 @@ var optimjs = (function (exports) {
                 }
 
                 x[indicies[i]] = x[indicies[i]] - alpha * dx;
+		if (x[indicies[i]] < 0) {
+		    console.log("LOCAL FAILURE",x,alpha,dx);
+		    x[indicies[i]] = 0.1;
+		}
                 fx = fnc(x);
 
             }
@@ -53,10 +57,12 @@ var optimjs = (function (exports) {
             alpha = pfx > fx ? alpha * 1.1 : alpha * 0.7;
             pfx = fx;
 
+//	    console.log(convergence,alpha,pfx);
+
             pidx--;
             if (pidx === 0) {
                 pidx = 1;
-                console.log(fx);
+//                console.log("pidx = 1",fx);
             }
 
         }
@@ -144,6 +150,7 @@ var optimjs = (function (exports) {
         var ro = [];
 
         var g = grd(x);
+//	console.log("interior g =",g);
         var direction = g.slice();
         var convergence = false;
         while (!convergence) {
@@ -155,6 +162,7 @@ var optimjs = (function (exports) {
 
             //  < ================= apply limited memory BFGS procedure ================= >
             var gn = grd(xn);
+//	    console.log("interior g =",gn,xn);	    
 
             if (optimjs.vect_max_abs_x_less_eps(gn, eps)) {
                 break;
@@ -213,7 +221,7 @@ var optimjs = (function (exports) {
             x = xn;
             g = gn;
             
-            console.log("fv = " + fx);
+//            console.log("fv = " + fx);
 
         }
 
@@ -300,7 +308,9 @@ var optimjs = (function (exports) {
         // can be used as for gradient check or its substitute. Gradient is approx. via forward difference
         var grad = x.slice();
         var fx = fnc(x);
-        var h = 1e-6; // step size
+	// Rob is trying a large step size here...
+//	var h = 1e-6; // step size
+	var h = 1e-6; // step size
 
         for (var i = 0; i < x.length; i++) {
 
