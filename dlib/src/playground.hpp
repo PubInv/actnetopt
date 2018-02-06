@@ -12,6 +12,15 @@ extern Obstacle obstacle;
 extern double* best_distances;
 extern double best_score;
 
+
+#define TRUSS_NODES 30
+#define UPPER_BOUND 2.0
+#define LOWER_BOUND 1.2
+#define MEDIAN 1.5
+#define INITIAL 1.5
+#define CRISIS_DERIVATIVE_LEVEL 1000.0
+
+
 int mainx(TriLadder *an,column_vector* coords,Obstacle ob);
 
 class Input

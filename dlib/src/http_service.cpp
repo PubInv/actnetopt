@@ -45,7 +45,6 @@ void post_method_handler( const shared_ptr< Session > session )
 	// WARNING: This should really be in the physical space, not the viewport space!
 	// Possibly body.size() must be checked here.
 	auto j = json::parse(body.data(),body.data()+body.size());
-	//	auto j = json::parse("{\"x\":4,\"y\":5}");	
 	
 	cout << "SAMPLE JSON\n";
 	cout << j << "\n";
@@ -63,15 +62,19 @@ void post_method_handler( const shared_ptr< Session > session )
 	  cout << j["x"] << "\n";
 	  cout << j["y"] << "\n";
 	  handle_goal_target_physical(an,coordsx,j["x"],j["y"]);
+	  // Need to output as JSON here....
+	  json solution;
 	  for(int i = 0; i < an->num_nodes; i++) {
 	    std::cout << " d["<< i << "]" << coordsx[i](0) << "," << coordsx[i](1) << std::endl;
+	    solution[i]["x"] = coordsx[i](0);
+	    solution[i]["y"] = coordsx[i](1);	    
 	  }
+	  cout << solution;	   
 	}
-
-
 	
 	fprintf( stdout, "%.*s\n", ( int ) body.size( ), body.data( ) );
-	   
+	// output the solution as JSON!
+
         session->close( OK, "Hello, World!", { { "Content-Length", "13" }, { "Connection", "close" } } );
     } );
 }
