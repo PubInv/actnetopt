@@ -19,6 +19,8 @@
 #include "playground.hpp"
 #include <dlib/optimization.h>
 
+#include "custom_logger.hpp"
+
 using namespace std;
 using namespace restbed;
 
@@ -32,7 +34,7 @@ TriLadder *an;
 column_vector* coordsx;
 
 
-void post_method_handler_goal( const shared_ptr< Session > session )
+void get_method_handler_goal( const shared_ptr< Session > session )
 {
     const auto request = session->get_request( );
 
@@ -40,25 +42,17 @@ void post_method_handler_goal( const shared_ptr< Session > session )
 
     session->fetch( content_length, [ request ]( const shared_ptr< Session > session, const Bytes & body )
     {
-	auto j = json::parse(body.data(),body.data()+body.size());
-	
-	cout << "SAMPLE JSON\n";
-	cout << j << "\n";
 
-	// range-based for
-	for (auto& element : j) {
-	  cout << "Element\n";
-	  std::cout << element << '\n';
-	}
-	
-// find an entry
-	if ((j.find("x") != j.end()) && (j.find("y") != j.end())) {
+      cout << "XXX" << request->get_query_parameter( "x" ) << "\n";
+      cout << "YYY" << request->get_query_parameter( "y" ) << "\n";
+      
+      double x = request->get_query_parameter( "x",10.0 );
+      double y = request->get_query_parameter( "y",10.0 );
+      
+      if (true) {
 	  // there is an entry with key "foo"
 	  cout << "FOUND X AND Y!\n";
-	  cout << j["x"] << "\n";
-	  cout << j["y"] << "\n";
-	  handle_goal_target_physical(an,coordsx,j["x"],j["y"]);
-	  // Need to output as JSON here....
+	  handle_goal_target_physical(an,coordsx,x,y);
 	  json solution;
 	  for(int i = 0; i < an->num_nodes; i++) {
 	    std::cout << " d["<< i << "]" << coordsx[i](0) << "," << coordsx[i](1) << std::endl;
@@ -82,11 +76,29 @@ void post_method_handler_goal( const shared_ptr< Session > session )
     } );
 }
 
+void options_method_handler_goal( const shared_ptr< Session > session )
+{
+    const auto request = session->get_request( );
+
+	  session->close( OK, "SUCCESS", {
+	      {"Access-Control-Allow-Headers", "*" 
+		  } } );	  
+}
+
 int main( const int, const char** )
 {
     auto resource = make_shared< Resource >( );
     resource->set_path( "/goal" );
-    resource->set_method_handler( "GET", post_method_handler_goal );
+    resource->set_method_handler( "GET", get_method_handler_goal );
+    // This is to deal with the CORS stuff by sending back "Access-Control-Allow-Headers"
+    resource->set_method_handler( "OPTIONS", options_method_handler_goal );
+
+    auto settings = make_shared< Settings >( );
+    //    settings->set_port( 1984 );
+    //    settings->set_default_header( "Connection", "close" );
+    settings->set_default_header( "Access-Control-Allow-Origin", "*" );    
+
+    
 
     // Here I set upa virtual space containing the TriLadder
     // This could be moved into a different call to allow
@@ -100,7 +112,8 @@ int main( const int, const char** )
 
     Service service;
     service.publish( resource );
-    service.start( );
+    service.set_logger( make_shared< CustomLogger >( ) );
+    service.start(settings );
 
     return EXIT_SUCCESS;
 }

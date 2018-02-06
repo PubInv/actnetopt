@@ -43,7 +43,7 @@ $(OBJ_DIR)/Invert.o: $(SRC_DIR)/Invert.cpp $(SRC_DIR)/Invert.hpp
 $(OBJ_DIR)/Obstacle.o: $(SRC_DIR)/Obstacle.cpp $(SRC_DIR)/Obstacle.hpp
 	$(CC) $(CXXFLAGS) $(CPPFLAGS)  -c $(SRC_DIR)/Obstacle.cpp -o $(OBJ_DIR)/Obstacle.o
 
-$(OBJ_DIR)/http_service.o: $(SRC_DIR)/http_service.cpp 
+$(OBJ_DIR)/http_service.o: $(SRC_DIR)/http_service.cpp $(SRC_DIR)/custom_logger.hpp
 	$(CC) $(CXXFLAGS) $(CPPFLAGS)  -c $(SRC_DIR)/http_service.cpp -o $(OBJ_DIR)/http_service.o
 
 $(OBJ_DIR)/playground_runner.o: $(SRC_DIR)/playground_runner.cpp
