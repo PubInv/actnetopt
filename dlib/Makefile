@@ -28,25 +28,25 @@ http_service: $(OBJ_DIR)/http_service.o $(OBJ_DIR)/playground.o $(OBJ_DIR)/TriLa
 test: $(OBJ_DIR)/derivative.o $(OBJ_DIR)/TriLadder.o $(OBJ_DIR)/Invert.o $(OBJ_DIR)/Obstacle.o 
 	$(CC) $(CXXFLAGS) $(LDFLAGS) $(OBJ_DIR)/derivative.o $(OBJ_DIR)/TriLadder.o $(OBJ_DIR)/Obstacle.o $(OBJ_DIR)/Invert.o $(LDLIBS) $(LOCAL_LIB)/libboost_unit_test_framework.a -o $@
 
-$(OBJ_DIR)/playground.o: $(SRC_DIR)/playground.cpp $(SRC_DIR)/playground.h
+$(OBJ_DIR)/playground.o: $(SRC_DIR)/playground.cpp $(SRC_DIR)/playground.hpp
 	$(CC) $(CXXFLAGS) $(CPPFLAGS) -c $(SRC_DIR)/playground.cpp -o $(OBJ_DIR)/playground.o
 
 $(OBJ_DIR)/derivative.o: $(SRC_DIR)/derivative.cpp
 	$(CC) $(CXXFLAGS) $(CPPFLAGS)  -c $(SRC_DIR)/derivative.cpp $(OUTPUT_OPTION) 
 
-$(OBJ_DIR)/TriLadder.o: $(SRC_DIR)/TriLadder.cpp $(SRC_DIR)/TriLadder.h
+$(OBJ_DIR)/TriLadder.o: $(SRC_DIR)/TriLadder.cpp $(SRC_DIR)/TriLadder.hpp
 	$(CC) $(CXXFLAGS) $(CPPFLAGS)  -c $(SRC_DIR)/TriLadder.cpp -o $(OBJ_DIR)/TriLadder.o
 
-$(OBJ_DIR)/Invert.o: $(SRC_DIR)/Invert.cpp $(SRC_DIR)/Invert.h
+$(OBJ_DIR)/Invert.o: $(SRC_DIR)/Invert.cpp $(SRC_DIR)/Invert.hpp
 	$(CC) $(CXXFLAGS) $(CPPFLAGS)  -c $(SRC_DIR)/Invert.cpp -o $(OBJ_DIR)/Invert.o
 
-$(OBJ_DIR)/Obstacle.o: $(SRC_DIR)/Obstacle.cpp $(SRC_DIR)/Obstacle.h
+$(OBJ_DIR)/Obstacle.o: $(SRC_DIR)/Obstacle.cpp $(SRC_DIR)/Obstacle.hpp
 	$(CC) $(CXXFLAGS) $(CPPFLAGS)  -c $(SRC_DIR)/Obstacle.cpp -o $(OBJ_DIR)/Obstacle.o
 
 $(OBJ_DIR)/http_service.o: $(SRC_DIR)/http_service.cpp 
 	$(CC) $(CXXFLAGS) $(CPPFLAGS)  -c $(SRC_DIR)/http_service.cpp -o $(OBJ_DIR)/http_service.o
 
-$(OBJ_DIR)/playground_runner.o: $(SRC_DIR)/playground_runner.cpp 
+$(OBJ_DIR)/playground_runner.o: $(SRC_DIR)/playground_runner.cpp
 	$(CC) $(CXXFLAGS) $(CPPFLAGS)  -c $(SRC_DIR)/playground_runner.cpp -o $(OBJ_DIR)/playground_runner.o
 
 
