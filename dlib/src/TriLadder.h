@@ -40,14 +40,12 @@ using namespace dlib;
 // represent the input to our objective functions which we will be minimizing.
 typedef matrix<double,0,1> column_vector;
 
-
 // TODO: This is very messy. My goal here is to test this out.
 // A) I need to use some sort of Vector.  This system uses column_vector;
 // I hardely know how to use that.
 // B) Maybe I should first test multiple variables in a simpler system first!
 // Can I solve 100 variables?
 void print_vec(column_vector& vec);
-
 
 const bool debug_find = false;
 const bool debug = false;

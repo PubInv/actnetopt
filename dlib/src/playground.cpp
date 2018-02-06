@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+#include "playground.h"
 #include <SDL.h>
 #include <dlib/optimization.h>
 #include <stdio.h>
@@ -459,35 +459,6 @@ void draw_axes(SDL_Renderer* renderer) {
 }
 
 
-class Input
-{
-// Methods
-public:
-  void (* buttondown)();
-  
-  Input(void(*f)());
-   ~Input();
-
-   // Call this before any other methods
-   void readInput();
-
-   bool* getInput();
-
-   // Check this each frame
-   bool windowClosed();
-
-  bool mouseDown;
-  SDL_Keycode sdl_keycode;
-
-  double x;
-  double y;
-  
-// Data
-private:
-   SDL_Event m_event;
-   bool m_keysHeld[323]; 
-   bool m_windowClosed;
-};
 
 Input::Input(void(*f)())
 {
@@ -640,8 +611,10 @@ void render_all(SDL_Renderer* renderer, TriLadder *an,column_vector* coordsx,Obs
   SDL_RenderPresent(renderer);
 }
 
-int main( int argc, char* args[] )
-{
+
+// TODO: reorganized this so that initialization is in a separate routine
+
+TriLadder *init_TriLadder() {
 
   // This needs to be generalized but for now I'm going to
   // just add an obstacle.  If I can successfully work around
@@ -651,35 +624,64 @@ int main( int argc, char* args[] )
   obstacle.center = -2.0, 10.0;
   obstacle.weight = 4.0;
 
-  TriLadder an = TriLadder(TRUSS_NODES,
+  TriLadder *an = new TriLadder(TRUSS_NODES,
 			   UPPER_BOUND,
 			   LOWER_BOUND,
 			   MEDIAN,
 			   INITIAL
 			   );
 
-  int last_node = an.num_nodes - 1;
-  double bx = ((last_node % 2) == 0) ? 0.0 : an.median_d * cos(30.0*M_PI/180);
-  double by = (an.median_d/2.0) * last_node;
+  int last_node = an->num_nodes - 1;
+  double bx = ((last_node % 2) == 0) ? 0.0 : an->median_d * cos(30.0*M_PI/180);
+  double by = (an->median_d/2.0) * last_node;
 
   // These are examples of adding different goals...
-  //  an.add_goal_node(an.num_nodes*1/3,1*bx/3+-2.0,1*by/3,0.5);
-  //  an.add_goal_node(an.num_nodes*2/3,2*bx/3+ 5.0,2*by/3,0.5);  
+  //  an->add_goal_node(an->num_nodes*1/3,1*bx/3+-2.0,1*by/3,0.5);
+  //  an->add_goal_node(an->num_nodes*2/3,2*bx/3+ 5.0,2*by/3,0.5);  
   double mx = 1.0;
   double my = 1.0;
-  an.add_goal_node(an.num_nodes-1,bx+mx,by+my,1.0);
+  an->add_goal_node(an->num_nodes-1,bx+mx,by+my,1.0);
   
   if (debug) {
-    for(int i = 0; i < an.goal_nodes.size(); i++) {
-      cout << "goal_nodes[" << i << "] " << an.goal_nodes[i] << "\n";
+    for(int i = 0; i < an->goal_nodes.size(); i++) {
+      cout << "goal_nodes[" << i << "] " << an->goal_nodes[i] << "\n";
     }
   }
-  
-  column_vector* coordsx = new column_vector[an.num_nodes];
+  return an;
+}
 
-  mainx(&an,coordsx,obstacle);
+SDL_Renderer* renderer = NULL;
+SDL_Window* window = NULL;
 
-    SDL_Window* window = NULL;
+void handle_goal_target(TriLadder *an,  column_vector* coordsx,int x, int y) {
+  cout << "SPUD-C\n";
+    	column_vector gl(2);
+  cout << "SPUD-D\n";	
+  	gl(0) = viewport_to_physical_x(x);
+  	gl(1) = viewport_to_physical_y(y);
+  cout << "SPUD-E\n";		
+
+  	an->goals[an->goals.size() - 1] = gl;
+  cout << "SPUD-F\n";			
+	cout  << "goal : " << gl << "\n";
+  cout << "SPUD-G\n";				
+	best_score = std::numeric_limits<float>::max();	
+	auto start = std::chrono::high_resolution_clock::now();
+	
+  	mainx(an,coordsx,obstacle);
+	
+	auto elapsed = std::chrono::high_resolution_clock::now() - start;
+	long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+	long long milliseconds = microseconds/ 1000.0;
+
+	cout << "optimization tim: ms = " << milliseconds << "\n";
+	render_all(renderer,an,coordsx,obstacle);
+	//  	input.mouseDown = false;
+}
+
+void init_renderer(TriLadder *an,column_vector* coordsx,Obstacle obstacle) {
+
+
     window = SDL_CreateWindow
     (
         "Actuator Network Optimization", SDL_WINDOWPOS_UNDEFINED,
@@ -688,53 +690,12 @@ int main( int argc, char* args[] )
         WIN_HEIGHT,
         SDL_WINDOW_SHOWN
     );
-
-    // Setup renderer
-    SDL_Renderer* renderer = NULL;
     renderer =  SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED);
+    render_all(renderer,an,coordsx,obstacle);    
+}
 
-    render_all(renderer,&an,coordsx,obstacle);
-
-    Input input(&mousedown_function);
-    int n = 0;
-    bool running = true;
-    while(running) {
-      input.readInput();
-      if (input.sdl_keycode == SDLK_q) {
-  	cout << "shutdown";
-  	running = false;
-      }
-      if (input.mouseDown) {
-  	column_vector gl(2);
-  	gl(0) = viewport_to_physical_x(input.x);
-  	gl(1) = viewport_to_physical_y(input.y);
-
-  	an.goals[an.goals.size() - 1] = gl;	
-	cout  << "goal : " << gl << "\n";
-	best_score = std::numeric_limits<float>::max();	
-	auto start = std::chrono::high_resolution_clock::now();
-	
-  	mainx(&an,coordsx,obstacle);
-	
-	auto elapsed = std::chrono::high_resolution_clock::now() - start;
-	long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-	long long milliseconds = microseconds/ 1000.0;
-
-	cout << "optimization tim: ms = " << milliseconds << "\n";
-
-	render_all(renderer,&an,coordsx,obstacle);
-       
-  	input.mouseDown = false;
-      }
-      SDL_Delay( 10 );
-      n++;
-    }
-    SDL_Event key_event;    
-    SDL_WaitEvent(&key_event);
-    cout << "Exit key " << key_event.type << "\n";
-
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+void close_renderer() {
+  SDL_DestroyWindow(window);
+  SDL_Quit();
     
-    return EXIT_SUCCESS;
 }
