@@ -1,11 +1,13 @@
 /*
+ * Note: This is now modified to access the actnetopt optimizer.
+ * Copyright (C) Robert L. Read, 2018, license MIT or GPL3 (not sure which!)
  * Example illustrating HTTP service.
  *
  * Server Usage:
  *    sudo ./distribution/example/http_service
  *
  * Client Usage:
- *    curl -w'\n' -v -X POST --data 'Hello, Restbed' 'http://localhost/resource'
+ *    curl -w'\n' -v -X POST --data 'Hello, Restbed' 'http://localhost/goal'
  */
 
 #include <memory>
@@ -30,7 +32,7 @@ TriLadder *an;
 column_vector* coordsx;
 
 
-void post_method_handler( const shared_ptr< Session > session )
+void post_method_handler_goal( const shared_ptr< Session > session )
 {
     const auto request = session->get_request( );
 
@@ -38,12 +40,6 @@ void post_method_handler( const shared_ptr< Session > session )
 
     session->fetch( content_length, [ request ]( const shared_ptr< Session > session, const Bytes & body )
     {
-        fprintf( stdout, "%.*s\n", ( int ) body.size( ), body.data( ) );
-	// now what we really want to do here is to have constructed the playground and render
-	// the dimensions. Making sure all of that linksl is an issue.
-
-	// WARNING: This should really be in the physical space, not the viewport space!
-	// Possibly body.size() must be checked here.
 	auto j = json::parse(body.data(),body.data()+body.size());
 	
 	cout << "SAMPLE JSON\n";
@@ -69,23 +65,32 @@ void post_method_handler( const shared_ptr< Session > session )
 	    solution[i]["x"] = coordsx[i](0);
 	    solution[i]["y"] = coordsx[i](1);	    
 	  }
-	  cout << solution;	   
+
+	  std::string s = solution.dump(4);
+	  fprintf( stdout, "%s\n", s.c_str() );
+	  std::ostringstream oss;
+	  oss << s.length();
+	  std::string len = oss.str();
+	  session->close( OK, s.c_str(), {  { "Content-Length", len } } );	  
+	} else {
+	  session->close( BAD_REQUEST, "could not find x or y", { { "Content-Length", "21" }, { "Connection", "close" } } );	  
 	}
 	
-	fprintf( stdout, "%.*s\n", ( int ) body.size( ), body.data( ) );
+	//	fprintf( stdout, "%.*s\n", ( int ) body.size( ), body.data( ) );
 	// output the solution as JSON!
 
-        session->close( OK, "Hello, World!", { { "Content-Length", "13" }, { "Connection", "close" } } );
     } );
 }
 
 int main( const int, const char** )
 {
     auto resource = make_shared< Resource >( );
-    resource->set_path( "/resource" );
-    resource->set_method_handler( "POST", post_method_handler );
+    resource->set_path( "/goal" );
+    resource->set_method_handler( "GET", post_method_handler_goal );
 
     // Here I set upa virtual space containing the TriLadder
+    // This could be moved into a different call to allow
+    // the truss parameters to be set.
     an = init_TriLadder();
   
     coordsx = new column_vector[an->num_nodes];
