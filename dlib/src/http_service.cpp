@@ -11,6 +11,7 @@
 #include <memory>
 #include <cstdlib>
 #include <restbed>
+#include "json.hpp"
 #include "TriLadder.hpp"
 #include "Obstacle.hpp"
 #include "playground.hpp"
@@ -18,6 +19,11 @@
 
 using namespace std;
 using namespace restbed;
+
+
+
+// for convenience
+using json = nlohmann::json;
 
 TriLadder *an;
   
@@ -37,16 +43,33 @@ void post_method_handler( const shared_ptr< Session > session )
 	// the dimensions. Making sure all of that linksl is an issue.
 
 	// WARNING: This should really be in the physical space, not the viewport space!
-	int x = 500;
-	int y = 500;
-
-	handle_goal_target(an,coordsx,x,y);
+	// Possibly body.size() must be checked here.
+	auto j = json::parse(body.data(),body.data()+body.size());
+	//	auto j = json::parse("{\"x\":4,\"y\":5}");	
 	
-	for(int i = 0; i < an->num_nodes; i++) {
-	  std::cout << " d["<< i << "]" << coordsx[i](0) << "," << coordsx[i](1) << std::endl;
+	cout << "SAMPLE JSON\n";
+	cout << j << "\n";
+
+	// range-based for
+	for (auto& element : j) {
+	  cout << "Element\n";
+	  std::cout << element << '\n';
 	}
 	
+// find an entry
+	if ((j.find("x") != j.end()) && (j.find("y") != j.end())) {
+	  // there is an entry with key "foo"
+	  cout << "FOUND X AND Y!\n";
+	  cout << j["x"] << "\n";
+	  cout << j["y"] << "\n";
+	  handle_goal_target_physical(an,coordsx,j["x"],j["y"]);
+	  for(int i = 0; i < an->num_nodes; i++) {
+	    std::cout << " d["<< i << "]" << coordsx[i](0) << "," << coordsx[i](1) << std::endl;
+	  }
+	}
 
+
+	
 	fprintf( stdout, "%.*s\n", ( int ) body.size( ), body.data( ) );
 	   
         session->close( OK, "Hello, World!", { { "Content-Length", "13" }, { "Connection", "close" } } );

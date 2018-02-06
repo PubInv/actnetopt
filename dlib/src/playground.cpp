@@ -704,5 +704,4 @@ void init_renderer(TriLadder *an,column_vector* coordsx,Obstacle obstacle) {
 void close_renderer() {
   SDL_DestroyWindow(window);
   SDL_Quit();
-    
 }
