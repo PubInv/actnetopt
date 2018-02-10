@@ -2,6 +2,7 @@
 #define PLAYGROUND_H 1
 
 #include "TriLadder.hpp"
+#include <SDL.h>
 
 TriLadder *init_TriLadder();
 void render_all(SDL_Renderer* renderer, TriLadder *an,column_vector* coordsx,Obstacle obstacle);

@@ -64,6 +64,17 @@ double distance_2d(column_vector a, column_vector b) {
   return std::sqrt(d);
 }
 
+double distance_3d(column_vector a, column_vector b) {
+  double d = 0.0;
+  for(int i = 0; i < a.size(); i++) {
+    d += (a(i)-b(i))*(a(i)-b(i));
+  }
+  return std::sqrt(d);
+}
+
+
+
+
 double l2_norm(column_vector a) {
   double d = 0.0;
   for(int i = 0; i < a.size(); i++) {
