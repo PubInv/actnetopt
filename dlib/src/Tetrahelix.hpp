@@ -58,21 +58,7 @@ public:
   
   const char* name = "ABCDE";
 
-  // writing out the edges in the graph
-  //  typedef std::pair<int, int> Edge;
-
-  //  Graph g;
-  //  Edge e;
-
-  //  static const int num_edges = 3;  
-  //  Edge edge_array[num_edges];
   column_vector fixed_nodes;
-  //  int node_fixing_order[num_nodes];
-  //  typedef property_map<Graph, vertex_index_t>::type IndexMap;
-  //  typedef graph_traits<Graph>::vertex_iterator vertex_iter;
-  //  IndexMap index;
-
-  //  column_vector goals[1];
   std::vector<column_vector> goals;
 
 

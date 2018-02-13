@@ -31,6 +31,14 @@ using namespace std;
 
 typedef matrix<double,0,1> column_vector;
 
+
+#define TRUSS_NODES 10
+#define UPPER_BOUND 2.0
+#define LOWER_BOUND 1.2
+#define MEDIAN 1.5
+#define INITIAL 1.5
+
+
 // YUK!  Should not have to define these...
 double cot(double x) {
   return 1.0/tan(x);
@@ -117,151 +125,174 @@ double ddhedral_dvertex(double adjacent1, double adjacent2, double opposite) {
   double den = sqrt(1 - csc(a)*csc(a) * csc(b)*csc(b) * pow( cos(c) - cos(a)*cos(b),2));
   return -num/den;
 }
-BOOST_AUTO_TEST_CASE( test_distnace )
+
+BOOST_AUTO_TEST_CASE( test_edge_numbering )
 {
-  column_vector A(3);
-  column_vector B(3);
-  column_vector C(3);
-  column_vector D(3);  
+  Tetrahelix thlx(TRUSS_NODES,
+		  UPPER_BOUND,
+		  LOWER_BOUND,
+		  MEDIAN,
+		  INITIAL);
   
-  // Please see accompanying diagram.
-  // C_z = 0
-  // B_x = 0, B_y = 0
-  // C_x = 0, C_y = 0
-  // D_y = 0
-
-  // now for test purposes I will choose some other values.
-  double theta = 60.0 * M_PI/ 180.0; // this is 45 degrees.
-  double Cx = cos(theta);
-  double Cy = sin(theta);
-  A = 0.0,0.0,1.0;
-  B = 0.0,0.0,-2.0;
-  C = Cx,Cy,0.0;
-  D = 1.0,0.0,0.0;
-  cout << "A" << A << "\n";
-  cout << "C" << C << "\n";
-  cout << "A C " <<  distance_3d(A,C) << "\n";
-  cout << "A B " <<  distance_3d(A,B) << "\n";    
-}
-// Basically we want to construct a special tetrahedron
-// aligned on the axes such that the computation
-// of the change of angle as a change a length is quite
-// easy. This will be used to test more general approaches
-// to finding the derivative.
-BOOST_AUTO_TEST_CASE( test_3Dtet )
-{
-  column_vector A(3);
-  column_vector B(3);
-  column_vector C(3);
-  column_vector D(3);  
-  
-  // Please see accompanying diagram.
-  // C_z = 0
-  // B_x = 0, B_y = 0
-  // C_x = 0, C_y = 0
-  // D_y = 0
-
-  // now for test purposes I will choose some other values.
-  double theta = 60.0 * M_PI/ 180.0; // this is 45 degrees.
-  double Cx = cos(theta);
-  double Cy = sin(theta);
-  A = 0.0,0.0,1.0;
-  B = 0.0,0.0,-2.0;
-  C = Cx,Cy,0.0;
-  D = 1.0,0.0,0.0;
-  cout << "A" << A << "\n";
-  cout << "C" << C << "\n";
-  cout << "A C " <<  distance_3d(A,C) << "\n";
-  cout << "A B " <<  distance_3d(A,B) << "\n";    
-
-  // now we have a particular tetrahedron.
-  // We want to compute d theta/ dl, where L = len(DC).
-  double epsilon = 2.0 * M_PI/ 180.0;
-
-  // what I really need to do is to keep this, and then
-  // change the length by leaving D alone but solving for the new
-  // theta, and see if it really matches the differential.
-  // That is, check that the differential matches the derivative.
-  for(int i = 0; i < 40; i++) {
-    D(0) = (1.0 + i*0.1);
-    double dist = distance_3d(C,D);
-
-    double dtheta = dtheta_dd_laid_on_axes(dist,D(0),D(2));
-    double dtheta_tenth = 0.1 * dtheta;
-    cout << i << " " << dist << " " << dtheta*180.0/M_PI << "\n";
-    cout << i << " " << dist << " " << dtheta_tenth*180.0/M_PI << "\n";
-
-    double ctheta = atan2(C(1),C(0));
-    cout << "ctheta " << ctheta*180.0/M_PI << "\n";    
-    double xtheta = acos((-dist*dist + D(0)*D(0) + D(2)*D(2) +1.0)/(2.0*D(0)));
-    cout << "xtheta " << xtheta*180.0/M_PI << "\n";
-    double ytheta = acos((-(dist+0.1)*(dist+0.1) + D(0)*D(0) + D(2)*D(2) +1.0)/(2.0*D(0))); 
-    cout << "theta differential " << 0.1*ytheta*180.0/M_PI << "\n";
-
-    // let b = the triangle opposite point B.
-
-    double ac = distance_3d(A,C);
-    double cd = distance_3d(C,D);
-    double ad = distance_3d(D,A);        
-    double bc = distance_3d(B,C);
-    double bd = distance_3d(B,D);
-    double ab = distance_3d(A,B);    
+  for(int i = 0; i < thlx.num_edges; i++) {
+    //    int e = thlx.edge_between(i+1,i);
+    int sm = thlx.small_node(i);    
+    int ln = thlx.large_node(i);
+    cout << " i sm ln " << i << " " << sm << " " << ln << "\n";
     
+    int e0 = thlx.edge_between(sm,ln);
 
-    // The lengths on b are AC, CD, DA.
-    //    double b = heron_area(ac,cd,ad);
-    //    double db_dx = darea_dx(cd,ac,ad);    
-    
-    // The lengths on a are BC,CD,BD.
-    //    double a = heron_area(bc,cd,bd);
-    //    double da_dx = darea_dx(cd,bc,bd);
-
-    //    double c = heron_area(ab,ad,bd);
-    //    double d = heron_area(ab,ac,bc);
-
-    // sadly, I have been confused.  I think I need to use this,
-    // which will require the cosine law to find vertex angles, from
-    // which the dihedrals can be computed from the article.
-
-    // https://math.stackexchange.com/questions/314970/dihedral-angles-between-tetrahedron-faces-from-triangles-angles-at-the-tip
-    //    cout << "lengths ab, ac, ad, bc, bd " << ab << " " << ac << " " << ad << " " << bc << " " << bd << "\n";
-
-    // if these are greater than 90 degrees, they are probably wrong!
-    // The MAX_PHYSICAL_ANGLE depends on the min and max physically actualizable
-    // lengths. WARNING: these outines are return 90 degress more than my angles,
-    // I think!
-    //    const MAX_PHYSICAL_ANGLE = 
-    double vc = angle_from_three_sides(ad,ab,bd);
-    double vd = angle_from_three_sides(ac,ab,bc);
-    double vb = angle_from_three_sides(ac,ad,cd);
-
-    //    cout << "vc, vd, vb " << vc*180.0/M_PI << " " << vd*180.0/M_PI << " " << vb*180.0/M_PI << "\n";
-
-// find the dihedral angle of <AB given vertex angles...
-//    double ztheta = dihedral_from_vertex_angles(vc,vd,vb);
-
-    // now I need to compute change in theta via another method...
-    double dvertex_angle_dlength = dangle_from_dside(ac,ad,cd);
-    double ddihedral_dv = ddhedral_dvertex(vd,vc,vb);
-
-    //    cout << "dva " << dvertex_angle_dlength << "\n";
-    //    cout << "ddihedral_dv " << ddihedral_dv << "\n";
-
-    double dvtheta = dvertex_angle_dlength * ddihedral_dv ;
-    
-    //    cout << "dvtheta " << dvtheta*180.0/M_PI << "\n";
-    // possibly this should be negative, since it is an outside angle.
-    double intnl_dvtheta_tenth = -dvtheta*0.1;
-
-    cout << "dvtheta int " << intnl_dvtheta_tenth*180.0/M_PI << "\n";    
-
-    BOOST_CHECK(abs((xtheta+dtheta_tenth) - ytheta) < epsilon);
-    BOOST_CHECK(abs((xtheta+dtheta_tenth) - ytheta) < epsilon);    
-
+    cout << " i e1 " << i << " " << e0 <<  "\n";    
   }
+
+  
+}
+
+// BOOST_AUTO_TEST_CASE( test_distance )
+// {
+//   column_vector A(3);
+//   column_vector B(3);
+//   column_vector C(3);
+//   column_vector D(3);  
+  
+//   // Please see accompanying diagram.
+//   // C_z = 0
+//   // B_x = 0, B_y = 0
+//   // C_x = 0, C_y = 0
+//   // D_y = 0
+
+//   // now for test purposes I will choose some other values.
+//   double theta = 60.0 * M_PI/ 180.0; // this is 45 degrees.
+//   double Cx = cos(theta);
+//   double Cy = sin(theta);
+//   A = 0.0,0.0,1.0;
+//   B = 0.0,0.0,-2.0;
+//   C = Cx,Cy,0.0;
+//   D = 1.0,0.0,0.0;
+//   cout << "A" << A << "\n";
+//   cout << "C" << C << "\n";
+//   cout << "A C " <<  distance_3d(A,C) << "\n";
+//   cout << "A B " <<  distance_3d(A,B) << "\n";    
+// }
+// // Basically we want to construct a special tetrahedron
+// // aligned on the axes such that the computation
+// // of the change of angle as a change a length is quite
+// // easy. This will be used to test more general approaches
+// // to finding the derivative.
+// BOOST_AUTO_TEST_CASE( test_3Dtet )
+// {
+//   column_vector A(3);
+//   column_vector B(3);
+//   column_vector C(3);
+//   column_vector D(3);  
+  
+//   // Please see accompanying diagram.
+//   // C_z = 0
+//   // B_x = 0, B_y = 0
+//   // C_x = 0, C_y = 0
+//   // D_y = 0
+
+//   // now for test purposes I will choose some other values.
+//   double theta = 60.0 * M_PI/ 180.0; // this is 45 degrees.
+//   double Cx = cos(theta);
+//   double Cy = sin(theta);
+//   A = 0.0,0.0,1.0;
+//   B = 0.0,0.0,-2.0;
+//   C = Cx,Cy,0.0;
+//   D = 1.0,0.0,0.0;
+//   cout << "A" << A << "\n";
+//   cout << "C" << C << "\n";
+//   cout << "A C " <<  distance_3d(A,C) << "\n";
+//   cout << "A B " <<  distance_3d(A,B) << "\n";    
+
+//   // now we have a particular tetrahedron.
+//   // We want to compute d theta/ dl, where L = len(DC).
+//   double epsilon = 2.0 * M_PI/ 180.0;
+
+//   // what I really need to do is to keep this, and then
+//   // change the length by leaving D alone but solving for the new
+//   // theta, and see if it really matches the differential.
+//   // That is, check that the differential matches the derivative.
+//   for(int i = 0; i < 40; i++) {
+//     D(0) = (1.0 + i*0.1);
+//     double dist = distance_3d(C,D);
+
+//     double dtheta = dtheta_dd_laid_on_axes(dist,D(0),D(2));
+//     double dtheta_tenth = 0.1 * dtheta;
+//     cout << i << " " << dist << " " << dtheta*180.0/M_PI << "\n";
+//     cout << i << " " << dist << " " << dtheta_tenth*180.0/M_PI << "\n";
+
+//     double ctheta = atan2(C(1),C(0));
+//     cout << "ctheta " << ctheta*180.0/M_PI << "\n";    
+//     double xtheta = acos((-dist*dist + D(0)*D(0) + D(2)*D(2) +1.0)/(2.0*D(0)));
+//     cout << "xtheta " << xtheta*180.0/M_PI << "\n";
+//     double ytheta = acos((-(dist+0.1)*(dist+0.1) + D(0)*D(0) + D(2)*D(2) +1.0)/(2.0*D(0))); 
+//     cout << "theta differential " << 0.1*ytheta*180.0/M_PI << "\n";
+
+//     // let b = the triangle opposite point B.
+
+//     double ac = distance_3d(A,C);
+//     double cd = distance_3d(C,D);
+//     double ad = distance_3d(D,A);        
+//     double bc = distance_3d(B,C);
+//     double bd = distance_3d(B,D);
+//     double ab = distance_3d(A,B);    
+    
+
+//     // The lengths on b are AC, CD, DA.
+//     //    double b = heron_area(ac,cd,ad);
+//     //    double db_dx = darea_dx(cd,ac,ad);    
+    
+//     // The lengths on a are BC,CD,BD.
+//     //    double a = heron_area(bc,cd,bd);
+//     //    double da_dx = darea_dx(cd,bc,bd);
+
+//     //    double c = heron_area(ab,ad,bd);
+//     //    double d = heron_area(ab,ac,bc);
+
+//     // sadly, I have been confused.  I think I need to use this,
+//     // which will require the cosine law to find vertex angles, from
+//     // which the dihedrals can be computed from the article.
+
+//     // https://math.stackexchange.com/questions/314970/dihedral-angles-between-tetrahedron-faces-from-triangles-angles-at-the-tip
+//     //    cout << "lengths ab, ac, ad, bc, bd " << ab << " " << ac << " " << ad << " " << bc << " " << bd << "\n";
+
+//     // if these are greater than 90 degrees, they are probably wrong!
+//     // The MAX_PHYSICAL_ANGLE depends on the min and max physically actualizable
+//     // lengths. WARNING: these outines are return 90 degress more than my angles,
+//     // I think!
+//     //    const MAX_PHYSICAL_ANGLE = 
+//     double vc = angle_from_three_sides(ad,ab,bd);
+//     double vd = angle_from_three_sides(ac,ab,bc);
+//     double vb = angle_from_three_sides(ac,ad,cd);
+
+//     //    cout << "vc, vd, vb " << vc*180.0/M_PI << " " << vd*180.0/M_PI << " " << vb*180.0/M_PI << "\n";
+
+// // find the dihedral angle of <AB given vertex angles...
+// //    double ztheta = dihedral_from_vertex_angles(vc,vd,vb);
+
+//     // now I need to compute change in theta via another method...
+//     double dvertex_angle_dlength = dangle_from_dside(ac,ad,cd);
+//     double ddihedral_dv = ddhedral_dvertex(vd,vc,vb);
+
+//     //    cout << "dva " << dvertex_angle_dlength << "\n";
+//     //    cout << "ddihedral_dv " << ddihedral_dv << "\n";
+
+//     double dvtheta = dvertex_angle_dlength * ddihedral_dv ;
+    
+//     //    cout << "dvtheta " << dvtheta*180.0/M_PI << "\n";
+//     // possibly this should be negative, since it is an outside angle.
+//     double intnl_dvtheta_tenth = -dvtheta*0.1;
+
+//     cout << "dvtheta int " << intnl_dvtheta_tenth*180.0/M_PI << "\n";    
+
+//     BOOST_CHECK(abs((xtheta+dtheta_tenth) - ytheta) < epsilon);
+//     BOOST_CHECK(abs((xtheta+dtheta_tenth) - ytheta) < epsilon);    
+
+//   }
   
 
-  BOOST_CHECK(true);
-}
+//   BOOST_CHECK(true);
+// }
 
 
