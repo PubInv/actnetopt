@@ -27,7 +27,12 @@
 using namespace std;
 using namespace dlib;
 
-
+// Note edge numbering is really important, and I may be doing it
+// differently here than in the javscript code.
+// Basically I number edges in order of the lowest node, and then
+// each of the (up to) 3 higher nodes. So edges are ordered by
+// "lowest connected node, highest connected node".
+// 
 
 int Tetrahelix::edges_in_tetrahelix(int n) {
   if (n >= 3) {
@@ -41,18 +46,7 @@ int Tetrahelix::edges_in_tetrahelix(int n) {
 }
 
 int Tetrahelix::large_node(int e) {
-  int d;
-  if ((e % 3) == 0) {
-    d = 1;
-  }
-  if ((e % 3) == 1) {
-    d = 2;
-  }
-  if ((e % 3) == 2) {
-    d = 3;
-  }
-  int s = small_node(e);
-  return s + d;
+  return small_node(e) + (e % 3) + 1;
 }
 
 int Tetrahelix::small_node(int e) {
@@ -60,16 +54,6 @@ int Tetrahelix::small_node(int e) {
 }
 
 
-
-// what did I mean by this name?
-// Number of edges before?
-int neb(int x) {
-  if (x == 0) return 0;
-  if (x == 1) return 1;
-  if (x == 2) return 3;
-  if (x >= 3) return 3*(x-1);
-  abort();
-}
 
 int edge_between_aux(int x,int y) {
   if (x == 0) {
