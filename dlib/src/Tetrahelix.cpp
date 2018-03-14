@@ -134,9 +134,7 @@ int edge_between_aux(int x,int y) {
       return 5;        
     }
   }
-  cout << " sm, lg :" << x << " " << y << "\n";
   int v = (y - 2)*3 + (3 - d);
-  cout << " v " <<  v << "\n";
   return v;
 }
 
@@ -277,6 +275,73 @@ column_vector find_point_from_transformed(double AB, double AC, double AD, doubl
   print_vec(C);
   print_vec(D);
   return D;
+}
+
+// my attempt to compute the necessary transform
+point_transform_affine3d compute_transform_to_axes(column_vector A, column_vector B, column_vector C) {
+  // now we want to rotate the vector AB until it is pointing along the X axis.
+  column_vector AB = B - A;
+
+  // Crumb, column_vector doesn't seem to be a vector, which doesn't let me a normalize...
+  dlib::vector<double,3> ABv(AB(0),AB(1),AB(2));
+  dlib::vector<double,3> ABu = ABv.normalize();
+  dlib::vector<double,3> Xu(1.0,0.0,0.0);
+  cout << "Abu\n";
+
+  cout << ABu;
+  
+  // Now, following: https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
+  dlib::vector<double,3> v = Xu.cross(ABu);
+  cout << v;
+  double s = v.length();
+  double c = ABu.dot(Xu);
+
+  cout << "s = " << s << "\n";
+  cout << "c = " << c << "\n";
+  // There is a possibility that c == 1.0 which must be handled...
+  double q = 1/(1.0 +c);
+  // Now we want a skew-symmetric cross-product matrix of v, according to the instructions...
+  cout << "q = " << q << "\n";
+  //  point_transform_affine3d I;
+  //  point_transform_affine3d vx;
+  dlib::matrix<double,3,3> vx;
+  vx(0,0) = 0;
+  vx(1,0) = v(3);
+  vx(2,0) = -v(2);   
+
+  vx(0,1) = -v(3);
+  vx(1,1) = 0;
+  vx(2,1) = v(1);   
+
+  vx(0,2) = v(2);
+  vx(1,2) = -v(1);
+  vx(2,2) = 0;   
+
+  cout << vx << "\n";
+  dlib::matrix<double,3,3> vx2 = vx * vx;
+
+  dlib::matrix<double,3,3> I;
+  vx(0,0) = 1;
+  vx(1,0) = 0;
+  vx(2,0) = 0;   
+
+  vx(0,1) = 0;
+  vx(1,1) = 1;
+  vx(2,1) = 0;   
+
+  vx(0,2) = 0;
+  vx(1,2) = 0;
+  vx(2,2) = 1;   
+  
+  dlib::matrix<double,3,3> R = I + vx + vx2 * q;
+  cout << R;
+  //  dlib::vector<double,3> negA(-A(0),-A(1),-A(2));
+  dlib::vector<double,3> zero(0,0,0);  
+  point_transform_affine3d firstRotation(R,zero);
+  point_transform_affine3d tform;
+  translate_point(-A(0),-A(1),-A(2));  
+  
+  return firstRotation * translate_point(-A(0),-A(1),-A(2));
 }
   
 column_vector find_fourth_point_given_three_points_and_three_distances(Chirality sense,

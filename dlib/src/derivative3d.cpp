@@ -115,19 +115,19 @@ BOOST_AUTO_TEST_CASE( test_edge_numbering )
 		  LOWER_BOUND,
 		  MEDIAN,
 		  INITIAL);
-  cout << "num_nodes: " << thlx.num_nodes << "\n";
-  cout << "num_edges: " << thlx.num_edges << "\n";  
+  //  cout << "num_nodes: " << thlx.num_nodes << "\n";
+  //  cout << "num_edges: " << thlx.num_edges << "\n";  
   
   for(int i = 0; i < thlx.num_edges; i++) {
     int sm = thlx.small_node(i);    
     int ln = thlx.large_node(i);
-    cout << "i, small, large\n" << i << " " << sm << "," << ln << "\n";
+    //    cout << "i, small, large\n" << i << " " << sm << "," << ln << "\n";
     
     int e0 = thlx.edge_between(sm,ln);
 
-    cout << "edge in, edge computed\n";
-    cout << i << " == " << e0 << "\n";
-    //    BOOST_CHECK( i == e0 );
+    //    cout << "edge in, edge computed\n";
+    //    cout << i << " == " << e0 << "\n";
+    BOOST_CHECK( i == e0 );
   }
 }
 
@@ -320,6 +320,40 @@ BOOST_AUTO_TEST_CASE( test_find_point_from_transformed )
   print_vec(D);
   print_vec(Dprime);
   BOOST_CHECK(equal(Dprime,D));
+}
+
+
+// This tests our ability to solve the "forward" problem
+// Note we will use right hand coordinates.
+BOOST_AUTO_TEST_CASE( test_transform_triangle )
+{
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  // First let's test with a triangle in the xz plane
+  A = 1.0,2.0,3.0;
+  B = 2.0,2.0,2.0;
+  C = 2.0,2.0,1.0;
+
+  column_vector O(3);
+  O = 0.0,0.0,0.0;
+
+  point_transform_affine3d tform = compute_transform_to_axes(A,B,C);
+
+  column_vector Ap(3);
+  column_vector Bp(3);
+  column_vector Cp(3);
+
+  Ap = tform(A);
+  cout << "Ap \n";
+  print_vec(Ap);
+  
+  BOOST_CHECK(equal(Ap,O));
+  Bp = tform(B);
+  cout << "Bp \n";
+  print_vec(Bp);
+  cout << tform.get_m() << "\n";
+  cout << tform.get_b() << "\n";  
 }
 
 
