@@ -117,5 +117,39 @@ column_vector compute_internal_effector_derivative_c(column_vector cur_coords[],
 
 };
 
+class FindCoords3d {
+public:
+  column_vector a;
+  column_vector b;
+  column_vector c;      
+
+  Tetrahelix *an;
+  
+  // Should the third point cc or ccw from a to b?
+  // In other words, we use this to disambiguate the two distance based solutions.
+  Chirality chi;
+
+  //     const double dab = 1.5; // This is in fact a constant in our frame
+  double dac; // these are in fact inputs to the problem
+  double dbc;
+  double dcc;
+  
+  // this is just the objective (NOT optional)
+  // This input is an x,y position for c
+  // The lengths between a, b, and c are constants (effectively, input to the problem)
+  double operator() ( const column_vector& x) const;
+};
+
+void solve_forward_find_coords(Tetrahelix *an,column_vector coords[]);
+
+
+column_vector find_point_from_transformed(double AB, double AC, double AD, double BC, double BD, double CD);
+
+  
+column_vector find_fourth_point_given_three_points_and_three_distances(
+								      Chirality sense,
+								      column_vector pa,column_vector pb,column_vector pc,
+								      double da,double db,double dc
+								      );
 
 #endif

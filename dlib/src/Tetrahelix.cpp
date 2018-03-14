@@ -22,6 +22,7 @@
 
 #define PI 3.14159265
 
+#include "ActNetUtility.hpp"
 #include "Tetrahelix.hpp"
 
 using namespace std;
@@ -32,8 +33,23 @@ using namespace dlib;
 // Basically I number edges in order of the lowest node, and then
 // each of the (up to) 3 higher nodes. So edges are ordered by
 // "lowest connected node, highest connected node".
-// 
+// However, edges # 5 adn #6 are anomaolous, as they must complete
+// the existing tetrahedron before falling into the standard pattern
+// inorder to have a statically deteminant structure.
 
+// Edge Num : sm node : lg node
+// 0 : 0 : 1
+// 1 : 0 : 2
+// 2 : 0 : 3
+// 3 : 1 : 2
+// 4 : 1 : 3
+// 5 : 2 : 3
+// 6 : 1 : 4
+// 7 : 2 : 4
+// 8 : 3 : 4
+// 9 :  2 : 5
+// 10 : 3 : 5
+// 11 : 4 : 5
 int Tetrahelix::edges_in_tetrahelix(int n) {
   if (n >= 3) {
     return (n -2) *3;
@@ -46,48 +62,89 @@ int Tetrahelix::edges_in_tetrahelix(int n) {
 }
 
 int Tetrahelix::large_node(int e) {
-  return small_node(e) + (e % 3) + 1;
+  if (e == 0) {
+    return 1;    
+  }
+  if (e == 1) {
+    return 2;        
+  }
+  if (e == 2) {
+    return 3;        
+  }
+  if (e == 3) {
+    return 2;        
+  }
+  if (e == 4) {
+    return 3;        
+  }
+  if (e == 5) {
+    return 3;
+  }
+  return (e/3) + 2;
 }
 
 int Tetrahelix::small_node(int e) {
-  return e / 3;
+  if (e == 0) {
+    return 0;    
+  }
+  if (e == 1) {
+    return 0;        
+  }
+  if (e == 2) {
+    return 0;        
+  }
+  if (e == 3) {
+    return 1;        
+  }
+  if (e == 4) {
+    return 1;        
+  }
+  if (e == 5) {
+    return 2;
+  }
+  return large_node(e) - (3 - (e % 3));
 }
-
-
 
 int edge_between_aux(int x,int y) {
-  if (x == 0) {
-    if (y == 1) return 0;
-    else {
-      if (y == 2) return 1;
-      else if (y == 3)
-	return 2;
-    }
-  } else if (x == 1) {
-      if (y == 2)
-	return 3;
-      else {
-	if (y == 3)
-	  return 4;
-	else if (y == 4)
-	  return 5;
-      }
-  } else {
-      int d = y - x;
-      cout << " final d " << d << "\n";
-      return x*3+d-1;
+  int d = y - x;
+  if (y  == 0) {
+    abort();
   }
-  abort();
+  if (y == 1) {
+    if (x == 0) {
+      return 0;    
+    }
+  }
+  if (y == 2) {
+    if (x == 0) {
+      return 1;        
+    }
+    if (x == 1) {
+      return 3;        
+    }
+  }
+  if (y == 3) {
+    if (x == 0) {
+      return 2;        
+    }
+    if (x == 1) {
+      return 4;        
+    }
+    if (x == 2) {
+      return 5;        
+    }
+  }
+  cout << " sm, lg :" << x << " " << y << "\n";
+  int v = (y - 2)*3 + (3 - d);
+  cout << " v " <<  v << "\n";
+  return v;
 }
 
-
-  int Tetrahelix::edge_between(int x,int y) {
+int Tetrahelix::edge_between(int x,int y) {
   if (abs(x-y) > 3) {
-    cout << "x y : " << x << " " << y << "\n";
     abort();
     return -1;
   } else if (x == y) {
-    cout << "x y : " << x << " " << y << "\n";    
     abort();    
     return -1;
   } else return (x < y) ? edge_between_aux(x,y) : edge_between_aux(y,x);
@@ -129,3 +186,177 @@ Tetrahelix::Tetrahelix(int nodes,
       upper_bound(i) = upper_bound_d;            
     }
   }
+
+
+void Tetrahelix::set_fixed_coords(column_vector coords[]) {
+    column_vector temp0(3);
+    temp0 = 0, 0, 0;
+    coords[0] = temp0;
+
+    column_vector temp1(3);
+    temp1 = 0.0, 1.3, 0.75;
+    coords[1] = temp1;
+    
+    column_vector temp2(3);
+    temp1 = 0.75, 0.75, 1.5;
+    coords[1] = temp1;
+}
+
+// In all probability, this can be unified with the 2D case
+// by using the proper norming operations...
+double FindCoords3d::operator() ( const column_vector& x) const
+  {
+    column_vector y(3);
+    y  = x(0), x(1), x(2);
+
+    
+    column_vector ac(3);
+    ac = y - a;
+
+    column_vector bc(3);
+    bc = y - b;
+
+    column_vector cc(3);
+    cc = y - c;
+    
+
+    double an = ac(0)*ac(0)+ac(1)*ac(1)+ac(2)*ac(2);
+    double bn = bc(0)*bc(0)+bc(1)*bc(1)+bc(2)*bc(2);
+    double cn = cc(0)*cc(0)+cc(1)*cc(1)+cc(2)*bc(2);
+    return
+      pow(sqrt(an) - dac,2) +
+      pow(sqrt(bn) - dbc,2) +
+      pow(sqrt(cn) - dcc,2);
+  }
+const int debug_find = 1;
+
+// This is a tricky but essential routine. Given a triangle abc and three distances
+// to a point d (da, db, dc), we have to find the point d.
+// The best way to do this is to translate and rotate the point to
+// the origin in a specific way, then comupte things simply, then perform the inverse transport.
+// We are using the right-hand rule. Following computer graphichs convention, Y is condidered "up"
+// and the Z dimenstion is considered depth.
+// A is at the origin
+// B is on the x axis (positive)
+// C is in the x-y plane
+// D is in the positive Z semiplane
+// I need to work out the naming very clearly! That is a task for tomorrow.
+// The input is the 6 distances.
+// This code inspired by Dave Barber: view-source:http://tamivox.org/redbear/tetra_calc/index.html
+column_vector find_point_from_transformed(double AB, double AC, double AD, double BC, double BD, double CD) {
+  // _m2 means "squared"
+  double AB_m2 = AB * AB; double AC_m2 = AC * AC;
+     double AD_m2 = AD * AD; double BC_m2 = BC * BC;
+     double BD_m2 = BD * BD; double CD_m2 = CD * CD;
+     double qx = AB;
+     cout << "AB " << AB << "\n";
+     double rx = (AB_m2 + AC_m2 - BC_m2) / (2.0 * AB);    
+     double ry = sqrt (AC_m2 - rx * rx);
+     double sx = (AB_m2 + AD_m2 - BD_m2) / (2.0 * AB);
+     double sy = (BD_m2 - (sx - qx) * (sx - qx) - CD_m2 + (sx - rx) * (sx - rx) + ry * ry) / (2 * ry);
+     double sz = sqrt (AD_m2 - sx * sx - sy * sy);
+
+     column_vector A(3);
+     column_vector B(3);
+     column_vector C(3);     
+     A = 0.0,0.0,0.0;
+     B = qx,0.0,0.0;
+     cout << "BBB\n";
+     print_vec(B);
+     C = rx,ry,0.0;     
+     //     A = new cart (0.0, 0.0, 0.0);
+     //     B = new cart (qx,  0.0, 0.0);
+     //     C = new cart (rx,  ry,  0.0);
+     //     D = new cart (sx,  sy,  sz );
+  column_vector D(3);
+  D = sx,sy,sz;
+
+  cout << "A B C D\n";
+  print_vec(A);
+  print_vec(B);
+  print_vec(C);
+  print_vec(D);
+  return D;
+}
+  
+column_vector find_fourth_point_given_three_points_and_three_distances(Chirality sense,
+								      column_vector pa,column_vector pb,column_vector pc,
+								      double ad,double bd,double cd
+								      ) {
+  // First compute all 6 distances....
+  double ab = distance_2d(pa,pb);
+  double ac = distance_2d(pa,pc);
+  double bc = distance_2d(pb,pc);
+
+  // Now find transformation that rotates and translates to axes...
+  
+
+  // pa must move to the origin....
+
+  // pb must move to the positive X axis....
+
+  // pc must rotate into the x-z plane....
+  // I think I will have to write my own routine for this...
+
+  // Now get the fourth point...
+  column_vector D = find_point_from_transformed(ab,ac,ad,bc,bd,cd);
+  
+  // Use inverse transform on the fourth point...
+  return D;
+}
+
+void solve_forward_find_coords(Tetrahelix *an,column_vector coords[]) {
+    FindCoords3d f;
+
+    an->set_fixed_coords(coords);
+    
+    // Basic structure: Iteratively find coordinates based on simple triangulations.
+    // This only works for actuator networks in which we can
+    int fs = an->fixed_nodes.size();
+    for(int i = fs; i < an->num_nodes; i++) {
+      // Let's set up initial values
+      // choose a starting point
+
+      f.a.set_size(3);
+      f.a = coords[i-fs];
+
+      f.b.set_size(3);
+      f.b = coords[i-(fs-1)];
+
+      f.c.set_size(3);
+      f.c = coords[i-(fs-2)];
+      
+      f.chi = ((i % 2) == 0) ? CCW : CW;
+
+      // and minimize the function
+      if (debug_find) std::cout << "f.a " << f.a << std::endl;
+      if (debug_find) std::cout << "f.b " << f.b << std::endl;
+      if (debug_find) std::cout << "f.c " << f.c << std::endl;      
+
+      int e = an->edge_between(i,i-1);
+      // his this right?
+      f.dac = an->distance(e-2);
+      f.dbc = an->distance(e-1);
+      f.dcc = an->distance(e);
+
+      column_vector  y(3);
+
+      //      y = find_third_point_given_two_and_distances(f.chi,dab,f.dbc,f.dac,f.a,f.b);
+      y = find_fourth_point_given_three_points_and_three_distances(f.chi,f.a,f.b,f.c,
+								   f.dcc,f.dbc,f.dac);
+      
+      //      fix_sense(f.chi,f.a(0), f.a(1), f.b(0), f.b(1),y);
+
+
+      //      if (any_too_small(dab,f.dbc,f.dac)) {
+      //	cout << "TOO SMALL! \n";	
+      //      } 
+
+      coords[i].set_size(2);
+      coords[i] = y;
+      if (debug_find) std::cout << "f(y) " << f(y) << std::endl;
+    }
+    for (int i = 0; i < an->num_nodes; i++) {
+      if (debug_find) std::cout << i << " =  " << an->coords[i] << std::endl;      
+    }
+};
