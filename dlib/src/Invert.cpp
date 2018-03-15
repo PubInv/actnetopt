@@ -45,7 +45,6 @@ Invert::Invert() {
     }
   }
 
-  // This is currently computing the sum of the l2_norm of the goal point quandrances (square of distance).
   double Invert::objective(const column_vector& ds) {
 
     if (debug) std::cout << "OBJECTIVE INPUTS" << std::endl;

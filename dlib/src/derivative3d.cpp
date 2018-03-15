@@ -331,14 +331,14 @@ BOOST_AUTO_TEST_CASE( test_transform_triangle )
   column_vector B(3);
   column_vector C(3);
   // First let's test with a triangle in the xz plane
-  A = 1.0,2.0,3.0;
-  B = 2.0,2.0,2.0;
-  C = 2.0,2.0,1.0;
+  A = 0.0,2.0,0.0;
+  B = 1.0,2.0,1.0;
+  C = 2.0,2.0,0.0;
 
   column_vector O(3);
   O = 0.0,0.0,0.0;
 
-  point_transform_affine3d tform = compute_transform_to_axes(A,B,C);
+  point_transform_affine3d tform = compute_transform_to_axes2(A,B,C);
 
   column_vector Ap(3);
   column_vector Bp(3);
@@ -352,91 +352,111 @@ BOOST_AUTO_TEST_CASE( test_transform_triangle )
   Bp = tform(B);
   cout << "Bp \n";
   print_vec(Bp);
+  
+  
+  Cp = tform(C);
+  cout << "Cp \n";
+  print_vec(Cp);
+
   cout << tform.get_m() << "\n";
   cout << tform.get_b() << "\n";  
 }
 
-
-// This tests our ability to solve the "forward" problem
-// Note we will use right hand coordinates.
-// BOOST_AUTO_TEST_CASE( test_find_fourth_point )
+// BOOST_AUTO_TEST_CASE( test_inverse_transform )
 // {
 //   column_vector A(3);
-//   column_vector B(3);
-//   column_vector C(3);
-//   column_vector D(3);
-
-//   // For testing, let's put:
-//   // A on the x axis,
-//   // B on the y axis
-//   // C on the z axis,
-//   // and then let's aim to have D be the unit point.
-//   A = 1.0,0.0,0.0;
-//   B = 0.0,1.0,0.0;
-//   C = 0.0,0.0,1.0;
-//   D = 1.0,1.0,1.0;
-
-//   // now compute the distances...
-//   double da = distance_3d(A,D);
-//   double db = distance_3d(B,D);
-//   double dc = distance_3d(C,D);
-
-//   // Now having done this, we should be able to get
-//   // D back out of system (subject to getting the normal right!)
-
-
-//   column_vector Dp = find_fourth_point_given_three_points_and_three_distances(CCW,
-// 									     A,B,C,
-// 									     da,db,dc);
-//   cout << "Dp = " << "\n";
-//   print_vec(Dp);
-//   BOOST_CHECK(Dp == D);
-  
+//   A = 1.0,1.0,1.0;
+//   double theta = M_PI/6;
+//   point_transform_affine3d rotate0 = rotate_around_x(theta);
+//   cout << "XXXXXXX\n";
+//   cout << A << "\n";
+//   cout << rotate0(A) << "\n";
+//   cout << rotate0(inv(rotate0)(A)) << "\n";
+//   cout << "XXXXXXX\n";  
   
 // }
+
+BOOST_AUTO_TEST_CASE( test_find_fourth_point )
+{
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  column_vector D(3);
+
+  // For testing, let's put:
+  // A on the x axis,
+  // B on the y axis
+  // C on the z axis,
+  // and then let's aim to have D be the unit point.
+  A = 0.0,0.0,0.0;
+  B = 10.0,0.0,0.1;
+  C = 0.0,10.0,0.1;
+  D = 5,5,5;
+
+  // now compute the distances...
+  double da = distance_3d(A,D);
+  double db = distance_3d(B,D);
+  double dc = distance_3d(C,D);
+  
+
+  // Now having done this, we should be able to get
+  // D back out of system (subject to getting the normal right!)
+
+
+  column_vector Dp = find_fourth_point_given_three_points_and_three_distances(CCW,
+									     A,B,C,
+									     da,db,dc);
+  cout << "Dp = " << "\n";
+  print_vec(Dp);
+  column_vector diff = Dp - D;
+  BOOST_CHECK(l2_norm(diff) < 1e-3);
+}
 
 
 // This tests our ability to solve the "forward" problem
-// BOOST_AUTO_TEST_CASE( find_coords )
-// {
-//   Tetrahelix thlx(TRUSS_NODES,
-// 			   UPPER_BOUND,
-// 			   LOWER_BOUND,
-// 			   MEDIAN,
-// 			   INITIAL
-// 	       );
+BOOST_AUTO_TEST_CASE( find_coords )
+{
+  Tetrahelix thlx(TRUSS_NODES,
+			   UPPER_BOUND,
+			   LOWER_BOUND,
+			   MEDIAN,
+			   INITIAL
+	       );
 
-//   cout << "START\n";
-//   cout << "thlx.num_nodes: " << thlx.num_nodes << "\n";
-//   column_vector* coords = new column_vector[thlx.num_nodes];
+  cout << "START\n";
+  cout << "thlx.num_nodes: " << thlx.num_nodes << "\n";
+  column_vector* coords = new column_vector[thlx.num_nodes];
 
-//   const double SHORT = LOWER_BOUND;
-//   const double LONG = UPPER_BOUND;
+  const double SHORT = LOWER_BOUND;
+  const double LONG = UPPER_BOUND;
 
-//   thlx.distance(0) = INITIAL;
-//   thlx.distance(1) = LONG;
-//   thlx.distance(2) = SHORT;
-//   thlx.distance(3) = SHORT;
-//   thlx.distance(4) = LONG;
+  thlx.distance(0) = INITIAL;
+  thlx.distance(1) = LONG;
+  thlx.distance(2) = SHORT;
+  thlx.distance(3) = SHORT;
+  thlx.distance(4) = LONG;
   
-//   solve_forward_find_coords(&thlx,coords);
+  solve_forward_find_coords(&thlx,coords);
 
-//   for(int i = 0; i < thlx.num_nodes; i++) {
-//     cout << "coordsv " << i+1 << " :\n";
-//     print_vec(coords[i]);
-//   }
-//   for(int i = 0; i < thlx.num_edges; i++) {
-//     cout << "distance  " << i << " ";
-//     cout << thlx.distance(i) << "\n";
-//   }
+  for(int i = 0; i < thlx.num_nodes; i++) {
+    cout << "coordsv " << i+1 << " :\n";
+    print_vec(coords[i]);
+  }
+  // for(int i = 0; i < thlx.num_edges; i++) {
+  //   cout << "distance  " << i << " ";
+  //   cout << thlx.distance(i) << "\n";
+  // }
 
-//   cout << "num_edges " << thlx.num_edges << "\n";
-//   for(int i = 0; i < thlx.num_edges; i++) {
-//     int ai = thlx.small_node(i);
-//     int bi = thlx.large_node(i);
-//     cout << "distance  ai,bi :" << ai << "," << bi << " " << thlx.edge_between(bi,ai) << "\n";
-//     cout << distance_3d(coords[ai],coords[bi]) << "\n";
-//   }
+  // cout << "num_edges " << thlx.num_edges << "\n";
+  // for(int i = 4; i < thlx.num_edges; i++) {
+  //       int ai = thlx.small_node(i);
+  //       int bi = thlx.large_node(i);
 
-//   BOOST_CHECK(true);
-// }
+    
+  // 	cout << "distance  ai,bi :" << ai << "," << bi << " " << thlx.edge_between(bi,ai) << "\n";
+  // 	cout << "coords[ai], coords[bi] :" << coords[ai] << "," << coords[bi] << "\n";
+  // 	cout << distance_3d(coords[ai],coords[bi]) << "\n";
+  // }
+
+  // BOOST_CHECK(true);
+}

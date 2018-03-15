@@ -25,5 +25,28 @@ using namespace dlib;
 
 typedef matrix<double,0,1> column_vector;
 
+typedef enum { CW, CCW } Chirality;
+
+template <typename T> int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
+
+template <typename T>
+bool is_close_to_zero(T x)
+{
+    return std::abs(x) < std::numeric_limits<T>::epsilon();
+}
+
+void print_vec(column_vector& vec);
+
+
+// YUK!  Should not have to define these...
+double cot(double x);
+
+double csc(double x);
+double distance_2d(column_vector a, column_vector b);
+double distance_3d(column_vector a, column_vector b);
+double l2_norm(column_vector a);
 
 #endif

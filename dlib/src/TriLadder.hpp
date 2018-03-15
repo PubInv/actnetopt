@@ -21,6 +21,7 @@
 #include <dlib/optimization.h>
 #include <stdio.h>
 #include <iostream>
+#include "ActNetUtility.hpp"
 #include "Obstacle.hpp"
 
 #include <math.h>
@@ -44,14 +45,9 @@ typedef matrix<double,0,1> column_vector;
 // I hardely know how to use that.
 // B) Maybe I should first test multiple variables in a simpler system first!
 // Can I solve 100 variables?
-void print_vec(column_vector& vec);
 
 const bool debug_find = false;
 const bool debug = false;
-
-double distance_2d(column_vector a, column_vector b);
-
-double l2_norm(column_vector a);
 
 class TriLadder {
 public:
@@ -172,7 +168,7 @@ column_vector derivative (const column_vector& m);
 
 
 
-typedef enum { CW, CCW } Chirality;
+// typedef enum { CW, CCW } Chirality;
 
 double get_angle(column_vector a, column_vector b, column_vector c);
 

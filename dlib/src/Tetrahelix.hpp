@@ -153,5 +153,8 @@ column_vector find_fourth_point_given_three_points_and_three_distances(
 								      );
 
 point_transform_affine3d compute_transform_to_axes(column_vector A, column_vector B, column_vector C);
+
+point_transform_affine3d compute_transform_to_axes2(column_vector A, column_vector B, column_vector C);
+
   
 #endif

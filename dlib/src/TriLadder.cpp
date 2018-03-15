@@ -23,6 +23,7 @@
 
 #define PI 3.14159265
 
+#include "ActNetUtility.hpp"
 #include "TriLadder.hpp"
 
 using namespace std;
@@ -38,17 +39,17 @@ using namespace dlib;
 // typedef matrix<double,0,1> column_vector;
 
 
-void print_vec(column_vector& vec)
-{
-  for(int i = 0; i < vec.size(); i++) {
-    std::cout << ' ' << vec(i);
-    }
-    std::cout << '\n';
-}
+// void print_vec(column_vector& vec)
+// {
+//   for(int i = 0; i < vec.size(); i++) {
+//     std::cout << ' ' << vec(i);
+//     }
+//     std::cout << '\n';
+// }
 
-template <typename T> int sgn(T val) {
-    return (T(0) < val) - (val < T(0));
-}
+// template <typename T> int sgn(T val) {
+//     return (T(0) < val) - (val < T(0));
+// }
 
 // void physical_to_viewport(double px,double py,double *vx, double *vy);
 // void viewport_to_physical(double px,double py,double *vx, double *vy);
@@ -56,32 +57,6 @@ template <typename T> int sgn(T val) {
 // const bool debug_find = false;
 // const bool debug = false;
 
-double distance_2d(column_vector a, column_vector b) {
-  double d = 0.0;
-  for(int i = 0; i < a.size(); i++) {
-    d += (a(i)-b(i))*(a(i)-b(i));
-  }
-  return std::sqrt(d);
-}
-
-double distance_3d(column_vector a, column_vector b) {
-  double d = 0.0;
-  for(int i = 0; i < a.size(); i++) {
-    d += (a(i)-b(i))*(a(i)-b(i));
-  }
-  return std::sqrt(d);
-}
-
-
-
-
-double l2_norm(column_vector a) {
-  double d = 0.0;
-  for(int i = 0; i < a.size(); i++) {
-    d += a(i)*a(i);
-  }
-  return d;
-}
 
 
 int TriLadder::edges_in_ladder(int n) {
