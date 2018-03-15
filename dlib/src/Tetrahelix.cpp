@@ -374,76 +374,86 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
   dlib::vector<double,3> A = Avec.normalize();
   dlib::vector<double,3> B(1.0,0.0,0.0);
 
-  // now both A and B are unit vectors.
+  dlib::matrix<double,3,3> U;
   
-  // Now, following: https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
-  dlib::vector<double,3> AxB = A.cross(B);
+  if (!equal(A,B)) {
 
-  double s = AxB.length();
-  double c = A.dot(B);
-
-  //  cout << "s = " << s << "\n";
-  //  cout << "c = " << c << "\n";
-  // There is a possibility that c == 1.0 which must be handled...
-  // Now we want a skew-symmetric cross-product matrix of v, according to the instructions...
-  //  point_transform_affine3d I;
-  //  point_transform_affine3d vx;
-  dlib::matrix<double,3,3> G;
-  G(0,0) = c;
-  G(1,0) = s;
-  G(2,0) = 0;   
-
-  G(0,1) = -s;
-  G(1,1) = c;
-  G(2,1) = 0;   
-
-  G(0,2) = 0;
-  G(1,2) = 0;
-  G(2,2) = 1;   
-
-  cout << "G \n";
-  cout << G << "\n";
-
-  dlib::vector<double,3> u = A;
-  cout << "A,B  c\n";
-  cout << A;
-  cout << B;
-  cout << c;
-  // NOTE: if A == B, this is a real problem. A special case that must be handled.
-  dlib::vector<double,3> v = (B - c*A).normalize();
-  cout << "v = \n";
-  cout << v;
-  dlib::vector<double,3> w = B.cross(A);
-
-  dlib::matrix<double,3,3> F;
-  F(0,0) = u(0);
-  F(1,0) = u(1);
-  F(2,0) = u(2);   
-
-  F(0,1) = v(0);
-  F(1,1) = v(1);
-  F(2,1) = v(2);   
-
-  F(0,2) = w(0);
-  F(1,2) = w(1);
-  F(2,2) = w(2);   
-
-  cout << "F \n";
-  cout << F << "\n";
+    // now both A and B are unit vectors.
   
-  dlib::matrix<double,3,3> Finv = inv(F);
+    // Now, following: https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
+    dlib::vector<double,3> AxB = A.cross(B);
 
-  //  cout << "Finv \n";
-  //  cout << Finv << "\n";
+    double s = AxB.length();
+    double c = A.dot(B);
+
+    //  cout << "s = " << s << "\n";
+    //  cout << "c = " << c << "\n";
+    // There is a possibility that c == 1.0 which must be handled...
+    // Now we want a skew-symmetric cross-product matrix of v, according to the instructions...
+    //  point_transform_affine3d I;
+    //  point_transform_affine3d vx;
+    dlib::matrix<double,3,3> G;
+    G(0,0) = c;
+    G(1,0) = s;
+    G(2,0) = 0;   
+
+    G(0,1) = -s;
+    G(1,1) = c;
+    G(2,1) = 0;   
+
+    G(0,2) = 0;
+    G(1,2) = 0;
+    G(2,2) = 1;   
+
+    cout << "G \n";
+    cout << G << "\n";
+
+    dlib::vector<double,3> u = A;
+    cout << "A,B  c\n";
+    cout << A;
+    cout << B;
+    cout << c;
+    // NOTE: if A == B, this is a real problem. A special case that must be handled.
+    dlib::vector<double,3> v = (B - c*A).normalize();
+    cout << "v = \n";
+    cout << v << "\n";
+    cout << "B : \n";
+    cout << B << "\n";
+    cout << "c * A \n";
+    cout << c*A << "\n";
+    dlib::vector<double,3> w = B.cross(A);
+
+    dlib::matrix<double,3,3> F;
+    F(0,0) = u(0);
+    F(1,0) = u(1);
+    F(2,0) = u(2);   
+
+    F(0,1) = v(0);
+    F(1,1) = v(1);
+    F(2,1) = v(2);   
+
+    F(0,2) = w(0);
+    F(1,2) = w(1);
+    F(2,2) = w(2);   
+
+    cout << "F \n";
+    cout << F << "\n";
   
-  dlib::matrix<double,3,3> U = F * G * Finv;
+    dlib::matrix<double,3,3> Finv = inv(F);
 
-  cout << "U \n";
-  cout << U << "\n";
-
-  //  cout << "U*A" << "\n";  
-  //  cout << U*A << "\n";
+    //  cout << "Finv \n";
+    //  cout << Finv << "\n";
   
+    U = F * G * Finv;
+
+    cout << "U \n";
+    cout << U << "\n";
+
+  } else {
+    U = 1,0,0,
+      0,1,0,
+      0,0,1;
+  }
   dlib::vector<double,3> zero(0,0,0);  
   point_transform_affine3d firstRotation(U,zero);
 

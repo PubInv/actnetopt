@@ -416,7 +416,7 @@ BOOST_AUTO_TEST_CASE( test_find_fourth_point )
 // This tests our ability to solve the "forward" problem
 BOOST_AUTO_TEST_CASE( find_coords )
 {
-  Tetrahelix thlx(TRUSS_NODES,
+  Tetrahelix thlx(20,
 			   UPPER_BOUND,
 			   LOWER_BOUND,
 			   MEDIAN,
