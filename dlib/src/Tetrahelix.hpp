@@ -27,7 +27,7 @@ public:
   // I know this is poor C++, I am not a very good C++ coder
   //  typedef adjacency_list<vecS, vecS, bidirectionalS> Graph;
   // Make convenient labels for the vertices
-  enum { A, B};
+  enum { A, B, C};
   // Making this a const seems to destry to the implicit
   // copy assignment; I have no idea why
 

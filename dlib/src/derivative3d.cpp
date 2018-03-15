@@ -427,15 +427,15 @@ BOOST_AUTO_TEST_CASE( find_coords )
   cout << "thlx.num_nodes: " << thlx.num_nodes << "\n";
   column_vector* coords = new column_vector[thlx.num_nodes];
 
-  const double SHORT = LOWER_BOUND;
+  //  const double SHORT = LOWER_BOUND;
   const double LONG = UPPER_BOUND;
 
   thlx.distance(0) = INITIAL;
   thlx.distance(1) = LONG;
-  thlx.distance(2) = SHORT;
-  thlx.distance(3) = SHORT;
+  thlx.distance(2) = INITIAL;
+  thlx.distance(3) = INITIAL;
   thlx.distance(4) = LONG;
-  
+
   solve_forward_find_coords(&thlx,coords);
 
   for(int i = 0; i < thlx.num_nodes; i++) {

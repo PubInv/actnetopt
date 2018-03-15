@@ -167,9 +167,10 @@ Tetrahelix::Tetrahelix(int nodes,
     node_fixing_order = new int[num_nodes];
     coords = new column_vector[num_nodes];      
 
-    fixed_nodes.set_size(2);
+    fixed_nodes.set_size(3);
     fixed_nodes(0) = A;
     fixed_nodes(1) = B;
+    fixed_nodes(2) = C;    
 
     // add the edges to the graph object
     distance.set_size(num_edges);
@@ -192,12 +193,12 @@ void Tetrahelix::set_fixed_coords(column_vector coords[]) {
     coords[0] = temp0;
 
     column_vector temp1(3);
-    temp1 = 0.0, 1.3, 0.75;
+    temp1 = 1.2, 0.0, 0.0;
     coords[1] = temp1;
     
     column_vector temp2(3);
-    temp1 = 0.75, 0.75, 1.5;
-    coords[1] = temp1;
+    temp1 = 0.0, 0.0, 1.2;
+    coords[2] = temp1;
 }
 
 // In all probability, this can be unified with the 2D case
@@ -252,6 +253,11 @@ column_vector find_point_from_transformed(double AB, double AC, double AD, doubl
      double ry = sqrt (AC_m2 - rx * rx);
      double sx = (AB_m2 + AD_m2 - BD_m2) / (2.0 * AB);
      double sy = (BD_m2 - (sx - qx) * (sx - qx) - CD_m2 + (sx - rx) * (sx - rx) + ry * ry) / (2 * ry);
+     cout << "NUMBERS :\n";
+     cout << AD_m2   << "\n";
+     cout << sx * sx  << "\n";
+     cout << sy * sy  << "\n";               
+     cout << AD_m2  - sx * sx - sy * sy << "\n";
      double sz = sqrt (AD_m2 - sx * sx - sy * sy);
 
      column_vector A(3);
@@ -262,18 +268,18 @@ column_vector find_point_from_transformed(double AB, double AC, double AD, doubl
      cout << "BBB\n";
      print_vec(B);
      C = rx,ry,0.0;     
-     //     A = new cart (0.0, 0.0, 0.0);
-     //     B = new cart (qx,  0.0, 0.0);
-     //     C = new cart (rx,  ry,  0.0);
-     //     D = new cart (sx,  sy,  sz );
-  column_vector D(3);
-  D = sx,sy,sz;
+         // A = new cart (0.0, 0.0, 0.0);
+         // B = new cart (qx,  0.0, 0.0);
+         // C = new cart (rx,  ry,  0.0);
+         // D = new cart (sx,  sy,  sz );
+     column_vector D(3);
+     D = sx,sy,sz;
 
-  // cout << "A B C D\n";
-  // print_vec(A);
-  // print_vec(B);
-  // print_vec(C);
-  // print_vec(D);
+  cout << "A B C D\n";
+  print_vec(A);
+  print_vec(B);
+  print_vec(C);
+  print_vec(D);
   return D;
 }
 
@@ -395,11 +401,18 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
   G(1,2) = 0;
   G(2,2) = 1;   
 
-  //  cout << "G \n";
-  //  cout << G << "\n";
+  cout << "G \n";
+  cout << G << "\n";
 
   dlib::vector<double,3> u = A;
+  cout << "A,B  c\n";
+  cout << A;
+  cout << B;
+  cout << c;
+  // NOTE: if A == B, this is a real problem. A special case that must be handled.
   dlib::vector<double,3> v = (B - c*A).normalize();
+  cout << "v = \n";
+  cout << v;
   dlib::vector<double,3> w = B.cross(A);
 
   dlib::matrix<double,3,3> F;
@@ -415,8 +428,8 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
   F(1,2) = w(1);
   F(2,2) = w(2);   
 
-  //  cout << "F \n";
-  //  cout << F << "\n";
+  cout << "F \n";
+  cout << F << "\n";
   
   dlib::matrix<double,3,3> Finv = inv(F);
 
@@ -425,8 +438,8 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
   
   dlib::matrix<double,3,3> U = F * G * Finv;
 
-  //  cout << "U \n";
-  //  cout << U << "\n";
+  cout << "U \n";
+  cout << U << "\n";
 
   //  cout << "U*A" << "\n";  
   //  cout << U*A << "\n";
@@ -441,14 +454,19 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
   // theta = asin(C_y)
   point_transform_affine3d alignX =  firstRotation * trans;  
   column_vector Cn = alignX(pC);
+  cout << "Cn\n";
+  print_vec(Cn);
   //  cout << "Cn \n";
   //  print_vec(Cn);
   //  double len = alignX(pC).length();
   //  cout << "len " << len << "\n";
   //  cout << "Cn(2) " << Cn(2) << "\n";
-
+  cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
+  
   double denom = sqrt(Cn(0)*Cn(0) + Cn(1)*Cn(1));
-  //  cout << "denom: " << denom << "\n";
+  cout << "denom: " << denom << "\n";
+  cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
+  
   double value = Cn(2)/denom;
 
   //  cout << "value " << value << "\n";
@@ -477,7 +495,11 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   double bc = distance_2d(pb,pc);
 
   // Now find transformation that rotates and translates to axes...
+  cout << "pa pb pc \n";
+  cout << pa << " " << pb << " " << pc << "\n";  
   point_transform_affine3d tform = compute_transform_to_axes2(pa,pb,pc);
+  cout << "XXXXXXX\n";
+  cout << tform.get_m();
 
   column_vector Ap(3);
   column_vector Bp(3);
@@ -494,6 +516,7 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   Cp = tform(pc);
   // cout << "Cp \n";
   // print_vec(Cp);
+  
   point_transform_affine3d tform_inv = inv(tform);
   // cout << "tform inv\n";
   // cout << tform_inv.get_m();
@@ -511,16 +534,17 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   
 
   // Now get the fourth point...
+  cout << ab << " " << ac << " " << ad << " " << bc << " " << bd << " " << cd << "\n";
   column_vector D = find_point_from_transformed(ab,ac,ad,bc,bd,cd);
 
-  // cout << "D = \n";
-  // cout << D << "\n";
-  // cout << "d len \n";
-  // cout << l2_norm(D) << "\n";
+  cout << "D = \n";
+  cout << D << "\n";
+  cout << "d len \n";
+  cout << l2_norm(D) << "\n";
   
-  // cout << "Dtransformed by tform_inv = \n";
-  // cout << tform_inv(D) << "\n";
-  // Use inverse transform on the fourth point...
+  cout << "Dtransformed by tform_inv = \n";
+  cout << tform_inv(D) << "\n";
+  //  Use inverse transform on the fourth point...
   return tform_inv(D);
 }
 
@@ -560,6 +584,15 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coords[]) {
 
       column_vector  y(3);
 
+      // cout << "args : \n";
+      // cout << f.chi << "\n";
+      // print_vec(f.a);
+      // print_vec(f.b);
+      // cout << "f.c \n";
+      // print_vec(f.c);
+      // cout << f.dcc << "\n";
+      // cout << f.dbc << "\n";
+      // cout << f.dac << "\n";            
       y = find_fourth_point_given_three_points_and_three_distances(f.chi,f.a,f.b,f.c,
 								   f.dcc,f.dbc,f.dac);
       cout << "y(i) " << i << " " << y << "\n";
