@@ -1,15 +1,17 @@
 #ifndef PLAYGROUND_H
 #define PLAYGROUND_H 1
 
-#include "TriLadder.hpp"
+#include "Tetrahelix.hpp"
+// #include "Obstacle.hcpp"
+
 #include <SDL.h>
 
-TriLadder *init_TriLadder();
-void render_all(SDL_Renderer* renderer, TriLadder *an,column_vector* coordsx,Obstacle obstacle);
+Tetrahelix *init_Tetrahelix();
+void render_all(SDL_Renderer* renderer, Tetrahelix *an,column_vector* coordsx,Obstacle obstacle);
 
 extern const int WIN_WIDTH;
 extern const int WIN_HEIGHT;
-extern Obstacle obstacle;
+// extern Obstacle obstacle;
 extern double* best_distances;
 extern double best_score;
 
@@ -22,7 +24,7 @@ extern double best_score;
 #define CRISIS_DERIVATIVE_LEVEL 1000.0
 
 
-int mainx(TriLadder *an,column_vector* coords,Obstacle ob);
+int mainx(Tetrahelix *an,column_vector* coords);
 
 class Input
 {
@@ -56,11 +58,11 @@ private:
 
 
 void mousedown_function();
-void handle_goal_target(TriLadder *an,column_vector* coordsx,int x,int y);
-void handle_goal_target_physical(TriLadder *an,column_vector* coordsx,double x,double y,double z);
-void handle_goal_target(TriLadder *an,column_vector* coordsx,column_vector gl);
-void init_renderer(TriLadder *an,column_vector* coordsx,Obstacle obstacle);
+void handle_goal_target(Tetrahelix *an,column_vector* coordsx,int x,int y);
+void handle_goal_target_physical(Tetrahelix *an,column_vector* coordsx,double x,double y,double z);
+void handle_goal_target(Tetrahelix *an,column_vector* coordsx,column_vector gl);
+void init_renderer(Tetrahelix *an,column_vector* coordsx,Obstacle obstacle);
 void close_renderer();
-void render_all(TriLadder *an,column_vector* coordsx,Obstacle obstacle);
+void render_all(Tetrahelix *an,column_vector* coordsx,Obstacle obstacle);
 
 #endif

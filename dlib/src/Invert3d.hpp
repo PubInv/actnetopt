@@ -23,7 +23,7 @@
 #include <dlib/optimization.h>
 #include <stdio.h>
 #include <iostream>
-#include "TriLadder.hpp"
+#include "Tetrahelix.hpp"
 #include "Obstacle.hpp"
 
 #include <math.h>
@@ -42,8 +42,8 @@ extern double best_score;
 class Invert {
 public:
 
-  TriLadder *an;
-  static TriLadder *global_truss;  
+  Tetrahelix *an;
+  static Tetrahelix *global_truss;  
   Invert();
   
   // This function weights how close our values are to the goals.

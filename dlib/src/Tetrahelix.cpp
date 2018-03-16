@@ -148,6 +148,16 @@ int Tetrahelix::edge_between(int x,int y) {
   } else return (x < y) ? edge_between_aux(x,y) : edge_between_aux(y,x);
 }
 
+// under the current numbering, externals are odd...
+bool Tetrahelix::rail_edge(int edge) {
+  // WARNING--this needs to be rewritten -- not sure how this works for tetrahelix...
+  // really the questin is are we changing rails, which is best done where we can
+  // detect the small and large node numbers.
+  
+  return ((edge % 2) == 1);
+}
+
+
 Tetrahelix::Tetrahelix(int nodes,
 		     double u,
 		     double l,
@@ -576,3 +586,90 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coords[]) {
       if (debug_find) std::cout << i << " =  " << an->coords[i] << std::endl;      
     }
 };
+
+void Tetrahelix::add_goal_node(int num,double x,double y, double z,double w)    {
+      column_vector mg(3);
+      mg(0) = x;
+      mg(1) = y;
+      mg(2) = z;
+      goals.push_back(mg);
+      goal_nodes.push_back(num);
+      goal_weights.push_back(w);
+    }
+
+
+double dtheta_dd_laid_on_axes(double d, double x, double z) {
+  //  cout << " d, x, z " <<  d << " " << x << " " << z << "\n";
+  double lower_term = pow((-d*d + x*x + z*z + 1.0),2)/(4.0*x*x);
+  //  cout << " lower " << lower_term << "\n";
+  return d / (
+	      x * sqrt(1.0 - lower_term));
+}
+
+// In this case, x,y,z are the lengths of a triangle
+double darea_dx(double x,double y, double z) {
+  double x2 = x*x;
+  double y2 = y*y;
+  double z2 = z*z;
+  double num = x*(-x2 + y2 + z2);
+  double dem = 2*sqrt(-x2*x2+ 2*x2*y2 + 2*x2*z2 - y2*y2 + 2*y2*z2 - z2*z2);
+  return num/dem;
+}
+
+// a,b,c,d are the areas of the triangles opposite i,j,k,l respectively.
+// e,f,g and dihedral angles of il,ik, and ij respectively.
+// our basic goal is to compute dihedral angles; this is part of that.
+double dangle_db(double a, double b, double c, double d, double e, double f) {
+  double num = -(2*b - 2*c*cos(e) - 2*d*cos(f));
+  double lnum = -a*a + b*b - 2*b*c*cos(e) - 2*b*d*cos(f)+c*c + d*d;
+  double lden = 4*c*c * d*d;
+  double den = 2*c*d * sqrt(1 - (lnum*lnum)/lden);
+  return num/den;
+}
+double semi_perimeter(double x, double y, double z) {
+  return (x+y+z)/2.0;
+}
+double heron_area(double x,double y, double z) {
+  double s = semi_perimeter(x,y,z);
+  return sqrt(s*(s-x)*(s-y)*(s-z));
+}
+
+// find the dihedral angle of <AB given vertex angles...
+double dihedral_from_vertex_angles(double a, double b, double c) {
+  double num = cos(c) - cos(b)*cos(a);
+  double den = sin(b) * sin(a);
+  return acos(num/den);
+}
+
+double angle_from_three_sides(double adjacent1, double adjacent2, double opposite) {
+  double a = adjacent1;
+  double b = adjacent2;
+  double c = opposite;
+  return acos((a*a + b*b - c*c)/(2*a*b));
+}
+double dangle_from_dside(double adjacent1, double adjacent2, double opposite) {
+  double a = adjacent1;
+  double b = adjacent2;
+  double c = opposite;
+  double num = c;
+  double inum = pow(a*a + b*b - c*c,2);
+  double iden = 4 * a * a * b * b;
+  double den = a * b * sqrt(1 - inum/iden);
+  return num/den;
+}
+
+double ddhedral_dvertex(double adjacent1, double adjacent2, double opposite) {
+  double a = adjacent1;
+  double c = adjacent2;
+  double b = opposite;
+  double num = csc(a)*csc(b)*sin(c);
+  double den = sqrt(1 - csc(a)*csc(a) * csc(b)*csc(b) * pow( cos(c) - cos(a)*cos(b),2));
+  return -num/den;
+}
+
+column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
+								int edge_number,
+								int goal_node_number) {
+  // This has to be reconstructed....
+  
+}

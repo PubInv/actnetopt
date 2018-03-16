@@ -14,9 +14,9 @@
 #include <cstdlib>
 #include <restbed>
 #include "json.hpp"
-#include "TriLadder.hpp"
-#include "Obstacle.hpp"
-#include "playground.hpp"
+#include "Tetrahelix.hpp"
+// #include "Obstacle.hpp"
+#include "playground3d.hpp"
 #include <dlib/optimization.h>
 
 #include "custom_logger.hpp"
@@ -29,7 +29,7 @@ using namespace restbed;
 // for convenience
 using json = nlohmann::json;
 
-TriLadder *an;
+Tetrahelix *an;
   
 column_vector* coordsx;
 
@@ -45,19 +45,22 @@ void get_method_handler_goal( const shared_ptr< Session > session )
 
       cout << "XXX" << request->get_query_parameter( "x" ) << "\n";
       cout << "YYY" << request->get_query_parameter( "y" ) << "\n";
+      cout << "ZZZ" << request->get_query_parameter( "z" ) << "\n";      
       
       double x = request->get_query_parameter( "x",10.0 );
       double y = request->get_query_parameter( "y",10.0 );
+      double z = request->get_query_parameter( "z",10.0 );      
       
       if (true) {
 	  // there is an entry with key "foo"
-	  cout << "FOUND X AND Y!\n";
-	  handle_goal_target_physical(an,coordsx,x,y);
+	  cout << "FOUND X AND Y and Z!\n";
+	  handle_goal_target_physical(an,coordsx,x,y,z);
 	  json solution;
 	  for(int i = 0; i < an->num_nodes; i++) {
-	    std::cout << " d["<< i << "]" << coordsx[i](0) << "," << coordsx[i](1) << std::endl;
+	    std::cout << " d["<< i << "]" << coordsx[i](0) << "," << coordsx[i](1) << "," << coordsx[i](2) << std::endl;
 	    solution[i]["x"] = coordsx[i](0);
-	    solution[i]["y"] = coordsx[i](1);	    
+	    solution[i]["y"] = coordsx[i](1);
+	    solution[i]["z"] = coordsx[i](2);	    	    
 	  }
 
 	  std::string s = solution.dump(4);
@@ -100,14 +103,11 @@ int main( const int, const char** )
 
     
 
-    // Here I set upa virtual space containing the TriLadder
-    // This could be moved into a different call to allow
-    // the truss parameters to be set.
-    an = init_TriLadder();
+    an = init_Tetrahelix();
   
     coordsx = new column_vector[an->num_nodes];
 
-    mainx(an,coordsx,obstacle);
+    mainx(an,coordsx);
 
 
     Service service;

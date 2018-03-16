@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#include "Invert.hpp"
+#include "Invert3d.hpp"
 #include "Obstacle.hpp"
 
 using namespace std;
@@ -26,6 +26,8 @@ using namespace dlib;
 // Therefore these are necessary.
 double* best_distances = 0;
 double best_score;
+
+extern int debug;
 
 Invert::Invert() {
 
@@ -56,7 +58,7 @@ Invert::Invert() {
     column_vector *coords = new column_vector[global_truss->num_nodes];
 
     // If I don't change an here, I'm not changing the coords!!
-    find_all_coords(global_truss,coords);
+    solve_forward_find_coords(global_truss,coords);	  
     
     for(int i = 0; i < global_truss->num_nodes; i++) {
       //       std::cout << " coords["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
@@ -101,14 +103,16 @@ Invert::Invert() {
     }
     // If I don't change an here, I'm not changing the coords!!
    column_vector *coords = new column_vector[global_truss->num_nodes];
-    find_all_coords(global_truss,coords);
+
+    solve_forward_find_coords(global_truss,coords);	     
+    
     column_vector d(global_truss->var_edges);
       
     for(int i = 0; i < global_truss->var_edges; i++) {
       // The true edge number is one higher than the index of the variable edges, since the first is fixed.
       int e = i + 1;
-      column_vector dx(2);
-      dx = 0.0,0.0;
+      column_vector dx(3);
+      dx = 0.0,0.0,0.0;
 
       double prod = 0.0;
       for(int j = 0; j < global_truss->goals.size(); j++) {
@@ -116,7 +120,7 @@ Invert::Invert() {
 	column_vector g = global_truss->goals[j];
 	int idx = global_truss->goal_nodes[j];	
 	column_vector c = coords[idx];
-	
+
 	column_vector d = global_truss->compute_goal_derivative_c(coords,e,global_truss->goal_nodes[j]);
 
 	if ((d(0) > 1000.0) || (abs(d(1)) > 1000.0)) {

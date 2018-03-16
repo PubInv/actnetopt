@@ -19,6 +19,7 @@
 #define TETRAHELIX_HPP 1
 
 #include "ActNetUtility.hpp"
+#include "Obstacle.hpp"
 
 
 class Tetrahelix {
@@ -30,6 +31,8 @@ public:
   enum { A, B, C};
   // Making this a const seems to destry to the implicit
   // copy assignment; I have no idea why
+
+  Obstacle obstacle;  
 
   int num_nodes;   // 
   int num_edges; //  f(num_nodes)
@@ -47,8 +50,9 @@ public:
   int large_node(int e);
   int small_node(int e);
   int edge_between(int ndh,int ndl);
+  bool rail_edge(int e);  
 
-  void add_goal_node(int num, double x,double y, double w);
+  void add_goal_node(int num, double x,double y, double z,double w);
 
   Tetrahelix(int nodes,
 	    double u,
@@ -155,6 +159,31 @@ column_vector find_fourth_point_given_three_points_and_three_distances(
 point_transform_affine3d compute_transform_to_axes(column_vector A, column_vector B, column_vector C);
 
 point_transform_affine3d compute_transform_to_axes2(column_vector A, column_vector B, column_vector C);
+
+
+double dtheta_dd_laid_on_axes(double d, double x, double z);
+
+// In this case, x,y,z are the lengths of a triangle
+double darea_dx(double x,double y, double z);
+
+// a,b,c,d are the areas of the triangles opposite i,j,k,l respectively.
+// e,f,g and dihedral angles of il,ik, and ij respectively.
+// our basic goal is to compute dihedral angles; this is part of that.
+double dangle_db(double a, double b, double c, double d, double e, double f);
+
+double semi_perimeter(double x, double y, double z);
+
+double heron_area(double x,double y, double z);
+
+// find the dihedral angle of <AB given vertex angles...
+double dihedral_from_vertex_angles(double a, double b, double c);
+
+double angle_from_three_sides(double adjacent1, double adjacent2, double opposite);
+
+double dangle_from_dside(double adjacent1, double adjacent2, double opposite);
+
+double ddhedral_dvertex(double adjacent1, double adjacent2, double opposite);
+
 
   
 #endif
