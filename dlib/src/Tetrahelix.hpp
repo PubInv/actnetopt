@@ -143,7 +143,7 @@ public:
 void solve_forward_find_coords(Tetrahelix *an,column_vector coords[]);
 
 
-column_vector find_point_from_transformed(double AB, double AC, double AD, double BC, double BD, double CD);
+column_vector find_point_from_transformed(Chirality sense,double AB, double AC, double AD, double BC, double BD, double CD);
 
   
 column_vector find_fourth_point_given_three_points_and_three_distances(

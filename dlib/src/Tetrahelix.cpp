@@ -189,16 +189,18 @@ Tetrahelix::Tetrahelix(int nodes,
 
 void Tetrahelix::set_fixed_coords(column_vector coords[]) {
     column_vector temp0(3);
-    temp0 = 0, 0, 0;
+
+    // These values are taken from: https://pubinv.github.io/tetrahelix/
+    temp0 = 0.25980762113533157,  0.7794228634059948,  -1;
     coords[0] = temp0;
 
-    column_vector temp1(3);
-    temp1 = 1.2, 0.0, 0.0;
-    coords[1] = temp1;
+
+    temp0 =  -0.17320508075688773, 0.9730720307163656, -0.841886116991581;   
+    coords[1] = temp0;
     
-    column_vector temp2(3);
-    temp1 = 0.0, 0.0, 1.2;
-    coords[2] = temp1;
+    temp0 =  -0.028867513459481214,  0.5212239736588337, -0.683772233983162;
+    coords[2] = temp0;
+
 }
 
 // In all probability, this can be unified with the 2D case
@@ -227,7 +229,7 @@ double FindCoords3d::operator() ( const column_vector& x) const
       pow(sqrt(bn) - dbc,2) +
       pow(sqrt(cn) - dcc,2);
   }
-const int debug_find = 1;
+const int debug_find = 0;
 
 // This is a tricky but essential routine. Given a triangle abc and three distances
 // to a point d (da, db, dc), we have to find the point d.
@@ -242,7 +244,7 @@ const int debug_find = 1;
 // I need to work out the naming very clearly! That is a task for tomorrow.
 // The input is the 6 distances.
 // This code inspired by Dave Barber: view-source:http://tamivox.org/redbear/tetra_calc/index.html
-column_vector find_point_from_transformed(double AB, double AC, double AD, double BC, double BD, double CD) {
+column_vector find_point_from_transformed(Chirality sense,double AB, double AC, double AD, double BC, double BD, double CD) {
   // _m2 means "squared"
   double AB_m2 = AB * AB; double AC_m2 = AC * AC;
      double AD_m2 = AD * AD; double BC_m2 = BC * BC;
@@ -253,11 +255,6 @@ column_vector find_point_from_transformed(double AB, double AC, double AD, doubl
      double ry = sqrt (AC_m2 - rx * rx);
      double sx = (AB_m2 + AD_m2 - BD_m2) / (2.0 * AB);
      double sy = (BD_m2 - (sx - qx) * (sx - qx) - CD_m2 + (sx - rx) * (sx - rx) + ry * ry) / (2 * ry);
-     cout << "NUMBERS :\n";
-     cout << AD_m2   << "\n";
-     cout << sx * sx  << "\n";
-     cout << sy * sy  << "\n";               
-     cout << AD_m2  - sx * sx - sy * sy << "\n";
      double sz = sqrt (AD_m2 - sx * sx - sy * sy);
 
      column_vector A(3);
@@ -265,21 +262,14 @@ column_vector find_point_from_transformed(double AB, double AC, double AD, doubl
      column_vector C(3);     
      A = 0.0,0.0,0.0;
      B = qx,0.0,0.0;
-     cout << "BBB\n";
-     print_vec(B);
-     C = rx,ry,0.0;     
-         // A = new cart (0.0, 0.0, 0.0);
-         // B = new cart (qx,  0.0, 0.0);
-         // C = new cart (rx,  ry,  0.0);
-         // D = new cart (sx,  sy,  sz );
      column_vector D(3);
-     D = sx,sy,sz;
+     D = sx,sy,(sense == CCW) ? sz : -sz;
 
-  cout << "A B C D\n";
-  print_vec(A);
-  print_vec(B);
-  print_vec(C);
-  print_vec(D);
+  // cout << "A B C D\n";
+  // print_vec(A);
+  // print_vec(B);
+  // print_vec(C);
+  // print_vec(D);
   return D;
 }
 
@@ -405,22 +395,11 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
     G(1,2) = 0;
     G(2,2) = 1;   
 
-    cout << "G \n";
-    cout << G << "\n";
 
     dlib::vector<double,3> u = A;
-    cout << "A,B  c\n";
-    cout << A;
-    cout << B;
-    cout << c;
     // NOTE: if A == B, this is a real problem. A special case that must be handled.
     dlib::vector<double,3> v = (B - c*A).normalize();
-    cout << "v = \n";
-    cout << v << "\n";
-    cout << "B : \n";
-    cout << B << "\n";
-    cout << "c * A \n";
-    cout << c*A << "\n";
+
     dlib::vector<double,3> w = B.cross(A);
 
     dlib::matrix<double,3,3> F;
@@ -435,19 +414,10 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
     F(0,2) = w(0);
     F(1,2) = w(1);
     F(2,2) = w(2);   
-
-    cout << "F \n";
-    cout << F << "\n";
   
     dlib::matrix<double,3,3> Finv = inv(F);
 
-    //  cout << "Finv \n";
-    //  cout << Finv << "\n";
-  
     U = F * G * Finv;
-
-    cout << "U \n";
-    cout << U << "\n";
 
   } else {
     U = 1,0,0,
@@ -508,8 +478,6 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   cout << "pa pb pc \n";
   cout << pa << " " << pb << " " << pc << "\n";  
   point_transform_affine3d tform = compute_transform_to_axes2(pa,pb,pc);
-  cout << "XXXXXXX\n";
-  cout << tform.get_m();
 
   column_vector Ap(3);
   column_vector Bp(3);
@@ -545,22 +513,14 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
 
   // Now get the fourth point...
   cout << ab << " " << ac << " " << ad << " " << bc << " " << bd << " " << cd << "\n";
-  column_vector D = find_point_from_transformed(ab,ac,ad,bc,bd,cd);
-
-  cout << "D = \n";
-  cout << D << "\n";
-  cout << "d len \n";
-  cout << l2_norm(D) << "\n";
-  
-  cout << "Dtransformed by tform_inv = \n";
-  cout << tform_inv(D) << "\n";
-  //  Use inverse transform on the fourth point...
+  column_vector D = find_point_from_transformed(sense,ab,ac,ad,bc,bd,cd);
   return tform_inv(D);
 }
 
 void solve_forward_find_coords(Tetrahelix *an,column_vector coords[]) {
     FindCoords3d f;
 
+    Chirality sense = CCW;
     an->set_fixed_coords(coords);
     
     // Basic structure: Iteratively find coordinates based on simple triangulations.
@@ -578,8 +538,10 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coords[]) {
 
       f.c.set_size(3);
       f.c = coords[i-(fs-2)];
-      
-      f.chi = ((i % 2) == 0) ? CCW : CW;
+
+      // Although in 2-dimensions we change this, in 3D it is not needed...
+      // I think there is something deeply mathmatical in that.
+      f.chi = sense;
 
       // and minimize the function
       if (debug_find) std::cout << "f.a " << f.a << std::endl;
@@ -605,7 +567,6 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coords[]) {
       // cout << f.dac << "\n";            
       y = find_fourth_point_given_three_points_and_three_distances(f.chi,f.a,f.b,f.c,
 								   f.dcc,f.dbc,f.dac);
-      cout << "y(i) " << i << " " << y << "\n";
       
       coords[i].set_size(3);
       coords[i] = y;

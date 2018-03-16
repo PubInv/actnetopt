@@ -316,7 +316,7 @@ BOOST_AUTO_TEST_CASE( test_find_point_from_transformed )
   cout << cd << " \n";
   
 
-  column_vector Dprime = find_point_from_transformed(ab,ac,ad,bc,bd,cd);
+  column_vector Dprime = find_point_from_transformed(CCW,ab,ac,ad,bc,bd,cd);
   print_vec(D);
   print_vec(Dprime);
   BOOST_CHECK(equal(Dprime,D));
@@ -414,7 +414,7 @@ BOOST_AUTO_TEST_CASE( test_find_fourth_point )
 
 
 // This tests our ability to solve the "forward" problem
-BOOST_AUTO_TEST_CASE( find_coords )
+BOOST_AUTO_TEST_CASE( find_coords_matches_distances )
 {
   Tetrahelix thlx(20,
 			   UPPER_BOUND,
@@ -428,35 +428,77 @@ BOOST_AUTO_TEST_CASE( find_coords )
   column_vector* coords = new column_vector[thlx.num_nodes];
 
   //  const double SHORT = LOWER_BOUND;
-  const double LONG = UPPER_BOUND;
-
-  thlx.distance(0) = INITIAL;
-  thlx.distance(1) = LONG;
-  thlx.distance(2) = INITIAL;
-  thlx.distance(3) = INITIAL;
-  thlx.distance(4) = LONG;
+  //  const double LONG = UPPER_BOUND;
+  for(int i = 0; i < thlx.num_nodes; i++) {
+    thlx.distance(i) = INITIAL;
+  }
 
   solve_forward_find_coords(&thlx,coords);
-
+  
   for(int i = 0; i < thlx.num_nodes; i++) {
-    cout << "coordsv " << i+1 << " :\n";
-    print_vec(coords[i]);
+    thlx.distance(i) = INITIAL;
+    cout << i << " " << coords[i] << "\n";
   }
-  // for(int i = 0; i < thlx.num_edges; i++) {
-  //   cout << "distance  " << i << " ";
-  //   cout << thlx.distance(i) << "\n";
-  // }
 
-  // cout << "num_edges " << thlx.num_edges << "\n";
-  // for(int i = 4; i < thlx.num_edges; i++) {
-  //       int ai = thlx.small_node(i);
-  //       int bi = thlx.large_node(i);
+  cout << "num_edges " << thlx.num_edges << "\n";
+  for(int i = 4; i < thlx.num_edges; i++) {
+        int ai = thlx.small_node(i);
+        int bi = thlx.large_node(i);
+	double actual = distance_3d(coords[ai],coords[bi]);
+	double expected = thlx.distance(i);
+	BOOST_CHECK(abs(expected-actual) < 1e-2);
+  }
+}
 
-    
-  // 	cout << "distance  ai,bi :" << ai << "," << bi << " " << thlx.edge_between(bi,ai) << "\n";
-  // 	cout << "coords[ai], coords[bi] :" << coords[ai] << "," << coords[bi] << "\n";
-  // 	cout << distance_3d(coords[ai],coords[bi]) << "\n";
-  // }
 
-  // BOOST_CHECK(true);
+BOOST_AUTO_TEST_CASE( make_sure_axis_is_followed )
+{
+  Tetrahelix thlx(20,
+			   UPPER_BOUND,
+			   LOWER_BOUND,
+			   MEDIAN,
+			   INITIAL
+	       );
+
+  cout << "START\n";
+  cout << "thlx.num_nodes: " << thlx.num_nodes << "\n";
+
+  // Now we want to set up the coordinates of the first three nodes
+  // very carefully so that we follow the X-axis specifically.
+  // The easiest way to to this is to take it from the javascript
+  // code already written to preform these calculations....
+
+  
+  
+  column_vector* coords = new column_vector[thlx.num_nodes];
+
+  //  const double SHORT = LOWER_BOUND;
+  //  const double LONG = UPPER_BOUND;
+  for(int i = 0; i < thlx.num_nodes; i++) {
+    thlx.distance(i) = INITIAL;
+  }
+
+  solve_forward_find_coords(&thlx,coords);
+  
+  for(int i = 0; i < thlx.num_nodes; i++) {
+    thlx.distance(i) = INITIAL;
+    cout << i << " " << coords[i] << "\n";
+  }
+
+  cout << "num_edges " << thlx.num_edges << "\n";
+  for(int i = 4; i < thlx.num_nodes; i++) {
+    //        int ai = thlx.small_node(i);
+    //        int bi = thlx.large_node(i);
+	//	double actual = distance_3d(coords[ai],coords[bi]);
+	//	double expected = thlx.distance(i);
+
+	// we want to make sure each point is not too far
+	// from the y axis.
+	// This is a little tricky...let me just test the coords
+	// stay close to the x axis...
+
+    cout << i << " " << coords[i](0) << "\n";
+    BOOST_CHECK(abs(coords[i](0)) < 2.0);
+  }
+
 }
