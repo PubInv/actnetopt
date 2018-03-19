@@ -200,16 +200,17 @@ Tetrahelix::Tetrahelix(int nodes,
 void Tetrahelix::set_fixed_coords(column_vector coords[]) {
     column_vector temp0(3);
 
+    double f = 3;
     // These values are taken from: https://pubinv.github.io/tetrahelix/
     temp0 = 0.25980762113533157,  0.7794228634059948,  -1;
-    coords[0] = temp0;
+    coords[0] = temp0*f;
 
 
     temp0 =  -0.17320508075688773, 0.9730720307163656, -0.841886116991581;   
-    coords[1] = temp0;
+    coords[1] = temp0*f;
     
     temp0 =  -0.028867513459481214,  0.5212239736588337, -0.683772233983162;
-    coords[2] = temp0;
+    coords[2] = temp0*f;
 
 }
 
@@ -260,7 +261,6 @@ column_vector find_point_from_transformed(Chirality sense,double AB, double AC, 
      double AD_m2 = AD * AD; double BC_m2 = BC * BC;
      double BD_m2 = BD * BD; double CD_m2 = CD * CD;
      double qx = AB;
-     cout << "AB " << AB << "\n";
      double rx = (AB_m2 + AC_m2 - BC_m2) / (2.0 * AB);    
      double ry = sqrt (AC_m2 - rx * rx);
      double sx = (AB_m2 + AD_m2 - BD_m2) / (2.0 * AB);
@@ -444,18 +444,18 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
   // theta = asin(C_y)
   point_transform_affine3d alignX =  firstRotation * trans;  
   column_vector Cn = alignX(pC);
-  cout << "Cn\n";
-  print_vec(Cn);
+  //  cout << "Cn\n";
+  //  print_vec(Cn);
   //  cout << "Cn \n";
   //  print_vec(Cn);
   //  double len = alignX(pC).length();
   //  cout << "len " << len << "\n";
   //  cout << "Cn(2) " << Cn(2) << "\n";
-  cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
+  //  cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
   
   double denom = sqrt(Cn(0)*Cn(0) + Cn(1)*Cn(1));
-  cout << "denom: " << denom << "\n";
-  cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
+  //  cout << "denom: " << denom << "\n";
+  //  cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
   
   double value = Cn(2)/denom;
 
@@ -485,8 +485,8 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   double bc = distance_2d(pb,pc);
 
   // Now find transformation that rotates and translates to axes...
-  cout << "pa pb pc \n";
-  cout << pa << " " << pb << " " << pc << "\n";  
+  //  cout << "pa pb pc \n";
+  //  cout << pa << " " << pb << " " << pc << "\n";  
   point_transform_affine3d tform = compute_transform_to_axes2(pa,pb,pc);
 
   column_vector Ap(3);
@@ -522,7 +522,7 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   
 
   // Now get the fourth point...
-  cout << ab << " " << ac << " " << ad << " " << bc << " " << bd << " " << cd << "\n";
+  //  cout << ab << " " << ac << " " << ad << " " << bc << " " << bd << " " << cd << "\n";
   column_vector D = find_point_from_transformed(sense,ab,ac,ad,bc,bd,cd);
   return tform_inv(D);
 }
