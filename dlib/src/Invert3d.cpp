@@ -1,4 +1,4 @@
-// Invert.cpp -- Code needed to perform gradient-based inverse problem (design) of a 2D Warren Truss
+// Invert.cpp -- Code needed to perform gradient-based inverse problem (design) of a 2D Warr
 // Copyright (C) Robert L. Read, 2018
 //
 // This program is free software: you can redistribute it and/or modify
@@ -39,19 +39,20 @@ Invert::Invert() {
     return objective(ds);
   }
 
-  void  Invert::set_global_truss(Obstacle o) {
+  void  Invert::set_global_truss() {
     global_truss = an;
-    global_truss->obstacle = o;
+    //        global_truss->obstacle = o;
     if (best_distances == 0) {
-     best_distances = new double[(global_truss->num_nodes-3)*2 +3];
+      // Is this really right?
+      best_distances = new double[global_truss->num_edges];
     }
   }
 
   double Invert::objective(const column_vector& ds) {
 
-    if (debug) std::cout << "OBJECTIVE INPUTS" << std::endl;
+    //    if (debug) std::cout << "OBJECTIVE INPUTS" << std::endl;
     for (int i = 0; i < global_truss->var_edges; ++i) {
-           if (debug) std::cout << i << " : " << ds(i) << std::endl;
+      //           if (debug) std::cout << i << " : " << ds(i) << std::endl;
 	  global_truss->distance(i+1) = ds(i);
     }
 
@@ -83,7 +84,7 @@ Invert::Invert() {
     }
 
    if (v < best_score) {
-     if (debug)    cout << "found best: " << v << "\n";
+     //     if (debug)    cout << "found best: " << v << "\n";
      for (int i = 0; i < global_truss->var_edges; ++i) {
        best_distances[i] = ds(i);
      }
@@ -96,6 +97,7 @@ Invert::Invert() {
 
   // compute the derivatives of the objective as the configuration ds.
   column_vector Invert::derivative(const column_vector& ds) {
+
     for (int i = 0; i < global_truss->var_edges; ++i) {
       if (debug) std::cout << i << " : " << ds(i) << std::endl;
       // This is correct?  It should it just be "i"?
@@ -108,20 +110,23 @@ Invert::Invert() {
     
     column_vector d(global_truss->var_edges);
       
-    for(int i = 0; i < global_truss->var_edges; i++) {
+      for(int i = 0; i < global_truss->var_edges; i++) {
       // The true edge number is one higher than the index of the variable edges, since the first is fixed.
-      int e = i + 1;
+	int e = global_truss->edge_number_of_nth_variable_edge(i);
       column_vector dx(3);
       dx = 0.0,0.0,0.0;
 
       double prod = 0.0;
       for(int j = 0; j < global_truss->goals.size(); j++) {
-
 	column_vector g = global_truss->goals[j];
 	int idx = global_truss->goal_nodes[j];	
 	column_vector c = coords[idx];
 
+	cout << "goal node " << global_truss->goals[global_truss->goal_nodes[j]] << "\n";
+	
 	column_vector d = global_truss->compute_goal_derivative_c(coords,e,global_truss->goal_nodes[j]);
+
+	cout << "e,d " << e << " , " << d << "\n";	
 
 	if ((d(0) > 1000.0) || (abs(d(1)) > 1000.0)) {
 	  cout << "CRISIS!\n";
@@ -131,11 +136,14 @@ Invert::Invert() {
 
 	// Which of thise is right?  Must be the latter?!?
 	//	dx += (d * global_truss->goal_weights[j]);
-	dx = (d * global_truss->goal_weights[j]);	
+
+	dx = (d * global_truss->goal_weights[j]);
+
 	column_vector goal_direction = c - g;
 	prod += dot(goal_direction,dx);
       }
       d(i) = prod;
+
 
       // Now for this edge, we will compute the contribution from obstacle inteference.
       // This can occur for any node which is after the edge in the kinematic chain.
@@ -167,10 +175,12 @@ Invert::Invert() {
 	  d_obst +=  ( direction * p);
 	}
       }
+
       if (d_obst != 0.0) {
 	d(i) += d_obst;
       }
     }
+
     // cout << "DERIVATIVES" << "\n";
     // for(int i = 0; i < global_truss->var_edges; i++) {
     //   cout << "i " << i << " " << d(i) << "\n";

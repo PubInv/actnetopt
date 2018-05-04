@@ -36,6 +36,8 @@ column_vector* coordsx;
 
 void get_method_handler_goal( const shared_ptr< Session > session )
 {
+    cerr << "goal invoked\n";
+  
     const auto request = session->get_request( );
 
     size_t content_length = request->get_header( "Content-Length", 0 );
@@ -49,7 +51,7 @@ void get_method_handler_goal( const shared_ptr< Session > session )
       
       double x = request->get_query_parameter( "x",10.0 );
       double y = request->get_query_parameter( "y",10.0 );
-      double z = request->get_query_parameter( "z",10.0 );      
+      double z = request->get_query_parameter( "z",10.0 );
       
       if (true) {
 	  // there is an entry with key "foo"
@@ -101,19 +103,18 @@ int main( const int, const char** )
     //    settings->set_default_header( "Connection", "close" );
     settings->set_default_header( "Access-Control-Allow-Origin", "*" );    
 
-    
-
     an = init_Tetrahelix();
   
     coordsx = new column_vector[an->num_nodes];
 
     mainx(an,coordsx);
 
-
     Service service;
     service.publish( resource );
     service.set_logger( make_shared< CustomLogger >( ) );
     service.start(settings );
+
+    cerr << "Service Invoked!\n";
 
     return EXIT_SUCCESS;
 }

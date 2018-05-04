@@ -39,74 +39,6 @@ using namespace std;
 
 
 
-// double dtheta_dd_laid_on_axes(double d, double x, double z) {
-//   //  cout << " d, x, z " <<  d << " " << x << " " << z << "\n";
-//   double lower_term = pow((-d*d + x*x + z*z + 1.0),2)/(4.0*x*x);
-//   //  cout << " lower " << lower_term << "\n";
-//   return d / (
-// 	      x * sqrt(1.0 - lower_term));
-// }
-
-// // In this case, x,y,z are the lengths of a triangle
-// double darea_dx(double x,double y, double z) {
-//   double x2 = x*x;
-//   double y2 = y*y;
-//   double z2 = z*z;
-//   double num = x*(-x2 + y2 + z2);
-//   double dem = 2*sqrt(-x2*x2+ 2*x2*y2 + 2*x2*z2 - y2*y2 + 2*y2*z2 - z2*z2);
-//   return num/dem;
-// }
-
-// // a,b,c,d are the areas of the triangles opposite i,j,k,l respectively.
-// // e,f,g and dihedral angles of il,ik, and ij respectively.
-// // our basic goal is to compute dihedral angles; this is part of that.
-// double dangle_db(double a, double b, double c, double d, double e, double f) {
-//   double num = -(2*b - 2*c*cos(e) - 2*d*cos(f));
-//   double lnum = -a*a + b*b - 2*b*c*cos(e) - 2*b*d*cos(f)+c*c + d*d;
-//   double lden = 4*c*c * d*d;
-//   double den = 2*c*d * sqrt(1 - (lnum*lnum)/lden);
-//   return num/den;
-// }
-// double semi_perimeter(double x, double y, double z) {
-//   return (x+y+z)/2.0;
-// }
-// double heron_area(double x,double y, double z) {
-//   double s = semi_perimeter(x,y,z);
-//   return sqrt(s*(s-x)*(s-y)*(s-z));
-// }
-
-// // find the dihedral angle of <AB given vertex angles...
-// double dihedral_from_vertex_angles(double a, double b, double c) {
-//   double num = cos(c) - cos(b)*cos(a);
-//   double den = sin(b) * sin(a);
-//   return acos(num/den);
-// }
-
-// double angle_from_three_sides(double adjacent1, double adjacent2, double opposite) {
-//   double a = adjacent1;
-//   double b = adjacent2;
-//   double c = opposite;
-//   return acos((a*a + b*b - c*c)/(2*a*b));
-// }
-// double dangle_from_dside(double adjacent1, double adjacent2, double opposite) {
-//   double a = adjacent1;
-//   double b = adjacent2;
-//   double c = opposite;
-//   double num = c;
-//   double inum = pow(a*a + b*b - c*c,2);
-//   double iden = 4 * a * a * b * b;
-//   double den = a * b * sqrt(1 - inum/iden);
-//   return num/den;
-// }
-
-// double ddhedral_dvertex(double adjacent1, double adjacent2, double opposite) {
-//   double a = adjacent1;
-//   double c = adjacent2;
-//   double b = opposite;
-//   double num = csc(a)*csc(b)*sin(c);
-//   double den = sqrt(1 - csc(a)*csc(a) * csc(b)*csc(b) * pow( cos(c) - cos(a)*cos(b),2));
-//   return -num/den;
-// }
 
 BOOST_AUTO_TEST_CASE( test_edge_numbering )
 {
@@ -410,8 +342,8 @@ BOOST_AUTO_TEST_CASE( find_coords_matches_distances )
 			   INITIAL
 	       );
 
-  cout << "START\n";
-  cout << "thlx.num_nodes: " << thlx.num_nodes << "\n";
+  //  cout << "START\n";
+  //  cout << "thlx.num_nodes: " << thlx.num_nodes << "\n";
   column_vector* coords = new column_vector[thlx.num_nodes];
 
   //  const double SHORT = LOWER_BOUND;
@@ -424,10 +356,10 @@ BOOST_AUTO_TEST_CASE( find_coords_matches_distances )
   
   for(int i = 0; i < thlx.num_nodes; i++) {
     thlx.distance(i) = INITIAL;
-    cout << i << " " << coords[i] << "\n";
+    //    cout << i << " " << coords[i] << "\n";
   }
 
-  cout << "num_edges " << thlx.num_edges << "\n";
+  //  cout << "num_edges " << thlx.num_edges << "\n";
   for(int i = 4; i < thlx.num_edges; i++) {
         int ai = thlx.small_node(i);
         int bi = thlx.large_node(i);
@@ -446,9 +378,6 @@ BOOST_AUTO_TEST_CASE( make_sure_axis_is_followed )
 			   MEDIAN,
 			   INITIAL
 	       );
-
-  cout << "START\n";
-  cout << "thlx.num_nodes: " << thlx.num_nodes << "\n";
 
   // Now we want to set up the coordinates of the first three nodes
   // very carefully so that we follow the X-axis specifically.
@@ -469,7 +398,7 @@ BOOST_AUTO_TEST_CASE( make_sure_axis_is_followed )
   
   for(int i = 0; i < thlx.num_nodes; i++) {
     thlx.distance(i) = INITIAL;
-    cout << i << " " << coords[i] << "\n";
+    //    cout << i << " " << coords[i] << "\n";
   }
 
   cout << "num_edges " << thlx.num_edges << "\n";
@@ -484,8 +413,36 @@ BOOST_AUTO_TEST_CASE( make_sure_axis_is_followed )
 	// This is a little tricky...let me just test the coords
 	// stay close to the x axis...
 
-    cout << i << " " << coords[i](0) << "\n";
+    //    cout << i << " " << coords[i](0) << "\n";
     BOOST_CHECK(abs(coords[i](0)) < 2.0);
   }
 
+}
+
+
+// This tests our ability to solve the "forward" problem
+BOOST_AUTO_TEST_CASE( test_rotation_about_points )
+{
+  column_vector A(3);
+  column_vector B(3);
+  column_vector M(3);
+
+  // For testing, let's put:
+  // A on the orign,
+  // B on the y axis
+  // C on the z axis,
+  // and then let's aim to have D be the unit point.
+  A = 0.0,0.0,0.0;
+  B = 10.0,0.0,0.0;
+  M = 0.0,10.0,0.0;
+
+  // first off, designing a case that will put M on the Z axis (X and Y = 0.0);
+  double theta = M_PI/2;
+  column_vector Mp = compute_rotation_about_points(A,B,theta,M);
+    
+  double epsilon = 1.0e-10;
+  
+  BOOST_CHECK(abs(Mp(0) -  0.0) < epsilon);
+  BOOST_CHECK(abs(Mp(1) - 0.0) < epsilon);
+  BOOST_CHECK(abs(Mp(2) - 10.0) < epsilon);    
 }

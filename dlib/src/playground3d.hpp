@@ -16,7 +16,7 @@ extern double* best_distances;
 extern double best_score;
 
 
-#define TRUSS_NODES 30
+#define TRUSS_NODES 10
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5

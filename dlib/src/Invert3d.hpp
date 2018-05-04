@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <iostream>
 #include "Tetrahelix.hpp"
-#include "Obstacle.hpp"
+// #include "Obstacle.hpp"
 
 #include <math.h>
 
@@ -60,7 +60,9 @@ public:
   // NOTE: At present this only works with ONE goal node
   static column_vector derivative(const column_vector& ds);
 
-  Obstacle ob;
+  //  Obstacle ob;
+
+  void set_global_truss();
   
 };
 

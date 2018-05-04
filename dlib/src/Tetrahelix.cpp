@@ -50,6 +50,19 @@ using namespace dlib;
 // 9 :  2 : 5
 // 10 : 3 : 5
 // 11 : 4 : 5
+//
+// Note: This means that edges 0,1,3 are not variable, but fixed,
+// which is rather confusing.
+int Tetrahelix::edge_number_of_nth_variable_edge(int n) {
+  if (n == 0) {
+    return 2;
+  } else if (n == 1) {
+    return 4;
+  } // else if (n >= 2) {
+    return n + 3;
+    //  }
+}
+
 int Tetrahelix::edges_in_tetrahelix(int n) {
   if (n >= 3) {
     return (n -2) *3;
@@ -172,8 +185,9 @@ Tetrahelix::Tetrahelix(int nodes,
     num_nodes = nodes;
     
     num_edges = edges_in_tetrahelix(num_nodes);
-    
-    var_edges = num_edges-1;
+
+    // Note: This is wildly different than the 2d case, which requires just one fixed edge.
+    var_edges = num_edges-3;
     node_fixing_order = new int[num_nodes];
     coords = new column_vector[num_nodes];      
 
@@ -246,7 +260,7 @@ const int debug_find = 0;
 // to a point d (da, db, dc), we have to find the point d.
 // The best way to do this is to translate and rotate the point to
 // the origin in a specific way, then comupte things simply, then perform the inverse transport.
-// We are using the right-hand rule. Following computer graphichs convention, Y is condidered "up"
+// We are using the right-hand rule. Following computer graphichs convention, is condidered "up"
 // and the Z dimenstion is considered depth.
 // A is at the origin
 // B is on the x axis (positive)
@@ -595,6 +609,7 @@ void Tetrahelix::add_goal_node(int num,double x,double y, double z,double w)    
       goals.push_back(mg);
       goal_nodes.push_back(num);
       goal_weights.push_back(w);
+      cout << "QQQ " << goals.size() << "\n";
     }
 
 
@@ -667,9 +682,85 @@ double ddhedral_dvertex(double adjacent1, double adjacent2, double opposite) {
   return -num/den;
 }
 
+// Compute the ccw rotation by theta about the segment A->B of M (moving) by theta
+// TODO: This needs to be decleared in the .hpp place.
+
+column_vector compute_rotation_about_points(column_vector A,
+					    column_vector B,
+					    double theta,
+					    column_vector M)
+{
+  point_transform_affine3d tform = compute_transform_to_axes2(A,B,M);
+  column_vector M_on_axis = tform(M);
+
+  point_transform_affine3d rotate0 = rotate_around_x(theta);
+  column_vector M_rotated = rotate0(M_on_axis);
+  
+  point_transform_affine3d tform_inv = inv(tform);
+  column_vector M_final = tform_inv(M_rotated);
+  return M_final;
+}
+
 column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
 								int edge_number,
 								int goal_node_number) {
   // This has to be reconstructed....
+  column_vector d_e_a(3);
+
+
+  // SIGH -- this is not using the goal_node_number....
+  // Somehow I am not computing anything at all!
+  column_vector en = cur_coords[goal_node_number];
+
+
+  // let P be the joint about which we are rotating by changing e
+  // let M be the directly moved joint.
+  // let S be the "stable" joint connected to M by e.
+
+  int e = edge_number;
+  int s = small_node(e);
+  int l  = large_node(e);  
+
+  // Note the edge numbering here is a little tricky....
+  int c = s;
+  int d = l;
+  int a = -1;
+  int b = -1;
+  if (c == l-1) {
+    a = l - 3;
+    b = l - 2;
+  } else if (c == l-2) {
+    a = l - 3;
+    b = l - 1;
+  } else if (c == l-3) {
+    a = l - 2;
+    b = l - 1;
+  }
+
+  column_vector A = cur_coords[a];
+  column_vector B = cur_coords[b];
+  column_vector C = cur_coords[c];
+  column_vector D = cur_coords[d];  
+
+  double ac = distance_3d(A,C);
+  double cd = distance_3d(C,D);
+  double ad = distance_3d(D,A);        
+  double bc = distance_3d(B,C);
+  double bd = distance_3d(B,D);
+  double ab = distance_3d(A,B);    
+    
+  double vc = angle_from_three_sides(ad,ab,bd);
+  double vd = angle_from_three_sides(ac,ab,bc);
+  double vb = angle_from_three_sides(ac,ad,cd);
+
+  double dvertex_angle_dlength = dangle_from_dside(ac,ad,cd);
+  double ddihedral_dv = ddhedral_dvertex(vd,vc,vb);
   
+  double dvtheta = dvertex_angle_dlength * ddihedral_dv ;
+
+  // now to compute the vector, we must take dvtheta rotate the vector 
+  // around the line A-B the vector of the goal_node
+
+  column_vector Emoved = compute_rotation_about_points(A,B,dvtheta,en);
+  return Emoved - en;
 }

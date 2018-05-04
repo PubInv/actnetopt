@@ -57,7 +57,7 @@ void solve_inverse_problem(TriLadder *an,Obstacle ob) {
     // This assumes the first edge is fixed, which it is in TriLadder
     sp(i) = an->distance(i + 1);
     lb(i) = an->lower_bound(i);
-    ub(i) = an->upper_bound(i);    
+    ub(i) = an->upper_bound(i);
   }
   
   Invert inv;

@@ -62,55 +62,38 @@ void solve_inverse_problem(Tetrahelix *an) {
   
   Invert inv;
   inv.an = an;
-  //  inv.set_global_truss(obstacle);
+  inv.set_global_truss();
   //  inv.ob = ob;
 
-  int n = an->var_edges;
+  //  int n = an->var_edges;
 
-  if (!USE_DERIVATIVES) {
-    // Inv is the objective funciton/object. It computes didstance for goal node.
-    find_min_bobyqa(inv, 
-		    sp, 
-		    (n+1)*(n+2)/2,    // number of interpolation points
-		    uniform_matrix<double>(n,1, LOWER_BOUND),  // lower bound constraint
-		    uniform_matrix<double>(n,1, UPPER_BOUND),   // upper bound constraint
-		    INITIAL/5,    // initial trust region radius (rho_begin)
-		    1e-5,  // stopping trust region radius (rho_end)
-		    10000   // max number of objective function evaluations
-		    );
-    for (int i = 0; i < an->var_edges; i++) {
-      if (debug)  std::cout << "distance edge" << i+1 << " :  " << sp(i) << std::endl;
-      an->distance(i+1) = sp(i);
-   }
-
-   if (debug)  std::cout << "inv(x) " << inv(sp) << std::endl;      
-  } else {
     best_score = std::numeric_limits<float>::max();
-
+    cerr << an->var_edges << "\n";
+    cerr << an->num_edges << "\n";
+    cerr << an->num_nodes << "\n";    
     for (int i = 0; i < an->var_edges; ++i) {
 	   best_distances[i] = an->distance(i+1);
     }
-    
+
+    //    double score = 0.0;
+       int n = an->var_edges;    
     double score = find_min_box_constrained(
       			    // bfgs_search_strategy(),
-			     lbfgs_search_strategy(30),
-			     // cg_search_strategy(),
-			     //			     newton_search_strategy,
-			     objective_delta_stop_strategy(1e-5),
-			     *Invert::objective,
-			     *Invert::derivative,
-			     sp,
-			     uniform_matrix<double>(n,1, LOWER_BOUND),  // lower bound constraint
-			     uniform_matrix<double>(n,1, UPPER_BOUND)   // upper bound constraint
-			     );
-
+    			     lbfgs_search_strategy(30),
+    			     // cg_search_strategy(),
+    			     //			     newton_search_strategy,
+    			     objective_delta_stop_strategy(1e-5),
+    			     *Invert::objective,
+    			     *Invert::derivative,
+    			     sp,
+    			     uniform_matrix<double>(n,1, LOWER_BOUND),  // lower bound constraint
+    			     uniform_matrix<double>(n,1, UPPER_BOUND)   // upper bound constraint
+    			     );
     // I uses this to get rid of the warning
     score = score + 0.0;
     for (int i = 0; i < an->var_edges; ++i) {
       an->distance(i+1) = best_distances[i];
     }
-  }
-
 };
 
 
@@ -136,19 +119,16 @@ int mainx(Tetrahelix *an,column_vector* coords)
 	  }
 
 	  //	  column_vector* coordsx = new column_vector[an->num_nodes];
-	  
-	  solve_forward_find_coords(an,coords);	  
-	  solve_inverse_problem(an);
-
-	  for (int i = 0; i < an->num_edges; ++i) {
-	    //	    std::cout << "mainx" << i << " : " << an->distance(i) << std::endl;
-	  }
 
 	  solve_forward_find_coords(an,coords);
+	  solve_inverse_problem(an);
+
+	  solve_forward_find_coords(an,coords);
+
 	  //	  find_all_coords(an,coords);
 	  Invert inv;
 	  inv.an = an;
-	  //	  inv.set_global_truss(obstacle);
+	  inv.set_global_truss();
 	  column_vector sp(an->var_edges);
 	  for (int i = 0; i < an->var_edges; i++) {
 	    sp(i) = an->distance(i + 1);
@@ -159,12 +139,14 @@ int mainx(Tetrahelix *an,column_vector* coords)
 	  //   std::cout << " d["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
 	  // }
 	  // should now deallocate coords
+
 	}
     }
     catch (std::exception& e)
     {
         cout << e.what() << endl;
     }
+
     return 0;
 }
 
@@ -203,6 +185,7 @@ Tetrahelix *init_Tetrahelix() {
   double mx = 1.0;
   double my = 1.0;
   double mz = 1.0;
+
   an->add_goal_node(an->num_nodes-1,bx+mx,by+my,bz+mz,1.0);
   
   if (debug) {
@@ -210,6 +193,7 @@ Tetrahelix *init_Tetrahelix() {
       cout << "goal_nodes[" << i << "] " << an->goal_nodes[i] << "\n";
     }
   }
+
   return an;
 }
 
@@ -220,7 +204,7 @@ void handle_goal_target_physical(Tetrahelix *an,  column_vector* coordsx,double 
   column_vector gl(3);
   gl(0) = x;
   gl(1) = y;
-  gl(1) = z;
+  gl(2) = z;
   handle_goal_target(an,coordsx,gl);  
 }
 
@@ -237,6 +221,5 @@ void handle_goal_target(Tetrahelix *an,  column_vector* coordsx,column_vector gl
   long long milliseconds = microseconds/ 1000.0;
 
   cout << "optimization tim: ms = " << milliseconds << "\n";
-  
 }
 

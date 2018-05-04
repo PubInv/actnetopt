@@ -47,6 +47,7 @@ public:
 
   int edges_in_tetrahelix(int n);
 
+  int edge_number_of_nth_variable_edge(int n);  
   int large_node(int e);
   int small_node(int e);
   int edge_between(int ndh,int ndl);
@@ -184,6 +185,10 @@ double dangle_from_dside(double adjacent1, double adjacent2, double opposite);
 
 double ddhedral_dvertex(double adjacent1, double adjacent2, double opposite);
 
+column_vector compute_rotation_about_points(column_vector A,
+					    column_vector B,
+					    double theta,
+					    column_vector M);
 
-  
+
 #endif
