@@ -50,10 +50,12 @@ Invert::Invert() {
 
   double Invert::objective(const column_vector& ds) {
 
-    //    if (debug) std::cout << "OBJECTIVE INPUTS" << std::endl;
+    if (debug) std::cout << "OBJECTIVE INPUTS" << std::endl;
     for (int i = 0; i < global_truss->var_edges; ++i) {
-      //           if (debug) std::cout << i << " : " << ds(i) << std::endl;
-	  global_truss->distance(i+1) = ds(i);
+      if (debug) std::cout << i << " : " << ds(i) << std::endl;
+
+      int n = global_truss->edge_number_of_nth_variable_edge(i);
+      global_truss->distance(n) = ds(i);
     }
 
     column_vector *coords = new column_vector[global_truss->num_nodes];
@@ -62,7 +64,7 @@ Invert::Invert() {
     solve_forward_find_coords(global_truss,coords);	  
     
     for(int i = 0; i < global_truss->num_nodes; i++) {
-      //       std::cout << " coords["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
+      std::cout << " coords["<< i << "]" << coords[i](0) << "," << coords[i](1) << "," << coords[i](2) << std::endl;
     }
     
     double v = 0.0;
@@ -70,23 +72,27 @@ Invert::Invert() {
       int idx = global_truss->goal_nodes[i];
       column_vector g = global_truss->goals[i];
       column_vector c = coords[idx];
-      v += (global_truss->goal_weights[i]*distance_2d(g,c));
+      cout << "distance to goal : " << distance_3d(g,c) << "\n";
+      v += (global_truss->goal_weights[i]*distance_3d(g,c));
     }
 
+    cout << " v = " << v << "\n";
+    
     // now we must add in the increase to the object caused by the obstacle!!
-    for(int j = 0; j < global_truss->num_nodes; j++) {
-      // Now, does the partial derivative of this node exist?
-      double di = distance_2d(coords[j],global_truss->obstacle.center);
-      double p = global_truss->obstacle.partial(di);
-      if (p != 0.0) {
-	v += global_truss->obstacle.f(coords[j]);
-      }
-    }
+    // for(int j = 0; j < global_truss->num_nodes; j++) {
+    //   // Now, does the partial derivative of this node exist?
+    //   double di = distance_3d(coords[j],global_truss->obstacle.center);
+    //   double p = global_truss->obstacle.partial(di);
+    //   if (p != 0.0) {
+    // 	v += global_truss->obstacle.f(coords[j]);
+    //   }
+    // }
 
    if (v < best_score) {
-     //     if (debug)    cout << "found best: " << v << "\n";
+     if (debug)    cout << "found best: " << v << "\n";
      for (int i = 0; i < global_truss->var_edges; ++i) {
        best_distances[i] = ds(i);
+       if (debug) std::cout << i << " : " << ds(i) << std::endl;       
      }
      best_score = v;
      
@@ -99,9 +105,10 @@ Invert::Invert() {
   column_vector Invert::derivative(const column_vector& ds) {
 
     for (int i = 0; i < global_truss->var_edges; ++i) {
-      if (debug) std::cout << i << " : " << ds(i) << std::endl;
-      // This is correct?  It should it just be "i"?
-      global_truss->distance(i+1) = ds(i);
+      int n = global_truss->edge_number_of_nth_variable_edge(i);
+      
+      if (debug) std::cout << "edge " << n << " : " << ds(i) << std::endl;
+      global_truss->distance(n) = ds(i);
     }
     // If I don't change an here, I'm not changing the coords!!
    column_vector *coords = new column_vector[global_truss->num_nodes];
@@ -116,13 +123,19 @@ Invert::Invert() {
       column_vector dx(3);
       dx = 0.0,0.0,0.0;
 
+      cout << "goals size " << global_truss->goals.size() << "\n";
+      cout << "first goal " << global_truss->goal_nodes[0] << "\n";      
+      cout << "goal node " << global_truss->goals[0] << "\n";
+
+      cout << "weights " << global_truss->goal_weights[0] << "\n";
+
       double prod = 0.0;
       for(int j = 0; j < global_truss->goals.size(); j++) {
 	column_vector g = global_truss->goals[j];
 	int idx = global_truss->goal_nodes[j];	
 	column_vector c = coords[idx];
 
-	cout << "goal node " << global_truss->goals[global_truss->goal_nodes[j]] << "\n";
+	cout << "goal node " << global_truss->goals[j] << "\n";
 	
 	column_vector d = global_truss->compute_goal_derivative_c(coords,e,global_truss->goal_nodes[j]);
 
@@ -138,8 +151,11 @@ Invert::Invert() {
 	//	dx += (d * global_truss->goal_weights[j]);
 
 	dx = (d * global_truss->goal_weights[j]);
+	cout << " dx = " << dx << "\n";
 
 	column_vector goal_direction = c - g;
+
+	cout << " dot = " << dot(goal_direction,dx) << "\n";
 	prod += dot(goal_direction,dx);
       }
       d(i) = prod;
@@ -163,8 +179,11 @@ Invert::Invert() {
       // this is ripe for optimization.
       for(int j = first_node; j < global_truss->num_nodes; j++) {
 	// Now, does the partial derivative of this node exist?
-	double di = distance_2d(coords[j],global_truss->obstacle.center);
+	double di = distance_3d(coords[j],global_truss->obstacle.center);
 	double p = global_truss->obstacle.partial(di);
+	cout << " presumably since we have no obstacles this should be zero!\n";
+	cout << p << "\n";
+	
 	if (p != 0.0) {
 	  column_vector deriv_v = global_truss->compute_goal_derivative_c(coords,e,j);	  
 
@@ -177,14 +196,16 @@ Invert::Invert() {
       }
 
       if (d_obst != 0.0) {
+	cout << "WHOA! Haven't defined an obstacle yet!\n";
 	d(i) += d_obst;
       }
     }
 
-    // cout << "DERIVATIVES" << "\n";
-    // for(int i = 0; i < global_truss->var_edges; i++) {
-    //   cout << "i " << i << " " << d(i) << "\n";
-    // }
+    cout << "DERIVATIVES" << "\n";
+    for(int i = 0; i < global_truss->var_edges; i++) {
+      int n = global_truss->edge_number_of_nth_variable_edge(i);      
+       cout << "edge " << n << " " << d(i) << "\n";
+    }
     delete[] coords;
     return d;
   }

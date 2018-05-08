@@ -76,7 +76,10 @@ void solve_inverse_problem(Tetrahelix *an) {
     }
 
     //    double score = 0.0;
-       int n = an->var_edges;    
+       int n = an->var_edges;
+
+       cout << "goal node [solve_inverse] " << an->goals[0] << "\n";
+
     double score = find_min_box_constrained(
       			    // bfgs_search_strategy(),
     			     lbfgs_search_strategy(30),
@@ -103,9 +106,6 @@ int mainx(Tetrahelix *an,column_vector* coords)
 {
     try
     {
-      // NOTE: This is currently using an algorithm that works without derivatives,
-      // even though I think I have correctly analyzed the derivatives (see LaTeX paper.)
-      // It can probably be made more efficient to use a dlib algorithm that uses derivatives.
       // However, that is a low priority until I get the playground working.
 	{
 
@@ -119,7 +119,8 @@ int mainx(Tetrahelix *an,column_vector* coords)
 	  }
 
 	  //	  column_vector* coordsx = new column_vector[an->num_nodes];
-
+	  cout << "goal node [mainx] " << an->goals[0] << "\n";
+	  
 	  solve_forward_find_coords(an,coords);
 	  solve_inverse_problem(an);
 

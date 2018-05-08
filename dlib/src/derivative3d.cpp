@@ -25,6 +25,7 @@
 
 #include "ActNetUtility.hpp"
 #include "Tetrahelix.hpp"
+#include "playground3d.hpp"
 
 using namespace dlib;
 using namespace std;
@@ -445,4 +446,62 @@ BOOST_AUTO_TEST_CASE( test_rotation_about_points )
   BOOST_CHECK(abs(Mp(0) -  0.0) < epsilon);
   BOOST_CHECK(abs(Mp(1) - 0.0) < epsilon);
   BOOST_CHECK(abs(Mp(2) - 10.0) < epsilon);    
+}
+
+
+BOOST_AUTO_TEST_CASE( test_compute_goal_derivative_c )
+{
+  Tetrahelix thlx(4,
+			   UPPER_BOUND,
+			   LOWER_BOUND,
+			   MEDIAN,
+			   INITIAL
+	       );
+
+  // Now we want to set up the coordinates of the first three nodes
+  // very carefully so that we follow the X-axis specifically.
+  // The easiest way to to this is to take it from the javascript
+  // code already written to preform these calculations....
+
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  column_vector D(3);  
+
+
+  A = 0.0,0.0,0.0;
+  B = 1.0,0.0,0.0;
+  C = 0.0,1.0,0.0;
+  D = 0.0,0.0,1.0;      
+  
+  column_vector* coords = new column_vector[thlx.num_nodes];
+
+  coords[0] = A;
+  coords[1] = B;
+  coords[2] = C;
+  coords[3] = D;
+
+  for(int i = 0; i < thlx.num_nodes; i++) {
+    thlx.distance(i) = INITIAL;
+  }
+
+  //  solve_forward_find_coords(&thlx,coords);
+
+  cout << "AAA\n";
+  
+  column_vector gl(3);
+
+  thlx.add_goal_node(0,1.0,0.0,0.0,1.0);
+  
+  gl(0) = 0.0;
+  gl(1) = 0.0;
+  gl(2) = 2.0;
+  cout << thlx.goals.size() << "\n";
+  cout << "BBB\n";    
+  thlx.goals[thlx.goals.size()- 1] = gl;
+  int e = 2;
+  cout << "BBB\n";  
+  column_vector d = thlx.compute_goal_derivative_c(coords,e,thlx.goal_nodes[0]);
+  cout << d << "\n";
+  
 }

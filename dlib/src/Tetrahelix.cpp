@@ -701,9 +701,14 @@ column_vector compute_rotation_about_points(column_vector A,
   return M_final;
 }
 
+
+// DANGER --- this is not under tests.
+// Highest prioirty is to write a test for this!
 column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
 								int edge_number,
 								int goal_node_number) {
+
+  cout << "iniit! \n";  
   // This has to be reconstructed....
   column_vector d_e_a(3);
 
@@ -736,6 +741,9 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
     a = l - 2;
     b = l - 1;
   }
+
+
+  cout << e << s << l << a << b << "\n";
 
   column_vector A = cur_coords[a];
   column_vector B = cur_coords[b];
