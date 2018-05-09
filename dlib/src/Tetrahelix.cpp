@@ -298,6 +298,7 @@ column_vector find_point_from_transformed(Chirality sense,double AB, double AC, 
 }
 
 // my attempt to compute the necessary transform
+// The purpose of this is to create the transform that makes A->B point along the X axis, I think.
 point_transform_affine3d compute_transform_to_axes(column_vector A, column_vector B, column_vector C) {
   // now we want to rotate the vector AB until it is pointing along the X axis.
   column_vector AB = B - A;
@@ -369,7 +370,8 @@ point_transform_affine3d compute_transform_to_axes(column_vector A, column_vecto
   return firstRotation * translate_point(-A(0),-A(1),-A(2));
 }
 
-// This is a slighlty different way based on answer by Kuba Ober in ths same way
+// This is a slighlty different way based on answer by Kuba Ober in ths same way.
+// This tries to rotate the vector A-B on to the X-Axis. C represents an "up vector", I think.
 point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vector pB, column_vector pC) {
 
   // first we translate to the origin
@@ -685,17 +687,38 @@ double ddhedral_dvertex(double adjacent1, double adjacent2, double opposite) {
 // Compute the ccw rotation by theta about the segment A->B of M (moving) by theta
 // TODO: This needs to be decleared in the .hpp place.
 
+// Note: The test of this is insufficient.
+// Furthermore, we need to decide if the order of A, B matters (does it change the direction?)
+// Yes, we need to think of this as an anti-clockwise rotation. If A and B are swapped,
+// the rotation is in the other direction.
+// Note: Under some test conditions, compute_transform_to_axes is failing and producing NANs.
+// Need to put that under test.
 column_vector compute_rotation_about_points(column_vector A,
 					    column_vector B,
 					    double theta,
 					    column_vector M)
 {
+
+  cout << "A B\n";
+  print_vec(A);
+  print_vec(B);
+  
   point_transform_affine3d tform = compute_transform_to_axes2(A,B,M);
+
   column_vector M_on_axis = tform(M);
+  
+  cout << "M_on_axis \n";
+  cout << M_on_axis;
+  
 
   point_transform_affine3d rotate0 = rotate_around_x(theta);
   column_vector M_rotated = rotate0(M_on_axis);
-  
+
+
+  cout << "M_rotated \n";
+  cout << M_rotated;
+
+
   point_transform_affine3d tform_inv = inv(tform);
   column_vector M_final = tform_inv(M_rotated);
   return M_final;
@@ -704,6 +727,9 @@ column_vector compute_rotation_about_points(column_vector A,
 
 // DANGER --- this is not under tests.
 // Highest prioirty is to write a test for this!
+// This computes the change in the x,y,z coordinates of the goal node based on a change
+// in the length of the specified edge. Note this is NOT computing the change in score
+// (that is, distance to the goal node) but the chnage in the node position.
 column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
 								int edge_number,
 								int goal_node_number) {
@@ -716,6 +742,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   // SIGH -- this is not using the goal_node_number....
   // Somehow I am not computing anything at all!
   column_vector en = cur_coords[goal_node_number];
+  cout << "en = " << en << "\n";
 
 
   // let P be the joint about which we are rotating by changing e
@@ -724,7 +751,9 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
 
   int e = edge_number;
   int s = small_node(e);
-  int l  = large_node(e);  
+  int l  = large_node(e);
+
+  // The edget that is changing is the "CD" edge--opposite AB
 
   // Note the edge numbering here is a little tricky....
   int c = s;
@@ -743,7 +772,8 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   }
 
 
-  cout << e << s << l << a << b << "\n";
+  cout << "edge" << e << " small " << s << " large "  << l << "\n";
+  cout << "a b c d  " << a << " " << b << " " << c << " " << d << "\n"; 
 
   column_vector A = cur_coords[a];
   column_vector B = cur_coords[b];
@@ -755,20 +785,38 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   double ad = distance_3d(D,A);        
   double bc = distance_3d(B,C);
   double bd = distance_3d(B,D);
-  double ab = distance_3d(A,B);    
+  double ab = distance_3d(A,B);
+
+  // cout << "spud\n";
+  // cout << A << "\n";
+  // cout << B << "\n";  
+  // cout << C << "\n";
+  // cout << D << "\n";  
+
+  // cout << "ab ac ad bc bd cd  " << ab << " " << ac << " " << ad << " " << bc  << " " << bd << " "  << cd << "\n";   
     
   double vc = angle_from_three_sides(ad,ab,bd);
   double vd = angle_from_three_sides(ac,ab,bc);
   double vb = angle_from_three_sides(ac,ad,cd);
 
+  cout << " vb vc vd  " << vb*180/(M_PI) << " " << vc*180/(M_PI) << " " << vd*180/(M_PI) << "\n";
+  
   double dvertex_angle_dlength = dangle_from_dside(ac,ad,cd);
   double ddihedral_dv = ddhedral_dvertex(vd,vc,vb);
-  
+
+  cout << " dvertex_angle_dlength  " << dvertex_angle_dlength*180/(M_PI) << "\n";
+  cout << " ddihedral_dv  " << ddihedral_dv*180/(M_PI) << "\n";
+
   double dvtheta = dvertex_angle_dlength * ddihedral_dv ;
+
+  cout << " dvtheta  " << dvtheta*180/(M_PI) << "\n";  
 
   // now to compute the vector, we must take dvtheta rotate the vector 
   // around the line A-B the vector of the goal_node
 
+  cout << "computing rotaiton: " << dvtheta << " of " << en << "\n";
+  cout << "about A and B " << A << " " << B  <<  "\n";  
   column_vector Emoved = compute_rotation_about_points(A,B,dvtheta,en);
+  cout << "Emoved " << Emoved << "\n";
   return Emoved - en;
 }
