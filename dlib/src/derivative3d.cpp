@@ -418,6 +418,58 @@ BOOST_AUTO_TEST_CASE( make_sure_axis_is_followed )
 
 }
 
+BOOST_AUTO_TEST_CASE( test_compute_transform_to_axes2_invertable )
+{
+  column_vector A(3);
+  column_vector B(3);
+  column_vector Y(3);
+  column_vector Q(3);  
+
+  // For testing, let's put:
+  // A on the orign,
+  // B on the y axis
+  // C on the z axis,
+  // and then let's aim to have D be the unit point.
+  A = 0.0,0.0,0.0;
+  B = 10.0,0.0,0.0;
+  Y = 0.0,10.0,0.0;
+  Q = 10.0,10.0,10.0;  
+
+  point_transform_affine3d tform = compute_transform_to_axes2(B,A,Y);
+  cout << tform.get_m() << "\n";
+  cout << tform.get_b() << "\n";  
+
+  // This appears to be transforming the z axis....
+  column_vector Yt = tform(Y);
+  cout << "Should lie on the y axis\n";
+  print_vec(Yt);
+
+  double epsilon = 1e-6;
+  BOOST_CHECK(abs(Yt(0) - 10.0) < epsilon);
+  BOOST_CHECK(abs(Yt(1) + 10.0) < epsilon);
+  BOOST_CHECK(abs(Yt(2) - 0.0) < epsilon);
+
+  // This appears to be transforming the z axis....
+  column_vector At = tform(A);
+  //  cout << "Should lie on the y axis\n";
+  print_vec(At);
+  BOOST_CHECK(abs(At(0) - 10.0) < epsilon);
+  BOOST_CHECK(abs(At(1) + 0.0) < epsilon);
+  BOOST_CHECK(abs(At(2) - 0.0) < epsilon);
+
+  column_vector Bt = tform(B);
+  //  print_vec(Bt);
+  BOOST_CHECK(abs(Bt(0) - 0.0) < epsilon);
+  BOOST_CHECK(abs(Bt(1) - 0.0) < epsilon);
+  BOOST_CHECK(abs(Bt(2) - 0.0) < epsilon);
+
+  column_vector Qt = tform(Q);
+  print_vec(Qt);
+  BOOST_CHECK(abs(Qt(0) - 0.0) < epsilon);
+  BOOST_CHECK(abs(Qt(1) + 10.0) < epsilon);
+  BOOST_CHECK(abs(Qt(2) - 10.0) < epsilon);
+
+}
 
 BOOST_AUTO_TEST_CASE( test_compute_transform_to_axes2 )
 {
@@ -440,8 +492,8 @@ BOOST_AUTO_TEST_CASE( test_compute_transform_to_axes2 )
 
   // This appears to be transforming the z axis....
   column_vector Yt = tform(Y);
-  cout << "Should lie on the y axis\n";
-  print_vec(Yt);
+  //  cout << "Should lie on the y axis\n";
+  //  print_vec(Yt);
 
   double epsilon = 1e-6;
   BOOST_CHECK(abs(Yt(0) - 0.0) < epsilon);
@@ -450,20 +502,20 @@ BOOST_AUTO_TEST_CASE( test_compute_transform_to_axes2 )
 
   // This appears to be transforming the z axis....
   column_vector At = tform(A);
-  cout << "Should lie on the y axis\n";
-  print_vec(At);
+  //  cout << "Should lie on the y axis\n";
+  //  print_vec(At);
   BOOST_CHECK(abs(At(0) - 0.0) < epsilon);
   BOOST_CHECK(abs(At(1) - 0.0) < epsilon);
   BOOST_CHECK(abs(At(2) - 0.0) < epsilon);
 
   column_vector Bt = tform(B);
-  print_vec(Bt);
+  //  print_vec(Bt);
   BOOST_CHECK(abs(Bt(0) - 10.0) < epsilon);
   BOOST_CHECK(abs(Bt(1) - 0.0) < epsilon);
   BOOST_CHECK(abs(Bt(2) - 0.0) < epsilon);
 
   column_vector Qt = tform(Q);
-  print_vec(Qt);
+  //  print_vec(Qt);
   BOOST_CHECK(abs(Qt(0) - 10.0) < epsilon);
   BOOST_CHECK(abs(Qt(1) - 10.0) < epsilon);
   BOOST_CHECK(abs(Qt(2) - 10.0) < epsilon);
@@ -479,147 +531,155 @@ BOOST_AUTO_TEST_CASE( test_compute_transform_to_axes2 )
 
   // This appears to be transforming the z axis....
   column_vector Yt1 = tform1(Y);
-  print_vec(Yt1);
+  //  print_vec(Yt1);
 
   // This appears to be transforming the z axis....
   column_vector At1 = tform1(A);
-  cout << "At1\n";  
-  print_vec(At1);
+  //  cout << "At1\n";  
+  //  print_vec(At1);
   BOOST_CHECK(abs(At1(0) - 0.0) < epsilon);
   BOOST_CHECK(abs(At1(1) - 0.0) < epsilon);
   BOOST_CHECK(abs(At1(2) - 0.0) < epsilon);
 
   column_vector Bt1 = tform1(B);
-  cout << "Bt1\n";
-  print_vec(Bt1);
+  //  cout << "Bt1\n";
+  //  print_vec(Bt1);
   BOOST_CHECK(abs(Bt1(0) - 17.3205) < 0.01);
   BOOST_CHECK(abs(Bt1(1) - 0.0) < epsilon);
   BOOST_CHECK(abs(Bt1(2) - 0.0) < epsilon);
 
   column_vector Qt1 = tform1(Q);
-  cout << "t1\n";    
-  print_vec(Qt1);
+  //  cout << "t1\n";    
+  //  print_vec(Qt1);
   BOOST_CHECK(Bt1(0) > 0.0);
   BOOST_CHECK(Bt1(1) < 0.0);
   BOOST_CHECK(Bt1(2) < 0.0);
   
 }
 
-// // This tests our ability to solve the "forward" problem
-// BOOST_AUTO_TEST_CASE( test_rotation_about_points )
-// {
-//   column_vector A(3);
-//   column_vector B(3);
-//   column_vector M(3);
+// This tests our ability to solve the "forward" problem
+BOOST_AUTO_TEST_CASE( test_rotation_about_points )
+{
+  column_vector A(3);
+  column_vector B(3);
+  column_vector M(3);
 
-//   // For testing, let's put:
-//   // A on the orign,
-//   // B on the y axis
-//   // C on the z axis,
-//   // and then let's aim to have D be the unit point.
-//   A = 0.0,0.0,0.0;
-//   B = 10.0,0.0,0.0;
-//   M = 0.0,10.0,0.0;
+  // For testing, let's put:
+  // A on the orign,
+  // B on the y axis
+  // C on the z axis,
+  // and then let's aim to have D be the unit point.
+  A = 0.0,0.0,0.0;
+  B = 10.0,0.0,0.0;
+  M = 0.0,10.0,0.0;
 
-//   // first off, designing a case that will put M on the Z axis (X and Y = 0.0);
-//   double theta = M_PI/2;
-//   column_vector Mp;
-//   double epsilon = 1.0e-10;  
+  // first off, designing a case that will put M on the Z axis (X and Y = 0.0);
+  double theta = M_PI/2;
+  column_vector Mp;
+  double epsilon = 1.0e-10;  
   
-//   Mp = compute_rotation_about_points(A,B,theta,M);
-//   cout << "Mp  A B\n";
-//   print_vec(Mp);
+  Mp = compute_rotation_about_points(A,B,theta,M);
+  cout << "Mp  A B\n";
+  print_vec(Mp);
 
-//   BOOST_CHECK(abs(Mp(0) -  0.0) < epsilon);
-//   BOOST_CHECK(abs(Mp(1) - 0.0) < epsilon);
-//   BOOST_CHECK(abs(Mp(2) - 10.0) < epsilon);
+  BOOST_CHECK(abs(Mp(0) -  0.0) < epsilon);
+  BOOST_CHECK(abs(Mp(1) - 0.0) < epsilon);
+  BOOST_CHECK(abs(Mp(2) - 10.0) < epsilon);
 
-//   Mp = compute_rotation_about_points(B,A,theta,M);
+  Mp = compute_rotation_about_points(B,A,theta,M);
 
-//   cout << "Mp B A\n";
-//   print_vec(Mp);
+  cout << "Mp B A\n";
+  print_vec(Mp);
   
-//   BOOST_CHECK(abs(Mp(0) -  0.0) < epsilon);
-//   BOOST_CHECK(abs(Mp(1) - 0.0) < epsilon);
-//   BOOST_CHECK(abs(Mp(2) + 10.0) < epsilon);
+  BOOST_CHECK(abs(Mp(0) -  0.0) < epsilon);
+  BOOST_CHECK(abs(Mp(1) - 0.0) < epsilon);
+  BOOST_CHECK(abs(Mp(2) + 10.0) < epsilon);
   
+}
+
+
+BOOST_AUTO_TEST_CASE( test_compute_goal_derivative_c )
+{
+  Tetrahelix thlx(4,
+			   UPPER_BOUND,
+			   LOWER_BOUND,
+			   MEDIAN,
+			   INITIAL
+	       );
+
+  // Now we want to set up the coordinates of the first three nodes
+  // very carefully so that we follow the X-axis specifically.
+  // The easiest way to to this is to take it from the javascript
+  // code already written to preform these calculations....
+
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  column_vector D(3);  
+
+  // Note we use right-handed coordinates.
+  // This diagram matches (approximately) the diagram in the paper.
+
+  A = 0.0,0.0,0.0;
+  B = 10.0,0.0,0.0;
+  C = 0.0,10.0,0.0;
+  D = 0.0,0.0,-10.0;      
   
-// }
+  column_vector* coords = new column_vector[thlx.num_nodes];
 
+  coords[0] = A;
+  coords[1] = B;
+  coords[2] = C;
+  coords[3] = D;
 
-// BOOST_AUTO_TEST_CASE( test_compute_goal_derivative_c )
-// {
-//   Tetrahelix thlx(4,
-// 			   UPPER_BOUND,
-// 			   LOWER_BOUND,
-// 			   MEDIAN,
-// 			   INITIAL
-// 	       );
+  for(int i = 0; i < thlx.num_nodes; i++) {
+    thlx.distance(i) = INITIAL;
+  }
 
-//   // Now we want to set up the coordinates of the first three nodes
-//   // very carefully so that we follow the X-axis specifically.
-//   // The easiest way to to this is to take it from the javascript
-//   // code already written to preform these calculations....
+  //  solve_forward_find_coords(&thlx,coords);
 
-//   column_vector A(3);
-//   column_vector B(3);
-//   column_vector C(3);
-//   column_vector D(3);  
-
-//   // Note we use right-handed coordinates.
-//   // This diagram matches (approximately) the diagram in the paper.
-
-//   A = 0.0,0.0,0.0;
-//   B = 10.0,0.0,0.0;
-//   C = 0.0,10.0,0.0;
-//   D = 0.0,0.0,-10.0;      
+  cout << "AAA\n";
   
-//   column_vector* coords = new column_vector[thlx.num_nodes];
+  column_vector gl(3);
 
-//   coords[0] = A;
-//   coords[1] = B;
-//   coords[2] = C;
-//   coords[3] = D;
-
-//   for(int i = 0; i < thlx.num_nodes; i++) {
-//     thlx.distance(i) = INITIAL;
-//   }
-
-//   //  solve_forward_find_coords(&thlx,coords);
-
-//   cout << "AAA\n";
+  thlx.add_goal_node(3,0.0,0.0,-20.0,1.0);
   
-//   column_vector gl(3);
+  cout << thlx.goals.size() << "\n";
+  column_vector d;
+  d = thlx.compute_goal_derivative_c(coords,5,thlx.goal_nodes[0]);
+  //  cout << d << "\n";
 
-//   thlx.add_goal_node(3,0.0,0.0,-20.0,1.0);
-  
-//   cout << thlx.goals.size() << "\n";
-//   column_vector d;
-//   d = thlx.compute_goal_derivative_c(coords,5,thlx.goal_nodes[0]);
-//   cout << d << "\n";
+  // Basically the point is driven downward and a little on the positive x axis...
+  BOOST_CHECK(d(0) == 0);
+  BOOST_CHECK(d(1) < -1.4);
+  BOOST_CHECK(d(2) < 0.1);
 
-//   // Basically the point is driven downward and a little on the positive x axis...
-//   BOOST_CHECK(d(0) == 0);
-//   BOOST_CHECK(d(1) < -1.4);
-//   BOOST_CHECK(d(2) < 0.1);
-
-//   // Now if we change edge 4, we expect to get: -X, +Y, -Z
-//   d = thlx.compute_goal_derivative_c(coords,4,thlx.goal_nodes[0]);
-//   cout << d << "\n";
-//   BOOST_CHECK(d(0) < 0);
-//   BOOST_CHECK(d(1) > 0);
-//   BOOST_CHECK(d(2) < 0);
-  
-//   // We could check this better by changing the distance and running the solver,
-//   // making sure that the endpoint is approximately in the place pointed to by the vector.
-//   // If made into a callable routine this could be quite valuable.
-
-//   // now if we change edge #2 instead, we expect z to move more negative,
-  
-//   // and to get slightly positive, and y to maybe get more positive.
-//   // cout << "CCC\n";    
-//   // d = thlx.compute_goal_derivative_c(coords,2,thlx.goal_nodes[0]);
-//   // cout << d << "\n";
+  //Note: Edges 4 and 5 are essentially symmetric, about about different axes.
+  // Now if we change edge 4, we expect to get: -X, +Y, -Z
+  d = thlx.compute_goal_derivative_c(coords,5,thlx.goal_nodes[0]);
+  cout << "derivative for edge 5\n";
+  print_vec(d);
+  BOOST_CHECK(d(0) == 0);
+  BOOST_CHECK(d(1) < 0);
 
   
-// }
+  // Now if we change edge 4, we expect to get: -X, +Y, -Z
+  d = thlx.compute_goal_derivative_c(coords,4,thlx.goal_nodes[0]);
+  cout << "derivative for edge 4\n";
+  print_vec(d);
+  BOOST_CHECK(d(0) > 0);
+  BOOST_CHECK(d(1) == 0);
+  
+  // We could check this better by changing the distance and running the solver,
+  // making sure that the endpoint is approximately in the place pointed to by the vector.
+  // If made into a callable routine this could be quite valuable.
+
+  // now if we change edge #2 instead, we expect z to move more negative,
+  
+  // and to get slightly positive, and y to maybe get more positive.
+  // cout << "CCC\n";    
+  // d = thlx.compute_goal_derivative_c(coords,2,thlx.goal_nodes[0]);
+  // cout << d << "\n";
+
+  
+}

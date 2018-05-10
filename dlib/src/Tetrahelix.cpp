@@ -299,79 +299,82 @@ column_vector find_point_from_transformed(Chirality sense,double AB, double AC, 
 
 // my attempt to compute the necessary transform
 // The purpose of this is to create the transform that makes A->B point along the X axis, I think.
-point_transform_affine3d compute_transform_to_axes(column_vector A, column_vector B, column_vector C) {
-  // now we want to rotate the vector AB until it is pointing along the X axis.
-  column_vector AB = B - A;
+// point_transform_affine3d compute_transform_to_axes(column_vector A, column_vector B, column_vector C) {
+//   // now we want to rotate the vector AB until it is pointing along the X axis.
+//   column_vector AB = B - A;
 
-  // Crumb, column_vector doesn't seem to be a vector, which doesn't let me a normalize...
-  dlib::vector<double,3> ABv(AB(0),AB(1),AB(2));
-  dlib::vector<double,3> ABu = ABv.normalize();
-  dlib::vector<double,3> Xu(1.0,0.0,0.0);
-  cout << "Abu\n";
+//   // Crumb, column_vector doesn't seem to be a vector, which doesn't let me a normalize...
+//   dlib::vector<double,3> ABv(AB(0),AB(1),AB(2));
+//   dlib::vector<double,3> ABu = ABv.normalize();
+//   dlib::vector<double,3> Xu(1.0,0.0,0.0);
+//   cout << "Abu\n";
 
-  cout << ABu;
+//   cout << ABu;
   
-  // Now, following: https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
-  dlib::vector<double,3> v = ABu.cross(Xu);
-  cout << v;
-  double s = v.length();
-  double c = ABu.dot(Xu);
+//   // Now, following: https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
+//   dlib::vector<double,3> v = ABu.cross(Xu);
+//   cout << v;
+//   double s = v.length();
+//   double c = ABu.dot(Xu);
  
 
-  cout << "s = " << s << "\n";
-  cout << "c = " << c << "\n";
-  // There is a possibility that c == 1.0 which must be handled...
-  double q = 1/(1.0 +c);
-  // Now we want a skew-symmetric cross-product matrix of v, according to the instructions...
-  cout << "q = " << q << "\n";
-  //  point_transform_affine3d I;
-  //  point_transform_affine3d vx;
-  dlib::matrix<double,3,3> vx;
-  vx(0,0) = 0;
-  vx(1,0) = v(3);
-  vx(2,0) = -v(2);   
+//   cout << "s = " << s << "\n";
+//   cout << "c = " << c << "\n";
+//   // There is a possibility that c == 1.0 which must be handled...
+//   double q = 1/(1.0 +c);
+//   // Now we want a skew-symmetric cross-product matrix of v, according to the instructions...
+//   cout << "q = " << q << "\n";
+//   //  point_transform_affine3d I;
+//   //  point_transform_affine3d vx;
+//   dlib::matrix<double,3,3> vx;
+//   vx(0,0) = 0;
+//   vx(1,0) = v(3);
+//   vx(2,0) = -v(2);   
 
-  vx(0,1) = -v(3);
-  vx(1,1) = 0;
-  vx(2,1) = v(1);   
+//   vx(0,1) = -v(3);
+//   vx(1,1) = 0;
+//   vx(2,1) = v(1);   
 
-  vx(0,2) = v(2);
-  vx(1,2) = -v(1);
-  vx(2,2) = 0;   
+//   vx(0,2) = v(2);
+//   vx(1,2) = -v(1);
+//   vx(2,2) = 0;   
 
-  dlib::matrix<double,3,3> vx2 = vx * vx;
-  cout << "vx* vx \n";
-  cout << vx2;
+//   dlib::matrix<double,3,3> vx2 = vx * vx;
+//   cout << "vx* vx \n";
+//   cout << vx2;
 
-  dlib::matrix<double,3,3> I;
-  I(0,0) = 1;
-  I(1,0) = 0;
-  I(2,0) = 0;   
+//   dlib::matrix<double,3,3> I;
+//   I(0,0) = 1;
+//   I(1,0) = 0;
+//   I(2,0) = 0;   
 
-  I(0,1) = 0;
-  I(1,1) = 1;
-  I(2,1) = 0;   
+//   I(0,1) = 0;
+//   I(1,1) = 1;
+//   I(2,1) = 0;   
 
-  I(0,2) = 0;
-  I(1,2) = 0;
-  I(2,2) = 1;   
+//   I(0,2) = 0;
+//   I(1,2) = 0;
+//   I(2,2) = 1;   
   
-  dlib::matrix<double,3,3> R = I + vx + (vx2) ;
-  cout << "R = \n";
-  cout << R;
-  //  dlib::vector<double,3> negA(-A(0),-A(1),-A(2));
+//   dlib::matrix<double,3,3> R = I + vx + (vx2) ;
+//   cout << "R = \n";
+//   cout << R;
+//   //  dlib::vector<double,3> negA(-A(0),-A(1),-A(2));
 
-  cout << "Attempt to rotate by matrix multiply\n";
-  cout << R*AB;
-  dlib::vector<double,3> zero(0,0,0);  
-  point_transform_affine3d firstRotation(R,zero);
-  point_transform_affine3d tform;
+//   cout << "Attempt to rotate by matrix multiply\n";
+//   cout << R*AB;
+//   dlib::vector<double,3> zero(0,0,0);  
+//   point_transform_affine3d firstRotation(R,zero);
+//   point_transform_affine3d tform;
   
-  return firstRotation * translate_point(-A(0),-A(1),-A(2));
-}
+//   return firstRotation * translate_point(-A(0),-A(1),-A(2));
+// }
 
 // This is a slighlty different way based on answer by Kuba Ober in ths same way.
-// This tries to rotate the vector A-B on to the X-Axis. C represents an "up vector", I think.
+// This tries to rotate the vector A-B on to the X-Axis. C should end up in the XY plane.
+// I think if the the vector A-B points in the negative x direction, we have a special case
+// that causes a problem here. In that case we are 180 degrees out of sync. I need to think
+// carefully about how to handle this.
 point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vector pB, column_vector pC) {
 
   // first we translate to the origin
@@ -389,89 +392,99 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
   dlib::vector<double,3> Avec(AB(0),AB(1),AB(2));
   dlib::vector<double,3> A = Avec.normalize();
   dlib::vector<double,3> B(1.0,0.0,0.0);
-
+  // now both A and B are unit vectors.
+  
   dlib::matrix<double,3,3> U;
-  
-  if (!equal(A,B)) {
 
-    // now both A and B are unit vectors.
-  
-    // Now, following: https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
-    dlib::vector<double,3> AxB = A.cross(B);
+  dlib::vector<double,3> AxB = A.cross(B);
 
-    double s = AxB.length();
-    double c = A.dot(B);
+  double s = AxB.length();
+  double c = A.dot(B);
 
-    //  cout << "s = " << s << "\n";
-    //  cout << "c = " << c << "\n";
-    // There is a possibility that c == 1.0 which must be handled...
-    // Now we want a skew-symmetric cross-product matrix of v, according to the instructions...
-    //  point_transform_affine3d I;
-    //  point_transform_affine3d vx;
-    dlib::matrix<double,3,3> G;
-    G(0,0) = c;
-    G(1,0) = s;
-    G(2,0) = 0;   
+  point_transform_affine3d alignX;
 
-    G(0,1) = -s;
-    G(1,1) = c;
-    G(2,1) = 0;   
-
-    G(0,2) = 0;
-    G(1,2) = 0;
-    G(2,2) = 1;   
-
-
-    dlib::vector<double,3> u = A;
-    // NOTE: if A == B, this is a real problem. A special case that must be handled.
-    dlib::vector<double,3> v = (B - c*A).normalize();
-
-    dlib::vector<double,3> w = B.cross(A);
-
-    dlib::matrix<double,3,3> F;
-    F(0,0) = u(0);
-    F(1,0) = u(1);
-    F(2,0) = u(2);   
-
-    F(0,1) = v(0);
-    F(1,1) = v(1);
-    F(2,1) = v(2);   
-
-    F(0,2) = w(0);
-    F(1,2) = w(1);
-    F(2,2) = w(2);   
-  
-    dlib::matrix<double,3,3> Finv = inv(F);
-
-    U = F * G * Finv;
-
+  if (c == -1) {
+      // This means that A and B point in opposite directions, and  must do something else
+      // In this case the rotation can be Pi around either the z or y axis to get us
+      // where we need to be...I prefer to ratate and z
+      alignX =  rotate_around_z(M_PI)* trans;    
   } else {
-    U = 1,0,0,
-      0,1,0,
-      0,0,1;
-  }
-  dlib::vector<double,3> zero(0,0,0);  
-  point_transform_affine3d firstRotation(U,zero);
+    if (equal(A,B)) {
+      U = 1,0,0,
+	0,1,0,
+	0,0,1;
+    } else {
+    // Now, following: https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
+      //      cout << "s = " << s << "\n";
+      //      cout << "c = " << c << "\n";
+      // There is a possibility that c == 1.0 which must be handled...
+      // Now we want a skew-symmetric cross-product matrix of v, according to the instructions...
+      //  point_transform_affine3d I;
+      //  point_transform_affine3d vx;
+      dlib::matrix<double,3,3> G;
+      G(0,0) = c;
+      G(1,0) = s;
+      G(2,0) = 0;   
 
-  // now we have a transform that translates point B onto the X Axis.
-  // We now desire to rotate the point C into the XY plane.
-  // This can be handled more simply as a rotation about the X-Axis.
-  // So we need to compute the angle to rotate, call it theta.
-  // theta = asin(C_y)
-  point_transform_affine3d alignX =  firstRotation * trans;  
+      G(0,1) = -s;
+      G(1,1) = c;
+      G(2,1) = 0;   
+
+      G(0,2) = 0;
+      G(1,2) = 0;
+      G(2,2) = 1;   
+
+      dlib::vector<double,3> u = A;
+      // NOTE: if A == B, this is a real problem. A special case that must be handled.
+      // cout << "A = " << A << "\n";
+      // cout << "B = " << B << "\n";        
+      // cout << "B - c*A) = " << B - c*A << "\n";    
+      dlib::vector<double,3> v = (B - c*A).normalize();
+      //      cout << " v = " << v << "\n";
+
+      dlib::vector<double,3> w = B.cross(A);
+
+      dlib::matrix<double,3,3> F;
+      F(0,0) = u(0);
+      F(1,0) = u(1);
+      F(2,0) = u(2);   
+
+      F(0,1) = v(0);
+      F(1,1) = v(1);
+      F(2,1) = v(2);   
+
+      F(0,2) = w(0);
+      F(1,2) = w(1);
+      F(2,2) = w(2);   
+  
+      dlib::matrix<double,3,3> Finv = inv(F);
+      U = F * G * Finv;
+    }
+    dlib::vector<double,3> zero(0,0,0);  
+    point_transform_affine3d firstRotation(U,zero);
+
+    // now we have a transform that translates point B onto the X Axis.
+    // We now desire to rotate the point C into the XY plane.
+    // This can be handled more simply as a rotation about the X-Axis.
+    // So we need to compute the angle to rotate, call it theta.
+    // theta = asin(C_y)
+    alignX =  firstRotation * trans;
+  } 
+
+  // Here we rotate C via our transform....
   column_vector Cn = alignX(pC);
-  //  cout << "Cn\n";
-  //  print_vec(Cn);
-  //  cout << "Cn \n";
-  //  print_vec(Cn);
-  //  double len = alignX(pC).length();
-  //  cout << "len " << len << "\n";
-  //  cout << "Cn(2) " << Cn(2) << "\n";
-  //  cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
+  
+   // cout << "Cn\n";
+   // print_vec(Cn);
+
+  //   double len = alignX(pC).length();
+   // cout << "len " << len << "\n";
+   // cout << "Cn(2) " << Cn(2) << "\n";
+   // cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
   
   double denom = sqrt(Cn(0)*Cn(0) + Cn(1)*Cn(1));
-  //  cout << "denom: " << denom << "\n";
-  //  cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
+  // cout << "denom: " << denom << "\n";
+  // cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
   
   double value = Cn(2)/denom;
 
@@ -479,16 +492,24 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
   //  cout << "near zero " << abs(value - 1.0) << "\n";    
   double theta;
   if (abs(value - 1.0) < 1e-3) {
-    cout << "UNITARY\n";
+    //    cout << "UNITARY\n";
     theta = -M_PI/2;
   } else {
     // how do we know this is the correct sign?    
     theta = -atan2(Cn(2),Cn(1));
   }
-  
   //  cout << "theta: " << theta*180/(M_PI) << "\n";
-  
-  return rotate_around_x(theta) * alignX;
+  // Now, if theta is a multiple of 180 degrees, we don't really need to rotate...
+  if ((((int) round(theta*180/(M_PI))) % 180) == 0) {
+    // cout << "Yes, this happened to be a 180 rotation, so avoiding!\n";
+    // cout << "pc " << pC << "\n";
+    // cout << alignX(pC) << "\n";
+    // cout << alignX.get_m() << "\n";
+    // cout << alignX.get_b() << "\n";  
+    return rotate_around_x(0) *alignX;    
+  } else {
+    return rotate_around_x(theta) * alignX;
+  }
 }
 
 column_vector find_fourth_point_given_three_points_and_three_distances(Chirality sense,
@@ -699,24 +720,27 @@ column_vector compute_rotation_about_points(column_vector A,
 					    column_vector M)
 {
 
-  cout << "A B\n";
-  print_vec(A);
-  print_vec(B);
+  // cout << "A B\n";
+  // print_vec(A);
+  // print_vec(B);
   
   point_transform_affine3d tform = compute_transform_to_axes2(A,B,M);
+  // cout << tform.get_m() << "\n";
+  // cout << tform.get_b() << "\n";  
+  
 
   column_vector M_on_axis = tform(M);
   
-  cout << "M_on_axis \n";
-  cout << M_on_axis;
+  // cout << "M_on_axis \n";
+  // cout << M_on_axis;
   
 
   point_transform_affine3d rotate0 = rotate_around_x(theta);
   column_vector M_rotated = rotate0(M_on_axis);
 
 
-  cout << "M_rotated \n";
-  cout << M_rotated;
+  // cout << "M_rotated \n";
+  // cout << M_rotated;
 
 
   point_transform_affine3d tform_inv = inv(tform);
@@ -815,7 +839,9 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   // around the line A-B the vector of the goal_node
 
   cout << "computing rotaiton: " << dvtheta << " of " << en << "\n";
-  cout << "about A and B " << A << " " << B  <<  "\n";  
+  cout << "about A and B "  <<  "\n";
+  print_vec(A);
+  print_vec(B);
   column_vector Emoved = compute_rotation_about_points(A,B,dvtheta,en);
   cout << "Emoved " << Emoved << "\n";
   return Emoved - en;
