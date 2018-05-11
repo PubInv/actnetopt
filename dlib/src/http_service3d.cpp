@@ -107,6 +107,7 @@ int main( const int, const char** )
   
     coordsx = new column_vector[an->num_nodes];
 
+
     mainx(an,coordsx);
 
     Service service;

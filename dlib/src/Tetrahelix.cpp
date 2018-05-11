@@ -617,6 +617,8 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coords[]) {
       
       coords[i].set_size(3);
       coords[i] = y;
+      //      cout << "SETTING " << i << "\n";
+      //      print_vec(y);
       if (debug_find) std::cout << "f(y) " << f(y) << std::endl;
     }
     for (int i = 0; i < an->num_nodes; i++) {
@@ -758,7 +760,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
 								int edge_number,
 								int goal_node_number) {
 
-  cout << "iniit! \n";  
+  //  cout << "iniit! \n";  
   // This has to be reconstructed....
   column_vector d_e_a(3);
 
@@ -766,7 +768,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   // SIGH -- this is not using the goal_node_number....
   // Somehow I am not computing anything at all!
   column_vector en = cur_coords[goal_node_number];
-  cout << "en = " << en << "\n";
+  //  cout << "en = " << en << "\n";
 
 
   // let P be the joint about which we are rotating by changing e
@@ -796,8 +798,8 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   }
 
 
-  cout << "edge" << e << " small " << s << " large "  << l << "\n";
-  cout << "a b c d  " << a << " " << b << " " << c << " " << d << "\n"; 
+  //  cout << "edge" << e << " small " << s << " large "  << l << "\n";
+  //  cout << "a b c d  " << a << " " << b << " " << c << " " << d << "\n"; 
 
   column_vector A = cur_coords[a];
   column_vector B = cur_coords[b];
@@ -823,26 +825,26 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   double vd = angle_from_three_sides(ac,ab,bc);
   double vb = angle_from_three_sides(ac,ad,cd);
 
-  cout << " vb vc vd  " << vb*180/(M_PI) << " " << vc*180/(M_PI) << " " << vd*180/(M_PI) << "\n";
+  //  cout << " vb vc vd  " << vb*180/(M_PI) << " " << vc*180/(M_PI) << " " << vd*180/(M_PI) << "\n";
   
   double dvertex_angle_dlength = dangle_from_dside(ac,ad,cd);
   double ddihedral_dv = ddhedral_dvertex(vd,vc,vb);
 
-  cout << " dvertex_angle_dlength  " << dvertex_angle_dlength*180/(M_PI) << "\n";
-  cout << " ddihedral_dv  " << ddihedral_dv*180/(M_PI) << "\n";
+  //  cout << " dvertex_angle_dlength  " << dvertex_angle_dlength*180/(M_PI) << "\n";
+  //  cout << " ddihedral_dv  " << ddihedral_dv*180/(M_PI) << "\n";
 
   double dvtheta = dvertex_angle_dlength * ddihedral_dv ;
 
-  cout << " dvtheta  " << dvtheta*180/(M_PI) << "\n";  
+  //  cout << " dvtheta  " << dvtheta*180/(M_PI) << "\n";  
 
   // now to compute the vector, we must take dvtheta rotate the vector 
   // around the line A-B the vector of the goal_node
 
-  cout << "computing rotaiton: " << dvtheta << " of " << en << "\n";
-  cout << "about A and B "  <<  "\n";
-  print_vec(A);
-  print_vec(B);
+  //  cout << "computing rotaiton: " << dvtheta << " of " << en << "\n";
+  //  cout << "about A and B "  <<  "\n";
+  //  print_vec(A);
+  //  print_vec(B);
   column_vector Emoved = compute_rotation_about_points(A,B,dvtheta,en);
-  cout << "Emoved " << Emoved << "\n";
+  //  cout << "Emoved " << Emoved << "\n";
   return Emoved - en;
 }

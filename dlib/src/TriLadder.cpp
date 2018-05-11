@@ -404,6 +404,7 @@ column_vector TriLadder::compute_internal_effector_derivative_c(column_vector cu
   return d_e_a;
 }
 
+// what am I doing there? This is very confusing!!!
 void TriLadder::set_fixed_coords(column_vector coords[]) {
     column_vector temp0(2);
     temp0 = 0, 0;

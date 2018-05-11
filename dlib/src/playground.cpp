@@ -90,7 +90,7 @@ void solve_inverse_problem(TriLadder *an,Obstacle ob) {
     for (int i = 0; i < an->var_edges; ++i) {
 	   best_distances[i] = an->distance(i+1);
     }
-    
+    cout << "find_min_box_constrained\n";
     double score = find_min_box_constrained(
       			    // bfgs_search_strategy(),
 			     lbfgs_search_strategy(30),
@@ -138,6 +138,7 @@ int mainx(TriLadder *an,column_vector* coords,Obstacle ob)
 	  //	  column_vector* coordsx = new column_vector[an->num_nodes];
 	  
 	  find_all_coords(an,coords);
+	  cout << "solve_inverse\n";
 	  solve_inverse_problem(an,ob);
 
 	  for (int i = 0; i < an->num_edges; ++i) {

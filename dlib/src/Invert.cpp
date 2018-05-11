@@ -46,7 +46,7 @@ Invert::Invert() {
   }
 
   double Invert::objective(const column_vector& ds) {
-
+    cout << "OOOO\n";
     if (debug) std::cout << "OBJECTIVE INPUTS" << std::endl;
     for (int i = 0; i < global_truss->var_edges; ++i) {
            if (debug) std::cout << i << " : " << ds(i) << std::endl;
@@ -94,6 +94,7 @@ Invert::Invert() {
 
   // compute the derivatives of the objective as the configuration ds.
   column_vector Invert::derivative(const column_vector& ds) {
+    cout << "DDD\n";
     for (int i = 0; i < global_truss->var_edges; ++i) {
       if (debug) std::cout << i << " : " << ds(i) << std::endl;
       // This is correct?  It should it just be "i"?
@@ -127,7 +128,9 @@ Invert::Invert() {
 
 	// Which of thise is right?  Must be the latter?!?
 	//	dx += (d * global_truss->goal_weights[j]);
-	dx = (d * global_truss->goal_weights[j]);	
+	dx = (d * global_truss->goal_weights[j]);
+
+	// This seems completely wrong---I wonder if I have coded this correctly!
 	column_vector goal_direction = c - g;
 	prod += dot(goal_direction,dx);
       }

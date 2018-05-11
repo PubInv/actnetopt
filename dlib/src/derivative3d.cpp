@@ -26,6 +26,8 @@
 #include "ActNetUtility.hpp"
 #include "Tetrahelix.hpp"
 #include "playground3d.hpp"
+#include "Invert3d.hpp"
+#include "Obstacle.hpp"
 
 using namespace dlib;
 using namespace std;
@@ -682,4 +684,140 @@ BOOST_AUTO_TEST_CASE( test_compute_goal_derivative_c )
   // cout << d << "\n";
 
   
+}
+
+int debug = 1;
+Tetrahelix *Invert3d::global_truss = 0;
+
+BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
+{
+  cout << "AAA\n";  
+  // This is an attempt to make sure that the "distance_to_goal" after
+  // solving our "standard start" tetrahelix goes down
+  // if variable edges get bigger
+  Tetrahelix thlx(4,
+		  UPPER_BOUND,
+		  LOWER_BOUND,
+		  MEDIAN,
+		  INITIAL
+		  );
+
+  // Now we want to set up the coordinates of the first three nodes
+  // very carefully so that we follow the X-axis specifically.
+  // The easiest way to to this is to take it from the javascript
+  // code already written to preform these calculations....
+  column_vector* coords = new column_vector[thlx.num_nodes];
+
+  //  const double SHORT = LOWER_BOUND;
+  //  const double LONG = UPPER_BOUND;
+  for(int i = 0; i < thlx.num_nodes; i++) {
+    thlx.distance(i) = INITIAL;
+  }
+
+  solve_forward_find_coords(&thlx,coords);
+
+
+  cout << "DONE WITH FORWARD\n";
+
+  // Just check this is what I expect...
+  for(int i = 0; i < thlx.num_nodes; i++) {
+    print_vec(coords[i]);
+  }
+  Invert3d inv;
+  inv.an = &thlx;
+  inv.set_global_truss();
+
+  cout << "BBB\n";  
+
+  thlx.add_goal_node(3,0.0,0.0,-20.0,1.0);
+  
+  // now check that we have one goal...
+  for(int i = 0; i < thlx.goal_nodes.size(); i++) {
+    cout << "goal_nodes " << i << " " << thlx.goal_nodes[i] << "\n";
+  }
+  cout << "CCC\n";        
+  column_vector gl(3);
+  gl(0) = 0.0;
+  gl(1) = 2.5;
+  gl(2) = 5.0;
+  thlx.goals[thlx.goals.size() - 1] = gl;
+  
+  // Now our goal should be set.
+  for(int i = 0; i < thlx.goal_nodes.size(); i++) {
+    cout << "goal_nodes " << i << "  " << thlx.goal_nodes[i] << "\n";
+  }
+  
+  column_vector ds(thlx.var_edges);
+
+  const column_vector* dsa = &ds;
+  
+  for(int i = 0; i < thlx.var_edges; i++) {
+    ds(i) = UPPER_BOUND;
+  }
+  for(int i = 0; i < thlx.var_edges; i++) {
+    thlx.distance(i+3) = ds(i);
+  }
+  solve_forward_find_coords(&thlx,coords);
+  column_vector deriv0 = inv.derivative(*dsa);
+
+  cout << "DERIVATIVE COMPUTED\n";
+  for (int i = 0; i < thlx.var_edges; ++i) {
+    int n = thlx.edge_number_of_nth_variable_edge(i);
+    cout << "edge " << n << " " << deriv0(i) << "\n";
+  }
+  
+  solve_forward_find_coords(&thlx,coords);
+  
+  cout << "Coords at MAX\n";
+  for (int i = 0; i < thlx.num_nodes; ++i) {
+    cout << " i : ";
+    print_vec(coords[i]);
+  }
+  cout << " distances \n";
+
+  for (int i = 0; i < thlx.num_nodes-1; ++i) {
+    for (int j = i+1; j <  thlx.num_nodes; ++j) {    
+      cout << " i,j : " << i << "," << j << " ";
+      cout << distance_3d(coords[i],coords[j]) << "\n";
+    }
+  }
+
+  cout << "distance from final to goal: ";
+  cout << distance_3d(gl,coords[3]) << "\n";
+  
+  double v0 = inv.objective(*dsa);
+
+
+  
+  for(int i = 0; i < thlx.var_edges; i++) {
+    ds(i) = LOWER_BOUND;
+  }
+  for(int i = 0; i < thlx.var_edges; i++) {
+    thlx.distance(i+3) = ds(i);
+  }
+  
+  solve_forward_find_coords(&thlx,coords);
+  
+  cout << "Coords at MIN\n";
+  for (int i = 0; i < thlx.num_nodes; ++i) {
+    cout << " i : ";
+    print_vec(coords[i]);
+  }
+
+  cout << " distances \n";
+  for (int i = 0; i < thlx.num_nodes-1; ++i) {
+    for (int j = i+1; j <  thlx.num_nodes; ++j) {    
+      cout << " i,j : " << i << "," << j << " ";
+      cout << distance_3d(coords[i],coords[j]) << "\n";
+    }
+  }
+
+  cout << "distance from final to goal: ";  
+  cout << distance_3d(gl,coords[3]) << "\n";
+    
+  double v1 = inv.objective(*dsa);
+  cout << "objective at max: " << v0 << "\n";  
+  cout << "objective at min: " << v1 << "\n"; 
+  // object at max should be lower than the objective at min!!!!
+  BOOST_CHECK( v0 < v1 );  
 }

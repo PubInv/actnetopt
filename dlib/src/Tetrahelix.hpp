@@ -32,7 +32,7 @@ public:
   // Making this a const seems to destry to the implicit
   // copy assignment; I have no idea why
 
-  Obstacle obstacle;  
+  Obstacle *obstacle = NULL;  
 
   int num_nodes;   // 
   int num_edges; //  f(num_nodes)

@@ -43,7 +43,7 @@ int debug = 1;
 // So keeping a global variable is the only effective way to maintain information
 // for solving the "forward" problem.
 // Therefore "global_truss" is global.
-Tetrahelix *Invert::global_truss = 0;
+Tetrahelix *Invert3d::global_truss = 0;
 
 // Obstacle obstacle;
 
@@ -55,12 +55,12 @@ void solve_inverse_problem(Tetrahelix *an) {
   // We need the Tetrahelix to have distances in order to iniitilize this meaningfully
   for (int i = 0; i < an->var_edges; i++) {
     // This assumes the first edge is fixed, which it is in Tetrahelix
-    sp(i) = an->distance(i + 1);
+    sp(i) = an->distance(i + 3);
     lb(i) = an->lower_bound(i);
     ub(i) = an->upper_bound(i);    
   }
   
-  Invert inv;
+  Invert3d inv;
   inv.an = an;
   inv.set_global_truss();
   //  inv.ob = ob;
@@ -72,22 +72,24 @@ void solve_inverse_problem(Tetrahelix *an) {
     cerr << an->num_edges << "\n";
     cerr << an->num_nodes << "\n";    
     for (int i = 0; i < an->var_edges; ++i) {
-	   best_distances[i] = an->distance(i+1);
+	   best_distances[i] = an->distance(i+3);
     }
 
     //    double score = 0.0;
-       int n = an->var_edges;
+    int n = an->var_edges;
+    cout << "# var edges: " << n << "\n";
 
-       cout << "goal node [solve_inverse] " << an->goals[0] << "\n";
+    cout << "goal node [solve_inverse] " << an->goals[0] << "\n";
 
     double score = find_min_box_constrained(
       			    // bfgs_search_strategy(),
-    			     lbfgs_search_strategy(30),
-    			     // cg_search_strategy(),
+			    lbfgs_search_strategy(5),
+					    // cg_search_strategy(),
     			     //			     newton_search_strategy,
-    			     objective_delta_stop_strategy(1e-5),
-    			     *Invert::objective,
-    			     *Invert::derivative,
+			    //    			     objective_delta_stop_strategy(1e-5),
+    			     objective_delta_stop_strategy(1e-3),			    
+    			     *Invert3d::objective,
+    			     *Invert3d::derivative,
     			     sp,
     			     uniform_matrix<double>(n,1, LOWER_BOUND),  // lower bound constraint
     			     uniform_matrix<double>(n,1, UPPER_BOUND)   // upper bound constraint
@@ -95,7 +97,7 @@ void solve_inverse_problem(Tetrahelix *an) {
     // I uses this to get rid of the warning
     score = score + 0.0;
     for (int i = 0; i < an->var_edges; ++i) {
-      an->distance(i+1) = best_distances[i];
+      an->distance(i+3) = best_distances[i];
     }
 };
 
@@ -104,6 +106,7 @@ void solve_inverse_problem(Tetrahelix *an) {
 
 int mainx(Tetrahelix *an,column_vector* coords)
 {
+  cout << "goal node [mainx] " << an->goals[0] << "\n";  
     try
     {
       // However, that is a low priority until I get the playground working.
@@ -122,18 +125,19 @@ int mainx(Tetrahelix *an,column_vector* coords)
 	  cout << "goal node [mainx] " << an->goals[0] << "\n";
 	  
 	  solve_forward_find_coords(an,coords);
+	  cout << "SOLVE_INVERSE\n";
 	  solve_inverse_problem(an);
 
 	  solve_forward_find_coords(an,coords);
 
 	  //	  find_all_coords(an,coords);
-	  Invert inv;
-	  inv.an = an;
-	  inv.set_global_truss();
-	  column_vector sp(an->var_edges);
-	  for (int i = 0; i < an->var_edges; i++) {
-	    sp(i) = an->distance(i + 1);
-	  }	  
+	  // Invert3d inv;
+	  // inv.an = an;
+	  // inv.set_global_truss();
+	  // column_vector sp(an->var_edges);
+	  // for (int i = 0; i < an->var_edges; i++) {
+	  //   sp(i) = an->distance(i + 1);
+	  // }	  
 	  // double final = inv(sp);
 	  // std::cout << "inv(x) final : " << final << std::endl;
 	  // for(int i = 0; i < an->num_nodes; i++) {
@@ -212,6 +216,7 @@ void handle_goal_target_physical(Tetrahelix *an,  column_vector* coordsx,double 
 void handle_goal_target(Tetrahelix *an,  column_vector* coordsx,column_vector gl) {
   an->goals[an->goals.size() - 1] = gl;
   cout  << "goal : " << gl << "\n";
+  cout << "goal node : " << an->goal_nodes[0] << "\n";
   best_score = std::numeric_limits<float>::max();	
   auto start = std::chrono::high_resolution_clock::now();
 	

@@ -1,4 +1,4 @@
-// Invert.h -- Code needed to perform gradient-based inverse problem (design) of a 2D Warren Truss
+// Invert3d.h -- Code needed to perform gradient-based inverse problem (design) of a 2D Warren Truss
 // Copyright (C) Robert L. Read, 2018
 //
 // This program is free software: you can redistribute it and/or modify
@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-#ifndef INVERT_H
-#define INVERT_H 1
+#ifndef INVERT3D_H
+#define INVERT3D_H 1
 
 
 //Using SDL and standard IO
@@ -39,12 +39,12 @@ extern double best_score;
 
 
 
-class Invert {
+class Invert3d {
 public:
 
   Tetrahelix *an;
   static Tetrahelix *global_truss;  
-  Invert();
+  Invert3d();
   
   // This function weights how close our values are to the goals.
   // At present, this is literally of the unweighted sum of the distances,

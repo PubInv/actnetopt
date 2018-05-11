@@ -1407,18 +1407,28 @@ function draw_custom_tetrahelix(results,pvec,helix
     }
 }
 
-
+var gpos = { x: 0, y: 0, z: 0};
 function fetch_coords() {
     $.ajax({url: "http://127.0.0.1/goal",
 	    data: { 
-		"X": 10, 
-		"Y": 10, 
-		"Z": 10
+		"X": gpos.x, 
+		"Y": gpos.y, 
+		"Z": gpos.z,
 	    },
-	   success: function(result) {
+	    success: function(result) {
 	       //	       alert(result);
 	       am.clear_non_floor_body_mesh_pairs();
+	am.clear_non_floor_body_mesh_pairs();
 
+		for( var i = am.scene.children.length - 1; i >= 0; i--) {
+		    var obj = am.scene.children[i];
+		    if (obj.type == "Mesh" && obj.name != "GROUND") {
+			am.scene.remove(obj);
+		    }
+		}
+		am.helices = [];
+		am.helix_params = [];
+		
 	       am.helices.push(
 		   {
 		       helix_joints: [],
@@ -1426,14 +1436,18 @@ function fetch_coords() {
 		   });
 	       
 	       // now basically we want to build the helix from these results...
-	       var pvec = new THREE.Vector3(0,HELIX_RADIUS*2.1,-1.0);
+	       //	       var pvec = new THREE.Vector3(0,HELIX_RADIUS*2.1,-1.0);
+	       var pvec = new THREE.Vector3(0,0.0,0.0);	       
 	       var nodes = JSON.parse(result);
+		console.log(nodes);
 	       draw_custom_tetrahelix(nodes,pvec,am.helices[0]);
 	   }
 	   });
 }
 
 $( "#fetch").click( fetch_coords );
+
+fetch_coords();
 
     </script>
 
