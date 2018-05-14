@@ -110,9 +110,9 @@ column_vector Invert3d::derivative(const column_vector& ds) {
     global_truss->distance(n) = ds(i);
   }
 
-  // for (int i = 0; i < global_truss->num_edges; ++i) {
-  //   cout << " i, distances(i) " << i << " , " << global_truss->distance(i) << "\n";
-  // }
+  for (int i = 0; i < global_truss->num_edges; ++i) {
+    cout << " i, distances(i) " << i << " , " << global_truss->distance(i) << "\n";
+  }
 
   // If I don't change an here, I'm not changing the coords!!
   column_vector *coords = new column_vector[global_truss->num_nodes];
@@ -121,10 +121,10 @@ column_vector Invert3d::derivative(const column_vector& ds) {
   solve_forward_find_coords(global_truss,coords);	     
 
 
-  // for (int i = 0; i < global_truss->num_nodes; ++i) {
-  //   cout << " nodes " << i <<  "\n";
-  //   print_vec(coords[i]);
-  // }
+  for (int i = 0; i < global_truss->num_nodes; ++i) {
+    cout << " nodes " << i <<  "\n";
+    print_vec(coords[i]);
+  }
   
   column_vector d(global_truss->var_edges);
       
@@ -151,27 +151,27 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       // column_vector goal_direction = c - g;
       column_vector goal_direction = g - c;
 
-      // cout << "ANALYSIS\n";
-      // cout << "node position: ";
-      // print_vec(c);
-      // cout << "\n";
-      // cout << "goal position: ";
-      // print_vec(g);
-      // cout << "\n";
+      cout << "ANALYSIS\n";
+      cout << "node position: ";
+      print_vec(c);
+      cout << "\n";
+      cout << "goal position: ";
+      print_vec(g);
+      cout << "\n";
       
-      // cout << "goal direction: ";
-      // print_vec(goal_direction);
-      // cout << "\n";
+      cout << "goal direction: ";
+      print_vec(goal_direction);
+      cout << "\n";
 
-      // cout << "derivative: ";
-      // print_vec(d);
-      // cout << "\n";
+      cout << "derivative: ";
+      print_vec(d);
+      cout << "\n";
       
       prod += dot(goal_direction,dx);
 
-      // cout << "ds/de: ";
-      // cout << dot(goal_direction,dx);
-      // cout << "\n";
+      cout << "ds/de: ";
+      cout << dot(goal_direction,dx);
+      cout << "\n";
       
     }
     //    cout << "edge,prod = " << e << " , " << prod <<"\n";    
@@ -219,11 +219,11 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       }
     }
   }
-  // cout << "DERIVATIVES" << "\n";
-  // for(int i = 0; i < global_truss->var_edges; i++) {
-  //   int n = global_truss->edge_number_of_nth_variable_edge(i);      
-  //   cout << "edge " << n << " " << d(i) << "\n";
-  // }
+  cout << "DERIVATIVES" << "\n";
+  for(int i = 0; i < global_truss->var_edges; i++) {
+    int n = global_truss->edge_number_of_nth_variable_edge(i);      
+    cout << "edge " << n << " " << d(i) << "\n";
+  }
   delete[] coords;
   return d;
 }

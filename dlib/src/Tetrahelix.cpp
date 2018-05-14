@@ -569,6 +569,12 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coords[]) {
 
     Chirality sense = CCW;
     an->set_fixed_coords(coords);
+
+    cout << "in solve distances:\n";
+    for(int i = 0; i < an->num_edges; i++) {
+      cout << "i, d " << i << " , " << an->distance(i) << "\n";
+    }
+
     
     // Basic structure: Iteratively find coordinates based on simple triangulations.
     // This only works for actuator networks in which we can
@@ -595,11 +601,13 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coords[]) {
       if (debug_find) std::cout << "f.b " << f.b << std::endl;
       if (debug_find) std::cout << "f.c " << f.c << std::endl;      
 
-      int e = an->edge_between(i,i-1);
-      // his this right?
-      f.dac = an->distance(e-2);
-      f.dbc = an->distance(e-1);
-      f.dcc = an->distance(e);
+      int ec = an->edge_between(i,i-1);
+      int eb = an->edge_between(i,i-2);
+      int ea = an->edge_between(i,i-3);            
+
+      f.dac = an->distance(ea);
+      f.dbc = an->distance(eb);
+      f.dcc = an->distance(ec);
 
       column_vector  y(3);
 
@@ -609,9 +617,9 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coords[]) {
       // print_vec(f.b);
       // cout << "f.c \n";
       // print_vec(f.c);
-      // cout << f.dcc << "\n";
-      // cout << f.dbc << "\n";
-      // cout << f.dac << "\n";            
+      cout << f.dcc << "\n";
+      cout << f.dbc << "\n";
+      cout << f.dac << "\n";            
       y = find_fourth_point_given_three_points_and_three_distances(f.chi,f.a,f.b,f.c,
 								   f.dcc,f.dbc,f.dac);
       

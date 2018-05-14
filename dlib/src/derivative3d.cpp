@@ -33,11 +33,8 @@ using namespace dlib;
 using namespace std;
 
 
+#undef TRUSS_NODES
 #define TRUSS_NODES 4
-#define UPPER_BOUND 2.0
-#define LOWER_BOUND 1.2
-#define MEDIAN 1.5
-#define INITIAL 1.5
 
 
 
@@ -710,7 +707,7 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
 
   //  const double SHORT = LOWER_BOUND;
   //  const double LONG = UPPER_BOUND;
-  for(int i = 0; i < thlx.num_nodes; i++) {
+  for(int i = 0; i < thlx.num_edges; i++) {
     thlx.distance(i) = INITIAL;
   }
 
@@ -786,8 +783,6 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
   cout << distance_3d(gl,coords[3]) << "\n";
   
   double v0 = inv.objective(*dsa);
-
-
   
   for(int i = 0; i < thlx.var_edges; i++) {
     ds(i) = LOWER_BOUND;
@@ -820,4 +815,93 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
   cout << "objective at min: " << v1 << "\n"; 
   // object at max should be lower than the objective at min!!!!
   BOOST_CHECK( v0 < v1 );  
+}
+
+BOOST_AUTO_TEST_CASE( test_derivatives )
+{
+  cout << "AAA\n";  
+  // This is an attempt to make sure that the "distance_to_goal" after
+  // solving our "standard start" tetrahelix goes down
+  // if variable edges get bigger
+  Tetrahelix thlx(4,
+		  UPPER_BOUND,
+		  LOWER_BOUND,
+		  MEDIAN,
+		  INITIAL
+		  );
+
+  // Now we want to set up the coordinates of the first three nodes
+  // very carefully so that we follow the X-axis specifically.
+  // The easiest way to to this is to take it from the javascript
+  // code already written to preform these calculations....
+  column_vector* coords = new column_vector[thlx.num_nodes];
+
+  //  const double SHORT = LOWER_BOUND;
+  //  const double LONG = UPPER_BOUND;
+  for(int i = 0; i < thlx.num_edges; i++) {
+    thlx.distance(i) = INITIAL;
+  }
+
+  cout << "distances:\n";
+  for(int i = 0; i < thlx.num_edges; i++) {
+    cout << "i, d " << i << " , " << thlx.distance(i) << "\n";
+  }
+
+  // Now we will lengthen edge 2 by precisely 0.1...
+  //  thlx.distance(2) += 0.1;
+  
+  solve_forward_find_coords(&thlx,coords);
+
+  column_vector goal = coords[3];
+
+  cout << "Goal node based on modified edge length:";
+  print_vec(coords[3]);
+
+  // now restore the system...
+  // thlx.distance(2) -= 0.1;
+  
+  solve_forward_find_coords(&thlx,coords);
+
+  cout << "initial position of node #3:";
+  print_vec(coords[3]);
+  
+
+  // Just check this is what I expect...
+  for(int i = 0; i < thlx.num_nodes; i++) {
+    print_vec(coords[i]);
+  }
+  Invert3d inv;
+  inv.an = &thlx;
+  inv.set_global_truss();
+
+  cout << "BBB\n";  
+
+  // Our goal now in this test is to place the goal node
+  // in a direct relationship specific distances.
+  // This should then allow us to compute a nearly "pure" derivative.
+  // For example, we length edge 2 by 0.1, and compute this goal position.
+  // Presumably then the derivative (the change of edge length towards the goal)
+  // should be positive for edge 2 but zero for others.
+  thlx.add_goal_node(3,goal(0),goal(1),goal(2),1.0);
+  
+  cout << "number of goals: " << thlx.goals.size() << "\n";
+  
+  print_vec(thlx.goals[0]);
+
+  column_vector ds(thlx.var_edges);
+
+  const column_vector* dsa = &ds;
+
+  for(int i = 0; i < thlx.var_edges; i++) {
+    int n = thlx.edge_number_of_nth_variable_edge(i);    
+    ds(i) = thlx.distance(n);
+  }
+
+  column_vector deriv = inv.derivative(*dsa);
+  
+  for(int i = 0; i < thlx.var_edges; i++) {
+    int n = thlx.edge_number_of_nth_variable_edge(i);    
+    cout << "Deriv " << n << " " << deriv(i) << "\n";
+  }
+  
 }
