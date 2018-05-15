@@ -269,9 +269,9 @@ double FindCoords3d::operator() ( const column_vector& x) const
     double bn = bc(0)*bc(0)+bc(1)*bc(1)+bc(2)*bc(2);
     double cn = cc(0)*cc(0)+cc(1)*cc(1)+cc(2)*bc(2);
     return
-      pow(sqrt(an) - dac,2) +
-      pow(sqrt(bn) - dbc,2) +
-      pow(sqrt(cn) - dcc,2);
+      pow(sqrt(an) - dad,2) +
+      pow(sqrt(bn) - dbd,2) +
+      pow(sqrt(cn) - dcd,2);
   }
 const int debug_find = 0;
 
@@ -586,6 +586,7 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
 void solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
     FindCoords3d f;
 
+    //    Chirality sense = CCW;
     Chirality sense = CCW;
     // Is this even required?
     an->restore_fixed_coords(coordsx);
@@ -631,32 +632,26 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
       if (debug_find) std::cout << "f.b " << f.b << std::endl;
       if (debug_find) std::cout << "f.c " << f.c << std::endl;      
 
-      int ec = an->edge_between(i,i-1);
-      int eb = an->edge_between(i,i-2);
-      int ea = an->edge_between(i,i-3);            
+      int ecd = an->edge_between(i,i-1);
+      int ebd = an->edge_between(i,i-2);
+      int ead = an->edge_between(i,i-3);            
 
-      f.dac = an->distance(ea);
-      f.dbc = an->distance(eb);
-      f.dcc = an->distance(ec);
+      f.dad = an->distance(ead);
+      f.dbd = an->distance(ebd);
+      f.dcd = an->distance(ecd);
 
       column_vector  y(3);
 
-      // cout << "args : \n";
-      // cout << f.chi << "\n";
-      // print_vec(f.a);
-      // print_vec(f.b);
-      // cout << "f.c \n";
-      // print_vec(f.c);
-      cout << f.dcc << "\n";
-      cout << f.dbc << "\n";
-      cout << f.dac << "\n";            
+      cout << f.dad << "\n";
+      cout << f.dbd << "\n";
+      cout << f.dcd << "\n";            
       y = find_fourth_point_given_three_points_and_three_distances(f.chi,f.a,f.b,f.c,
-								   f.dcc,f.dbc,f.dac);
+								   f.dad,f.dbd,f.dcd);
       
       coordsx[i].set_size(3);
       coordsx[i] = y;
-      //      cout << "SETTING " << i << "\n";
-      //      print_vec(y);
+      cout << "SETTING " << i << "\n";
+      print_vec(y);
       if (debug_find) std::cout << "f(y) " << f(y) << std::endl;
     }
 };

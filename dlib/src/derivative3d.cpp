@@ -870,7 +870,6 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
   // Now we will lengthen edge 2 by precisely 0.1...
   thlx.distance(2) += 1.0;
 
-
   // This is really 4 points, but it will just read the first three..
   thlx.init_fixed_coords(coords);
   
@@ -884,6 +883,8 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
   column_vector goal = coords[3];
 
   cout << "Goal node based on modified edge length:";
+
+  // This is wrong, and it fails!
   print_vec(coords[3]);
 
   // now restore the system...

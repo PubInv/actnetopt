@@ -140,9 +140,11 @@ public:
   Chirality chi;
 
   //     const double dab = 1.5; // This is in fact a constant in our frame
-  double dac; // these are in fact inputs to the problem
-  double dbc;
-  double dcc;
+  // "dad = distance from a to d "
+  // "dbd = distance from b to d " 
+  double dad; // these are in fact inputs to the problem
+  double dbd;
+  double dcd;
   
   // this is just the objective (NOT optional)
   // This input is an x,y position for c
