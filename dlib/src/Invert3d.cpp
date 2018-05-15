@@ -107,6 +107,7 @@ column_vector Invert3d::derivative(const column_vector& ds) {
   cout << "DERIVATIVE CALLED\n";
   for (int i = 0; i < global_truss->var_edges; ++i) {
     int n = global_truss->edge_number_of_nth_variable_edge(i);
+    cout << " i, n : " << i << " " << n << "\n";
     global_truss->distance(n) = ds(i);
   }
 
@@ -154,18 +155,15 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       cout << "ANALYSIS\n";
       cout << "node position: ";
       print_vec(c);
-      cout << "\n";
+
       cout << "goal position: ";
       print_vec(g);
-      cout << "\n";
       
       cout << "goal direction: ";
       print_vec(goal_direction);
-      cout << "\n";
 
       cout << "derivative: ";
       print_vec(d);
-      cout << "\n";
       
       prod += dot(goal_direction,dx);
 

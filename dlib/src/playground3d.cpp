@@ -199,6 +199,9 @@ Tetrahelix *init_Tetrahelix() {
     }
   }
 
+  column_vector coords[3];
+  an->init_fixed_coords_to_z_axis_alignment(coords);
+  an->init_fixed_coords(coords);
   return an;
 }
 

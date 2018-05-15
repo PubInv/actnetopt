@@ -135,6 +135,7 @@ int mainx(TriLadder *an,column_vector* coords,Obstacle ob)
 	    an->distance(i) = INITIAL;
 	  }
 
+
 	  //	  column_vector* coordsx = new column_vector[an->num_nodes];
 	  
 	  find_all_coords(an,coords);

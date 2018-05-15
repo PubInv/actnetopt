@@ -43,7 +43,12 @@ public:
   double initial_d;
 
   int *node_fixing_order;
-  column_vector*  coords;
+  column_vector*  lcoords;
+  column_vector fixed[3];
+
+  void init_fixed_coords(column_vector fcoords[]);
+  void init_fixed_coords_to_z_axis_alignment(column_vector coords[]);
+  void restore_fixed_coords(column_vector coords[]);  
 
   int edges_in_tetrahelix(int n);
 

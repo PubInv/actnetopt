@@ -189,7 +189,9 @@ Tetrahelix::Tetrahelix(int nodes,
     // Note: This is wildly different than the 2d case, which requires just one fixed edge.
     var_edges = num_edges-3;
     node_fixing_order = new int[num_nodes];
-    coords = new column_vector[num_nodes];      
+
+    // This is dangerous; I think possibly it should be removed...
+    lcoords = new column_vector[num_nodes];      
 
     fixed_nodes.set_size(3);
     fixed_nodes(0) = A;
@@ -208,24 +210,41 @@ Tetrahelix::Tetrahelix(int nodes,
       lower_bound(i) = lower_bound_d;
       upper_bound(i) = upper_bound_d;            
     }
+
+    column_vector coords[3];
+    init_fixed_coords_to_z_axis_alignment(coords);
+    init_fixed_coords(coords);
   }
 
+column_vector fixed[3];
+void Tetrahelix::init_fixed_coords(column_vector fcoords[]) {
+  fixed[0] = fcoords[0];
+  fixed[1] = fcoords[1];
+  fixed[2] = fcoords[2];  
+}
 
-void Tetrahelix::set_fixed_coords(column_vector coords[]) {
-    column_vector temp0(3);
+void Tetrahelix::init_fixed_coords_to_z_axis_alignment(column_vector coords[]) {
 
     double f = 3;
+    column_vector temp0(3);
     // These values are taken from: https://pubinv.github.io/tetrahelix/
     temp0 = 0.25980762113533157,  0.7794228634059948,  -1;
     coords[0] = temp0*f;
-
 
     temp0 =  -0.17320508075688773, 0.9730720307163656, -0.841886116991581;   
     coords[1] = temp0*f;
     
     temp0 =  -0.028867513459481214,  0.5212239736588337, -0.683772233983162;
     coords[2] = temp0*f;
+    fixed[0] = coords[0];
+    fixed[1] = coords[1];
+    fixed[2] = coords[2];
+}
 
+void Tetrahelix::restore_fixed_coords(column_vector coords[]) {
+  coords[0] = fixed[0];
+  coords[1] = fixed[1];
+  coords[2] = fixed[2];  
 }
 
 // In all probability, this can be unified with the 2D case
@@ -564,33 +583,44 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   return tform_inv(D);
 }
 
-void solve_forward_find_coords(Tetrahelix *an,column_vector coords[]) {
+void solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
     FindCoords3d f;
 
     Chirality sense = CCW;
-    an->set_fixed_coords(coords);
+    // Is this even required?
+    an->restore_fixed_coords(coordsx);
 
     cout << "in solve distances:\n";
     for(int i = 0; i < an->num_edges; i++) {
       cout << "i, d " << i << " , " << an->distance(i) << "\n";
     }
 
+    cout << "SOLVE_FORWARD_FIND_COORDS \n";
+    for(int i = 0; i < an->num_nodes; i++) {
+      print_vec(coordsx[i]);
+    }
     
     // Basic structure: Iteratively find coordinates based on simple triangulations.
     // This only works for actuator networks in which we can
     int fs = an->fixed_nodes.size();
+    cout << "fixed nodes " << fs << "\n";
     for(int i = fs; i < an->num_nodes; i++) {
       // Let's set up initial values
       // choose a starting point
 
       f.a.set_size(3);
-      f.a = coords[i-fs];
+      f.a = coordsx[i-fs];
 
       f.b.set_size(3);
-      f.b = coords[i-(fs-1)];
+      f.b = coordsx[i-(fs-1)];
 
       f.c.set_size(3);
-      f.c = coords[i-(fs-2)];
+      f.c = coordsx[i-(fs-2)];
+
+      cout << "f.a f.b f.c\n";
+      print_vec(f.a);
+      print_vec(f.b);
+      print_vec(f.c);
 
       // Although in 2-dimensions we change this, in 3D it is not needed...
       // I think there is something deeply mathmatical in that.
@@ -623,14 +653,11 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coords[]) {
       y = find_fourth_point_given_three_points_and_three_distances(f.chi,f.a,f.b,f.c,
 								   f.dcc,f.dbc,f.dac);
       
-      coords[i].set_size(3);
-      coords[i] = y;
+      coordsx[i].set_size(3);
+      coordsx[i] = y;
       //      cout << "SETTING " << i << "\n";
       //      print_vec(y);
       if (debug_find) std::cout << "f(y) " << f(y) << std::endl;
-    }
-    for (int i = 0; i < an->num_nodes; i++) {
-      if (debug_find) std::cout << i << " =  " << an->coords[i] << std::endl;      
     }
 };
 
@@ -806,8 +833,8 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   }
 
 
-  //  cout << "edge" << e << " small " << s << " large "  << l << "\n";
-  //  cout << "a b c d  " << a << " " << b << " " << c << " " << d << "\n"; 
+  cout << "edge" << e << " small " << s << " large "  << l << "\n";
+  cout << "a b c d  " << a << " " << b << " " << c << " " << d << "\n"; 
 
   column_vector A = cur_coords[a];
   column_vector B = cur_coords[b];
@@ -821,11 +848,13 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   double bd = distance_3d(B,D);
   double ab = distance_3d(A,B);
 
-  // cout << "spud\n";
-  // cout << A << "\n";
-  // cout << B << "\n";  
-  // cout << C << "\n";
-  // cout << D << "\n";  
+  cout << "A B C D\n";
+  print_vec(A);
+  print_vec(B);
+  print_vec(C);
+  print_vec(D);
+  cout << "\n";
+
 
   // cout << "ab ac ad bc bd cd  " << ab << " " << ac << " " << ad << " " << bc  << " " << bd << " "  << cd << "\n";   
     
@@ -843,7 +872,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
 
   double dvtheta = dvertex_angle_dlength * ddihedral_dv ;
 
-  //  cout << " dvtheta  " << dvtheta*180/(M_PI) << "\n";  
+  cout << " dvtheta  " << dvtheta*180/(M_PI) << "\n";  
 
   // now to compute the vector, we must take dvtheta rotate the vector 
   // around the line A-B the vector of the goal_node
@@ -853,6 +882,6 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   //  print_vec(A);
   //  print_vec(B);
   column_vector Emoved = compute_rotation_about_points(A,B,dvtheta,en);
-  //  cout << "Emoved " << Emoved << "\n";
+  cout << "Emoved " << Emoved << "\n";
   return Emoved - en;
 }

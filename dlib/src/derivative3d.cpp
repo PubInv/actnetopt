@@ -755,7 +755,10 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
     thlx.distance(i+3) = ds(i);
   }
   solve_forward_find_coords(&thlx,coords);
+
+  cout << "XXXX\n";
   column_vector deriv0 = inv.derivative(*dsa);
+  cout << "ZZZZ\n";  
 
   cout << "DERIVATIVE COMPUTED\n";
   for (int i = 0; i < thlx.var_edges; ++i) {
@@ -765,22 +768,22 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
   
   solve_forward_find_coords(&thlx,coords);
   
-  cout << "Coords at MAX\n";
-  for (int i = 0; i < thlx.num_nodes; ++i) {
-    cout << " i : ";
-    print_vec(coords[i]);
-  }
-  cout << " distances \n";
+  // cout << "Coords at MAX\n";
+  // for (int i = 0; i < thlx.num_nodes; ++i) {
+  //   cout << " i : ";
+  //   print_vec(coords[i]);
+  // }
+  // cout << " distances \n";
 
-  for (int i = 0; i < thlx.num_nodes-1; ++i) {
-    for (int j = i+1; j <  thlx.num_nodes; ++j) {    
-      cout << " i,j : " << i << "," << j << " ";
-      cout << distance_3d(coords[i],coords[j]) << "\n";
-    }
-  }
+  // for (int i = 0; i < thlx.num_nodes-1; ++i) {
+  //   for (int j = i+1; j <  thlx.num_nodes; ++j) {    
+  //     cout << " i,j : " << i << "," << j << " ";
+  //     cout << distance_3d(coords[i],coords[j]) << "\n";
+  //   }
+  // }
 
-  cout << "distance from final to goal: ";
-  cout << distance_3d(gl,coords[3]) << "\n";
+  // cout << "distance from final to goal: ";
+  // cout << distance_3d(gl,coords[3]) << "\n";
   
   double v0 = inv.objective(*dsa);
   
@@ -793,19 +796,19 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
   
   solve_forward_find_coords(&thlx,coords);
   
-  cout << "Coords at MIN\n";
-  for (int i = 0; i < thlx.num_nodes; ++i) {
-    cout << " i : ";
-    print_vec(coords[i]);
-  }
+  // cout << "Coords at MIN\n";
+  // for (int i = 0; i < thlx.num_nodes; ++i) {
+  //   cout << " i : ";
+  //   print_vec(coords[i]);
+  // }
 
-  cout << " distances \n";
-  for (int i = 0; i < thlx.num_nodes-1; ++i) {
-    for (int j = i+1; j <  thlx.num_nodes; ++j) {    
-      cout << " i,j : " << i << "," << j << " ";
-      cout << distance_3d(coords[i],coords[j]) << "\n";
-    }
-  }
+  // cout << " distances \n";
+  // for (int i = 0; i < thlx.num_nodes-1; ++i) {
+  //   for (int j = i+1; j <  thlx.num_nodes; ++j) {    
+  //     cout << " i,j : " << i << "," << j << " ";
+  //     cout << distance_3d(coords[i],coords[j]) << "\n";
+  //   }
+  // }
 
   cout << "distance from final to goal: ";  
   cout << distance_3d(gl,coords[3]) << "\n";
@@ -817,9 +820,11 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
   BOOST_CHECK( v0 < v1 );  
 }
 
+// This is an attempt to set up a very particular situation which allows
+// us to test effectively.
 BOOST_AUTO_TEST_CASE( test_derivatives )
 {
-  cout << "AAA\n";  
+  cout << "TEST DERIVATIVES WITH AXES COORDS\n";
   // This is an attempt to make sure that the "distance_to_goal" after
   // solving our "standard start" tetrahelix goes down
   // if variable edges get bigger
@@ -835,20 +840,44 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
   // The easiest way to to this is to take it from the javascript
   // code already written to preform these calculations....
   column_vector* coords = new column_vector[thlx.num_nodes];
+  
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  column_vector D(3);  
 
-  //  const double SHORT = LOWER_BOUND;
-  //  const double LONG = UPPER_BOUND;
-  for(int i = 0; i < thlx.num_edges; i++) {
-    thlx.distance(i) = INITIAL;
-  }
+  // Note we use right-handed coordinates.
+  // This diagram matches (approximately) the diagram in the paper.
 
-  cout << "distances:\n";
-  for(int i = 0; i < thlx.num_edges; i++) {
-    cout << "i, d " << i << " , " << thlx.distance(i) << "\n";
-  }
+  A = 0.0,0.0,0.0;
+  B = 10.0,0.0,0.0;
+  C = 0.0,10.0,0.0;
+  D = 0.0,0.0,-10.0;      
+  
+  coords[0] = A;
+  coords[1] = B;
+  coords[2] = C;
+  coords[3] = D;
+
+
+  thlx.distance(0) = 10.0;
+  thlx.distance(1) = 10.0;
+  thlx.distance(2) = 10.0;
+  thlx.distance(3) = distance_3d(B,C);
+  thlx.distance(4) = distance_3d(B,D);
+  thlx.distance(5) = distance_3d(C,D);
 
   // Now we will lengthen edge 2 by precisely 0.1...
-  //  thlx.distance(2) += 0.1;
+  thlx.distance(2) += 1.0;
+
+
+  // This is really 4 points, but it will just read the first three..
+  thlx.init_fixed_coords(coords);
+  
+  cout << "ABOUT TO SOLVE_FORWARD_FIND_COORDS \n";
+  for(int i = 0; i < thlx.num_nodes; i++) {
+    print_vec(coords[i]);
+  }
   
   solve_forward_find_coords(&thlx,coords);
 
@@ -858,7 +887,7 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
   print_vec(coords[3]);
 
   // now restore the system...
-  // thlx.distance(2) -= 0.1;
+  thlx.distance(2) -= 1.0;
   
   solve_forward_find_coords(&thlx,coords);
 
@@ -870,6 +899,7 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
   for(int i = 0; i < thlx.num_nodes; i++) {
     print_vec(coords[i]);
   }
+  
   Invert3d inv;
   inv.an = &thlx;
   inv.set_global_truss();
