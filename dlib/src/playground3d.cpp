@@ -36,7 +36,9 @@ using namespace dlib;
 
 #define USE_DERIVATIVES 1
 
-int debug = 1;
+extern int debug;
+
+// int debug = 1;
 
 // Sadly, the way the objective and deriviate functions are called
 // the do not allow general "client" data to be passed in, and they are static.
@@ -53,13 +55,18 @@ void solve_inverse_problem(Tetrahelix *an) {
   column_vector ub(an->var_edges);      
 
   // We need the Tetrahelix to have distances in order to iniitilize this meaningfully
+  double upper_bound = 0;
+  double lower_bound = -1;
   for (int i = 0; i < an->var_edges; i++) {
-    // This assumes the first edge is fixed, which it is in Tetrahelix
-    sp(i) = an->distance(i + 3);
+
+    int n = an->edge_number_of_nth_variable_edge(i);
+    sp(i) = an->distance(n);
+    
     lb(i) = an->lower_bound(i);
-    ub(i) = an->upper_bound(i);    
+    ub(i) = an->upper_bound(i);
+    if (ub(i) > upper_bound) upper_bound = ub(i);
+    if ((lower_bound == -1) || (lb(i) < lower_bound)) lower_bound = lb(i);    
   }
-  
   Invert3d inv;
   inv.an = an;
   inv.set_global_truss();
@@ -83,19 +90,20 @@ void solve_inverse_problem(Tetrahelix *an) {
 
     double score = find_min_box_constrained(
       			    // bfgs_search_strategy(),
-			    lbfgs_search_strategy(5),
-					    // cg_search_strategy(),
+			    lbfgs_search_strategy(30),
+			    //	    cg_search_strategy(),
     			     //			     newton_search_strategy,
 			    //    			     objective_delta_stop_strategy(1e-5),
     			     objective_delta_stop_strategy(1e-3),			    
     			     *Invert3d::objective,
     			     *Invert3d::derivative,
     			     sp,
-    			     uniform_matrix<double>(n,1, LOWER_BOUND),  // lower bound constraint
-    			     uniform_matrix<double>(n,1, UPPER_BOUND)   // upper bound constraint
+    			     uniform_matrix<double>(n,1, lower_bound),  // lower bound constraint
+    			     uniform_matrix<double>(n,1, upper_bound)   // upper bound constraint
     			     );
     // I uses this to get rid of the warning
     score = score + 0.0;
+    cout << "got a score : " << score << "\n";
     for (int i = 0; i < an->var_edges; ++i) {
       an->distance(i+3) = best_distances[i];
     }
@@ -192,7 +200,7 @@ Tetrahelix *init_Tetrahelix() {
   double mz = 1.0;
 
   an->add_goal_node(an->num_nodes-1,bx+mx,by+my,bz+mz,1.0);
-  
+  int debug = 0;
   if (debug) {
     for(int i = 0; i < an->goal_nodes.size(); i++) {
       cout << "goal_nodes[" << i << "] " << an->goal_nodes[i] << "\n";

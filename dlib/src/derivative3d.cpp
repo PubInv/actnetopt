@@ -176,7 +176,7 @@ BOOST_AUTO_TEST_CASE( test_computation_change_angle_wrt_length )
 
     // I think dvtheta is the external strap angle....
     double dvtheta = dvertex_angle_dlength * ddihedral_dv ;
-    
+
     cout << "dvtheta " << dvtheta*180.0/M_PI << "\n";
     // possibly this should be negative, since it is an outside angle.
     double intnl_dvtheta_tenth = -dvtheta*0.1;
@@ -595,6 +595,46 @@ BOOST_AUTO_TEST_CASE( test_rotation_about_points )
   BOOST_CHECK(abs(Mp(2) + 10.0) < epsilon);
   
 }
+// This tests our ability to solve the "forward" problem
+BOOST_AUTO_TEST_CASE( test_rotation_about_points_sense )
+{
+  column_vector A(3);
+  column_vector B(3);
+  column_vector M(3);
+
+  // For testing, let's put:
+  // A on the orign,
+  // B on the y axis
+  // C on the z axis,
+  // and then let's aim to have D be the unit point.
+  A = 0.0,0.0,0.0;
+  B = 10.0,0.0,0.0;
+  M = 10.0,10.0,0.0;
+
+  // first off, designing a case that will put M on the Z axis (X and Y = 0.0);
+  // This is 45 degrees.
+  double theta = M_PI/4;
+  column_vector Mp_pos;
+  column_vector Mp_neg;  
+  double epsilon = 1.0e-10;
+  double factor = sin(theta);
+
+  // This is an anti-clockwise rotation about the vector A to B...
+  Mp_pos = compute_rotation_about_points(A,B,theta,M);
+
+  // Z should be positive, y positive, X unchange
+  BOOST_CHECK(abs(Mp_pos(0) -  10.0) < epsilon);
+  BOOST_CHECK(abs(Mp_pos(1) - 10.0*factor) < epsilon);
+  BOOST_CHECK(abs(Mp_pos(2) - 10.0*factor) < epsilon);
+
+  Mp_neg = compute_rotation_about_points(A,B,-theta,M);
+
+  BOOST_CHECK(abs(Mp_neg(0) -  10.0) < epsilon);
+  BOOST_CHECK(abs(Mp_neg(1) - 10.0*factor) < epsilon);
+  BOOST_CHECK(abs(Mp_neg(2) + 10.0*factor) < epsilon);
+  BOOST_CHECK(abs(Mp_neg(2) + Mp_pos(2)) < epsilon);  
+
+}
 
 
 BOOST_AUTO_TEST_CASE( test_compute_goal_derivative_c )
@@ -636,7 +676,6 @@ BOOST_AUTO_TEST_CASE( test_compute_goal_derivative_c )
   }
 
   //  solve_forward_find_coords(&thlx,coords);
-
   cout << "AAA\n";
   
   column_vector gl(3);
@@ -646,7 +685,6 @@ BOOST_AUTO_TEST_CASE( test_compute_goal_derivative_c )
   cout << thlx.goals.size() << "\n";
   column_vector d;
   d = thlx.compute_goal_derivative_c(coords,5,thlx.goal_nodes[0]);
-  //  cout << d << "\n";
 
   // Basically the point is driven downward and a little on the positive x axis...
   BOOST_CHECK(d(0) == 0);
@@ -684,7 +722,7 @@ BOOST_AUTO_TEST_CASE( test_compute_goal_derivative_c )
 }
 
 int debug = 1;
-Tetrahelix *Invert3d::global_truss = 0;
+// Tetrahelix *Invert3d::global_truss = 0;
 
 BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
 {
@@ -810,12 +848,7 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
   //   }
   // }
 
-  cout << "distance from final to goal: ";  
-  cout << distance_3d(gl,coords[3]) << "\n";
-    
   double v1 = inv.objective(*dsa);
-  cout << "objective at max: " << v0 << "\n";  
-  cout << "objective at min: " << v1 << "\n"; 
   // object at max should be lower than the objective at min!!!!
   BOOST_CHECK( v0 < v1 );  
 }
@@ -844,7 +877,8 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
   column_vector A(3);
   column_vector B(3);
   column_vector C(3);
-  column_vector D(3);  
+  column_vector D(3);
+  column_vector Dgoal(3);    
 
   // Note we use right-handed coordinates.
   // This diagram matches (approximately) the diagram in the paper.
@@ -852,8 +886,10 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
   A = 0.0,0.0,0.0;
   B = 10.0,0.0,0.0;
   C = 0.0,10.0,0.0;
-  D = 0.0,0.0,-10.0;      
-  
+  D = 0.0,0.0,10.0;
+  Dgoal = 0.0,0.0,20.0;
+
+  // Note: This is done in this order so that we -Z will be 
   coords[0] = A;
   coords[1] = B;
   coords[2] = C;
@@ -868,44 +904,44 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
   thlx.distance(5) = distance_3d(C,D);
 
   // Now we will lengthen edge 2 by precisely 0.1...
-  thlx.distance(2) += 1.0;
+  //  thlx.distance(2) += 1.0;
 
   // This is really 4 points, but it will just read the first three..
   thlx.init_fixed_coords(coords);
   
-  cout << "ABOUT TO SOLVE_FORWARD_FIND_COORDS \n";
-  for(int i = 0; i < thlx.num_nodes; i++) {
-    print_vec(coords[i]);
-  }
+  // cout << "ABOUT TO SOLVE_FORWARD_FIND_COORDS \n";
+  // for(int i = 0; i < thlx.num_nodes; i++) {
+  //   print_vec(coords[i]);
+  // }
   
   solve_forward_find_coords(&thlx,coords);
 
-  column_vector goal = coords[3];
+  column_vector goal = Dgoal;
 
-  cout << "Goal node based on modified edge length:";
+  // cout << "Goal node based on modified edge length:";
 
-  // This is wrong, and it fails!
-  print_vec(coords[3]);
+  // // This is wrong, and it fails!
+  // print_vec(coords[3]);
 
   // now restore the system...
-  thlx.distance(2) -= 1.0;
+  //  thlx.distance(2) -= 1.0;
   
-  solve_forward_find_coords(&thlx,coords);
+  //  solve_forward_find_coords(&thlx,coords);
 
-  cout << "initial position of node #3:";
-  print_vec(coords[3]);
+  // cout << "initial position of node #3:";
+  // print_vec(coords[3]);
   
 
-  // Just check this is what I expect...
-  for(int i = 0; i < thlx.num_nodes; i++) {
-    print_vec(coords[i]);
-  }
+  // // Just check this is what I expect...
+  // for(int i = 0; i < thlx.num_nodes; i++) {
+  //   print_vec(coords[i]);
+  // }
   
   Invert3d inv;
   inv.an = &thlx;
   inv.set_global_truss();
 
-  cout << "BBB\n";  
+  //  cout << "BBB\n";  
 
   // Our goal now in this test is to place the goal node
   // in a direct relationship specific distances.
@@ -913,11 +949,11 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
   // For example, we length edge 2 by 0.1, and compute this goal position.
   // Presumably then the derivative (the change of edge length towards the goal)
   // should be positive for edge 2 but zero for others.
-  thlx.add_goal_node(3,goal(0),goal(1),goal(2),1.0);
+  thlx.add_goal_node(3,Dgoal(0),Dgoal(1),Dgoal(2),1.0);
   
-  cout << "number of goals: " << thlx.goals.size() << "\n";
+  // cout << "number of goals: " << thlx.goals.size() << "\n";
   
-  print_vec(thlx.goals[0]);
+  // print_vec(thlx.goals[0]);
 
   column_vector ds(thlx.var_edges);
 
@@ -934,5 +970,133 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
     int n = thlx.edge_number_of_nth_variable_edge(i);    
     cout << "Deriv " << n << " " << deriv(i) << "\n";
   }
+  BOOST_CHECK( deriv(0) < 0 );
+  BOOST_CHECK( deriv(1) < 0 );
+  BOOST_CHECK( deriv(2) < 0 );      
+}
+
+
+
+// This is an attempt to set up a very particular situation which allows
+// us to test effectively.
+BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_single_tetrahedron )
+{
+  cout << "TEST ABILITY TO SOLVE A SINGLE TETRAHEDRONXSD\n";
+  // This is an attempt to make sure that the "distance_to_goal" after
+  // solving our "standard start" tetrahelix goes down
+  // if variable edges get bigger
+  Tetrahelix thlx(4,
+		  20.0,
+		  10.0,
+		  MEDIAN,
+		  INITIAL
+		  );
+
+  // Now we want to set up the coordinates of the first three nodes
+  // very carefully so that we follow the X-axis specifically.
+  // The easiest way to to this is to take it from the javascript
+  // code already written to preform these calculations....
+  column_vector* coords = new column_vector[thlx.num_nodes];
   
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  column_vector D(3);
+  column_vector Dgoal(3);    
+
+  // Note we use right-handed coordinates.
+  // This diagram matches (approximately) the diagram in the paper.
+
+  A = 0.0,0.0,0.0;
+  B = 10.0,0.0,0.0;
+  C = 0.0,10.0,0.0;
+  D = 0.0,0.0,10.0;
+  Dgoal = 0.0,0.0,13.0;
+
+  // Note: This is done in this order so that we -Z will be 
+  coords[0] = A;
+  coords[1] = B;
+  coords[2] = C;
+  coords[3] = D;
+
+
+  thlx.distance(0) = 10.0;
+  thlx.distance(1) = 10.0;
+  thlx.distance(2) = 10.0;
+  thlx.distance(3) = distance_3d(B,C);
+  thlx.distance(4) = distance_3d(B,D);
+  thlx.distance(5) = distance_3d(C,D);
+
+  // Now we will lengthen edge 2 by precisely 0.1...
+  //  thlx.distance(2) += 1.0;
+
+  // This is really 4 points, but it will just read the first three..
+  thlx.init_fixed_coords(coords);
+
+  for (int i = 0; i < thlx.num_edges; ++i) {
+    cout << " i, distances(i) " << i << " , " << thlx.distance(i) << "\n";
+  }
+  
+  cout << "ABOUT TO SOLVE_FORWARD_FIND_COORDS \n";
+  for(int i = 0; i < thlx.num_nodes; i++) {
+    print_vec(coords[i]);
+  }
+  
+  solve_forward_find_coords(&thlx,coords);
+
+  // TODO: DAMN, DAMN DAMN, This is putting it on the wrong side.
+  // I'm not sure I even have a means for discriminating which side it should go on!
+  // I Guess I would have to use negative distance to represent going the other way.
+  // Possibly I just putting them in the wrong order.
+  cout << "DONE SOLVING_FORWARD_FIND_COORDS \n";
+  for(int i = 0; i < thlx.num_nodes; i++) {
+    print_vec(coords[i]);
+  }
+
+  column_vector goal = Dgoal;
+
+  // cout << "Goal node based on modified edge length:";
+
+  // // This is wrong, and it fails!
+  // print_vec(coords[3]);
+
+  // now restore the system...
+  //  thlx.distance(2) -= 1.0;
+  
+  //  solve_forward_find_coords(&thlx,coords);
+
+  // cout << "initial position of node #3:";
+  // print_vec(coords[3]);
+  
+
+  // // Just check this is what I expect...
+  // for(int i = 0; i < thlx.num_nodes; i++) {
+  //   print_vec(coords[i]);
+  // }
+  
+  Invert3d inv;
+  inv.an = &thlx;
+  inv.set_global_truss();
+
+  //  cout << "BBB\n";  
+
+  // Our goal now in this test is to place the goal node
+  // in a direct relationship specific distances.
+  // This should then allow us to compute a nearly "pure" derivative.
+  // For example, we length edge 2 by 0.1, and compute this goal position.
+  // Presumably then the derivative (the change of edge length towards the goal)
+  // should be positive for edge 2 but zero for others.
+  thlx.add_goal_node(3,Dgoal(0),Dgoal(1),Dgoal(2),1.0);
+
+  solve_inverse_problem(inv.an);
+
+
+  solve_forward_find_coords(&thlx,coords);
+
+  // Just check this is what I expect...
+  for(int i = 0; i < thlx.num_nodes; i++) {
+    print_vec(coords[i]);
+  }
+	  
+
 }

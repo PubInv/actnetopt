@@ -65,4 +65,6 @@ void init_renderer(Tetrahelix *an,column_vector* coordsx,Obstacle obstacle);
 void close_renderer();
 void render_all(Tetrahelix *an,column_vector* coordsx,Obstacle obstacle);
 
+void solve_inverse_problem(Tetrahelix *an);
+
 #endif

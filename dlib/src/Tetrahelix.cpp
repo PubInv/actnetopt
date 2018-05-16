@@ -591,20 +591,20 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
     // Is this even required?
     an->restore_fixed_coords(coordsx);
 
-    cout << "in solve distances:\n";
-    for(int i = 0; i < an->num_edges; i++) {
-      cout << "i, d " << i << " , " << an->distance(i) << "\n";
-    }
+    //    cout << "in solve distances:\n";
+    //    for(int i = 0; i < an->num_edges; i++) {
+    //      cout << "i, d " << i << " , " << an->distance(i) << "\n";
+    //    }
 
-    cout << "SOLVE_FORWARD_FIND_COORDS \n";
-    for(int i = 0; i < an->num_nodes; i++) {
-      print_vec(coordsx[i]);
-    }
+    //    cout << "SOLVE_FORWARD_FIND_COORDS \n";
+    //    for(int i = 0; i < an->num_nodes; i++) {
+    //      print_vec(coordsx[i]);
+    //    }
     
     // Basic structure: Iteratively find coordinates based on simple triangulations.
     // This only works for actuator networks in which we can
     int fs = an->fixed_nodes.size();
-    cout << "fixed nodes " << fs << "\n";
+    //    cout << "fixed nodes " << fs << "\n";
     for(int i = fs; i < an->num_nodes; i++) {
       // Let's set up initial values
       // choose a starting point
@@ -618,10 +618,10 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
       f.c.set_size(3);
       f.c = coordsx[i-(fs-2)];
 
-      cout << "f.a f.b f.c\n";
-      print_vec(f.a);
-      print_vec(f.b);
-      print_vec(f.c);
+      // cout << "f.a f.b f.c\n";
+      // print_vec(f.a);
+      // print_vec(f.b);
+      // print_vec(f.c);
 
       // Although in 2-dimensions we change this, in 3D it is not needed...
       // I think there is something deeply mathmatical in that.
@@ -642,16 +642,16 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
 
       column_vector  y(3);
 
-      cout << f.dad << "\n";
-      cout << f.dbd << "\n";
-      cout << f.dcd << "\n";            
+      //      cout << f.dad << "\n";
+      //      cout << f.dbd << "\n";
+      //      cout << f.dcd << "\n";            
       y = find_fourth_point_given_three_points_and_three_distances(f.chi,f.a,f.b,f.c,
 								   f.dad,f.dbd,f.dcd);
       
       coordsx[i].set_size(3);
       coordsx[i] = y;
-      cout << "SETTING " << i << "\n";
-      print_vec(y);
+      //      cout << "SETTING " << i << "\n";
+      //      print_vec(y);
       if (debug_find) std::cout << "f(y) " << f(y) << std::endl;
     }
 };
@@ -664,7 +664,7 @@ void Tetrahelix::add_goal_node(int num,double x,double y, double z,double w)    
       goals.push_back(mg);
       goal_nodes.push_back(num);
       goal_weights.push_back(w);
-      cout << "QQQ " << goals.size() << "\n";
+      //      cout << "QQQ " << goals.size() << "\n";
     }
 
 
@@ -711,12 +711,16 @@ double dihedral_from_vertex_angles(double a, double b, double c) {
   return acos(num/den);
 }
 
+// This is the two dimension angle of a triangle from lengths
+// based on triangle law.
 double angle_from_three_sides(double adjacent1, double adjacent2, double opposite) {
   double a = adjacent1;
   double b = adjacent2;
   double c = opposite;
   return acos((a*a + b*b - c*c)/(2*a*b));
 }
+// This is change in the angle c wrt to a change to the length DC given
+// lengthe a, b (adjajent to ANGLE ACB and c (the opposite length).
 double dangle_from_dside(double adjacent1, double adjacent2, double opposite) {
   double a = adjacent1;
   double b = adjacent2;
@@ -728,6 +732,10 @@ double dangle_from_dside(double adjacent1, double adjacent2, double opposite) {
   return num/den;
 }
 
+// This is the change in the dihedral angle wrappe around  with respect to
+// the vertex angles AT THE TIP.  So if A is the tip, pointing to B, C, D,
+// the the dihedral angle across AB based on the tip angles BAD (adjacent1)
+// and BAD (adjacent2)  and CAD (opposite) is geiven by this function.
 double ddhedral_dvertex(double adjacent1, double adjacent2, double opposite) {
   double a = adjacent1;
   double c = adjacent2;
@@ -828,8 +836,8 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   }
 
 
-  cout << "edge" << e << " small " << s << " large "  << l << "\n";
-  cout << "a b c d  " << a << " " << b << " " << c << " " << d << "\n"; 
+  //  cout << "edge" << e << " small " << s << " large "  << l << "\n";
+  //  cout << "a b c d  " << a << " " << b << " " << c << " " << d << "\n"; 
 
   column_vector A = cur_coords[a];
   column_vector B = cur_coords[b];
@@ -843,40 +851,60 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   double bd = distance_3d(B,D);
   double ab = distance_3d(A,B);
 
-  cout << "A B C D\n";
-  print_vec(A);
-  print_vec(B);
-  print_vec(C);
-  print_vec(D);
-  cout << "\n";
+  // cout << "A B C D\n";
+  // print_vec(A);
+  // print_vec(B);
+  // print_vec(C);
+  // print_vec(D);
+  // cout << "\n";
 
 
   // cout << "ab ac ad bc bd cd  " << ab << " " << ac << " " << ad << " " << bc  << " " << bd << " "  << cd << "\n";   
-    
-  double vc = angle_from_three_sides(ad,ab,bd);
-  double vd = angle_from_three_sides(ac,ab,bc);
-  double vb = angle_from_three_sides(ac,ad,cd);
+  // Are these properly tested?  I have reason to believe this may not be right!!!
+  // These are supposed to be the interior strap angles...
+  // I believe these are supposed by two-dimensional angles for simple triangles..
+  // But the are not named corretly!!!
+  // Naming should be adjacen-center-adjacent..
+  double ang_BAD = angle_from_three_sides(ad,ab,bd);
+  double ang_BAC = angle_from_three_sides(ac,ab,bc);
+  double ang_CAD = angle_from_three_sides(ac,ad,cd);
 
-  //  cout << " vb vc vd  " << vb*180/(M_PI) << " " << vc*180/(M_PI) << " " << vd*180/(M_PI) << "\n";
-  
+  //  cout << " BAD BAC CAD  " << ang_BAD*180/(M_PI) << " " << ang_BAC*180/(M_PI) << " " << ang_CAD*180/(M_PI) << "\n";
+
+  // This is the change in the vertex angle c (opposite CD).
   double dvertex_angle_dlength = dangle_from_dside(ac,ad,cd);
-  double ddihedral_dv = ddhedral_dvertex(vd,vc,vb);
+
+
+  // This the change in the dihedral angle AB based on the angles of the triangles meeting at A.
+  double ddihedral_dv = ddhedral_dvertex(ang_BAD,ang_BAC,ang_CAD);
 
   //  cout << " dvertex_angle_dlength  " << dvertex_angle_dlength*180/(M_PI) << "\n";
   //  cout << " ddihedral_dv  " << ddihedral_dv*180/(M_PI) << "\n";
 
+  // This is the change in the dihedral angle AB with respect to the change in length CD
   double dvtheta = dvertex_angle_dlength * ddihedral_dv ;
+    // because we use this as the INTERIOR angle, the change in the
+    // interior is the negation of the EXTERIOR, so we change the sign
 
-  cout << " dvtheta  " << dvtheta*180/(M_PI) << "\n";  
+  // THIS IS THE CRUX OF MY PROBLEM....
+  //  dvtheta = -dvtheta;
+  
+  //  cout << " dvtheta  " << dvtheta*180/(M_PI) << "\n";  
 
   // now to compute the vector, we must take dvtheta rotate the vector 
   // around the line A-B the vector of the goal_node
 
-  //  cout << "computing rotaiton: " << dvtheta << " of " << en << "\n";
+  //  cout << "computing rotaiton: " << dvtheta*180/(M_PI) << " of " << en << "\n";
   //  cout << "about A and B "  <<  "\n";
   //  print_vec(A);
   //  print_vec(B);
+  // I now suspect this is rotating in the wrong direction! Or that I mus
+  // at least be careful of the order!
   column_vector Emoved = compute_rotation_about_points(A,B,dvtheta,en);
-  cout << "Emoved " << Emoved << "\n";
+  //  cout << "Emoved " << Emoved << "\n";
   return Emoved - en;
 }
+
+
+// TODO: Add number of fixed nodes as a definite function and replace all
+// references to naked literals that depend on it.

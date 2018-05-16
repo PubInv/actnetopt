@@ -27,7 +27,7 @@ using namespace dlib;
 double* best_distances = 0;
 double best_score;
 
-extern int debug;
+int debug_inv;
 
 Invert3d::Invert3d() {
 
@@ -51,15 +51,21 @@ Invert3d::Invert3d() {
   double Invert3d::objective(const column_vector& ds) {
     cout << "OBJECTIVE\n";
 
-    //    if (debug) std::cout << "OBJECTIVE INPUTS" << std::endl;
+    //    if (debug_inv) std::cout << "OBJECTIVE INPUTS" << std::endl;
+    cout << "input to objective \n";    
     for (int i = 0; i < global_truss->var_edges; ++i) {
-      //      if (debug) std::cout << i << " : " << ds(i) << std::endl;
+      //      if (debug_inv) std::cout << i << " : " << ds(i) << std::endl;
 
       int n = global_truss->edge_number_of_nth_variable_edge(i);
       global_truss->distance(n) = ds(i);
+      cout << "i, n, ds(i) " << i << "," << n << "," << ds(i) << "\n";
     }
+    cout << "OBJECTIVE AAA\n";
+  for (int i = 0; i < global_truss->num_edges; ++i) {
+    cout << " i, distances(i) " << i << " , " << global_truss->distance(i) << "\n";
+  }
 
-    column_vector *coords = new column_vector[global_truss->num_nodes];
+  column_vector *coords = new column_vector[global_truss->num_nodes];
 
     // If I don't change an here, I'm not changing the coords!!
     solve_forward_find_coords(global_truss,coords);	  
@@ -73,11 +79,11 @@ Invert3d::Invert3d() {
       int idx = global_truss->goal_nodes[i];
       column_vector g = global_truss->goals[i];
       column_vector c = coords[idx];
-      cout << "distance to goal : " << distance_3d(g,c) << "\n";
+      //      cout << "distance to goal : " << distance_3d(g,c) << "\n";
       v += (global_truss->goal_weights[i]*distance_3d(g,c));
     }
 
-    cout << " v = " << v << "\n";
+    //    cout << " v = " << v << "\n";
     
     // now we must add in the increase to the object caused by the obstacle!!
     // for(int j = 0; j < global_truss->num_nodes; j++) {
@@ -90,10 +96,10 @@ Invert3d::Invert3d() {
     // }
 
    if (v < best_score) {
-     if (debug)    cout << "found best: " << v << "\n";
+     if (debug_inv)   cout << "found best: " << v << "\n";
      for (int i = 0; i < global_truss->var_edges; ++i) {
        best_distances[i] = ds(i);
-       if (debug) std::cout << i << " : " << ds(i) << std::endl;       
+       if (debug_inv) std::cout << i << " : " << ds(i) << std::endl;       
      }
      best_score = v;
      
@@ -105,20 +111,25 @@ Invert3d::Invert3d() {
   // compute the derivatives of the objective as the configuration ds.
 column_vector Invert3d::derivative(const column_vector& ds) {
   cout << "DERIVATIVE CALLED\n";
+  for (int i = 0; i < global_truss->num_edges; ++i) {
+    cout << " i, distances(i) " << i << " , " << global_truss->distance(i) << "\n";
+  }
+  
   for (int i = 0; i < global_truss->var_edges; ++i) {
     int n = global_truss->edge_number_of_nth_variable_edge(i);
     cout << " i, n : " << i << " " << n << "\n";
     global_truss->distance(n) = ds(i);
   }
 
+  
   for (int i = 0; i < global_truss->num_edges; ++i) {
     cout << " i, distances(i) " << i << " , " << global_truss->distance(i) << "\n";
   }
 
   // If I don't change an here, I'm not changing the coords!!
   column_vector *coords = new column_vector[global_truss->num_nodes];
+  cout << "NUM NODES " << global_truss->num_nodes << "\n";
 
-  
   solve_forward_find_coords(global_truss,coords);	     
 
 
@@ -149,6 +160,9 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       }
       dx = (d * global_truss->goal_weights[j]);
       // This is the code I copied from Invert, but it seems wrong to me..
+      // This is actually the anti-goal direction, but this is a way to
+      // express that we want to move closer to the goal, so the derivative
+      // goes UP as we move AWAY from the goal.
       // column_vector goal_direction = c - g;
       column_vector goal_direction = g - c;
 
@@ -219,8 +233,10 @@ column_vector Invert3d::derivative(const column_vector& ds) {
   }
   cout << "DERIVATIVES" << "\n";
   for(int i = 0; i < global_truss->var_edges; i++) {
-    int n = global_truss->edge_number_of_nth_variable_edge(i);      
+    int n = global_truss->edge_number_of_nth_variable_edge(i);
     cout << "edge " << n << " " << d(i) << "\n";
+    // WARNING: Experimental
+
   }
   delete[] coords;
   return d;
