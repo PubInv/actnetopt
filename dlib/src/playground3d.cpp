@@ -89,12 +89,12 @@ void solve_inverse_problem(Tetrahelix *an) {
     cout << "goal node [solve_inverse] " << an->goals[0] << "\n";
 
     double score = find_min_box_constrained(
-      			    // bfgs_search_strategy(),
-			    lbfgs_search_strategy(30),
-			    //	    cg_search_strategy(),
+					    //bfgs_search_strategy(),
+					    lbfgs_search_strategy(100),
+					    //    cg_search_strategy(),
     			     //			     newton_search_strategy,
 			    //    			     objective_delta_stop_strategy(1e-5),
-    			     objective_delta_stop_strategy(1e-3),			    
+    			     objective_delta_stop_strategy(1e-5),			    
     			     *Invert3d::objective,
     			     *Invert3d::derivative,
     			     sp,

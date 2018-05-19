@@ -797,6 +797,7 @@ column_vector compute_rotation_about_points(column_vector A,
 column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
 								int edge_number,
 								int goal_node_number) {
+  int debug = 0;
 
   //  cout << "iniit! \n";  
   // This has to be reconstructed....
@@ -851,12 +852,14 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   double bd = distance_3d(B,D);
   double ab = distance_3d(A,B);
 
-  // cout << "A B C D\n";
-  // print_vec(A);
-  // print_vec(B);
-  // print_vec(C);
-  // print_vec(D);
-  // cout << "\n";
+  if (debug) {
+  cout << "A B C D\n";
+  print_vec(A);
+  print_vec(B);
+  print_vec(C);
+  print_vec(D);
+  cout << "\n";
+  }
 
 
   // cout << "ab ac ad bc bd cd  " << ab << " " << ac << " " << ad << " " << bc  << " " << bd << " "  << cd << "\n";   
@@ -878,8 +881,10 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   // This the change in the dihedral angle AB based on the angles of the triangles meeting at A.
   double ddihedral_dv = ddhedral_dvertex(ang_BAD,ang_BAC,ang_CAD);
 
-  //  cout << " dvertex_angle_dlength  " << dvertex_angle_dlength*180/(M_PI) << "\n";
-  //  cout << " ddihedral_dv  " << ddihedral_dv*180/(M_PI) << "\n";
+  if (debug) {
+   cout << " dvertex_angle_dlength  " << dvertex_angle_dlength*180/(M_PI) << "\n";
+   cout << " ddihedral_dv  " << ddihedral_dv*180/(M_PI) << "\n";
+  }
 
   // This is the change in the dihedral angle AB with respect to the change in length CD
   double dvtheta = dvertex_angle_dlength * ddihedral_dv ;
@@ -887,22 +892,44 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
     // interior is the negation of the EXTERIOR, so we change the sign
 
   // THIS IS THE CRUX OF MY PROBLEM....
-  //  dvtheta = -dvtheta;
-  
-  //  cout << " dvtheta  " << dvtheta*180/(M_PI) << "\n";  
+
+    if (debug) {
+  cout << " dvtheta  " << dvtheta*180/(M_PI) << "\n";  
 
   // now to compute the vector, we must take dvtheta rotate the vector 
   // around the line A-B the vector of the goal_node
 
-  //  cout << "computing rotaiton: " << dvtheta*180/(M_PI) << " of " << en << "\n";
-  //  cout << "about A and B "  <<  "\n";
-  //  print_vec(A);
-  //  print_vec(B);
+   cout << "computing rotaiton: " << dvtheta*180/(M_PI) << " of " << en << "\n";
+   cout << "about A and B "  <<  "\n";
+   print_vec(A);
+   print_vec(B);
+    }
+
+    // Note: I now believe this is wrong. This is in fact a differential,
+    // instead of a derivative. I don't know what I was thinking.
+    // I think what we really want is the cross product of B->A x B->en
+    // multiplied by the dvtheta.
+    column_vector G = en - B;
+    
+    column_vector BA = A - B;
+    column_vector deriv = cross_product(BA,G)*dvtheta;
+
+    
+
+
   // I now suspect this is rotating in the wrong direction! Or that I mus
   // at least be careful of the order!
   column_vector Emoved = compute_rotation_about_points(A,B,dvtheta,en);
-  //  cout << "Emoved " << Emoved << "\n";
-  return Emoved - en;
+  column_vector differential = Emoved - en;  
+  debug = 0;  
+  if (debug) {
+    cout << "differential ";
+    print_vec(differential);
+    cout << "deriv ";
+    print_vec(deriv);  
+  }
+  //  return Emoved - en;
+  return differential;
 }
 
 

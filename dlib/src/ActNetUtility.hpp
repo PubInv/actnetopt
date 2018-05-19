@@ -49,4 +49,6 @@ double distance_2d(column_vector a, column_vector b);
 double distance_3d(column_vector a, column_vector b);
 double l2_norm(column_vector a);
 
+column_vector cross_product(column_vector a, column_vector b);
+
 #endif

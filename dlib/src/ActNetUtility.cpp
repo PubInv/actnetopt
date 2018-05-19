@@ -1,5 +1,6 @@
 #include "ActNetUtility.hpp"
 #include <limits.h>
+#include <dlib/geometry.h>
 
 void print_vec(column_vector& vec)
 {
@@ -47,3 +48,13 @@ double l2_norm(column_vector a) {
 }
 
 
+column_vector cross_product(column_vector a, column_vector b) {
+  vector<double,3> va = a;
+  vector<double,3> vb = b;
+  vector<double,3> vc = va.cross(vb);
+  column_vector c(3);
+  c(0) = vc(0);
+  c(1) = vc(1);
+  c(2) = vc(2);
+  return c;
+}

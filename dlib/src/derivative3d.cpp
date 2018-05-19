@@ -853,6 +853,110 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
   BOOST_CHECK( v0 < v1 );  
 }
 
+
+// compute the derivative of the tetrahelix against the goal for testing
+column_vector compute_derivative_for_single_tet_testing(Invert3d *inv,Tetrahelix *an,
+							column_vector* coords,
+							column_vector goal,double *obj) {
+
+  // First set all distances based on coords.
+  column_vector A = coords[0];
+  column_vector B = coords[1];
+  column_vector C = coords[2];
+  column_vector D = coords[3];
+  
+  an->distance(0) = distance_3d(A,B);
+  an->distance(1) = distance_3d(A,C);
+  an->distance(2) = distance_3d(A,D);
+  an->distance(3) = distance_3d(B,C);
+  an->distance(4) = distance_3d(B,D);
+  an->distance(5) = distance_3d(C,D);
+  column_vector ds(an->var_edges);
+  const column_vector* dsa = &ds;
+
+  for(int i = 0; i < an->var_edges; i++) {
+    int n = an->edge_number_of_nth_variable_edge(i);    
+    ds(i) = an->distance(n);
+  }
+
+  an->goals[an->goals.size() - 1] = goal;
+
+  column_vector deriv =  inv->derivative(*dsa);
+  *obj = inv->objective(*dsa);
+  
+  return deriv;
+}
+BOOST_AUTO_TEST_CASE( test_directional_derivatives )
+{
+  cout << "TEST DERIVATIVES WITH AXES COORDS\n";
+  // This is an attempt to make sure that the "distance_to_goal" after
+  // solving our "standard start" tetrahelix goes down
+  // if variable edges get bigger
+  Tetrahelix thlx(4,
+		  UPPER_BOUND,
+		  LOWER_BOUND,
+		  MEDIAN,
+		  INITIAL
+		  );
+
+  // Now we want to set up the coordinates of the first three nodes
+  // very carefully so that we follow the X-axis specifically.
+  // The easiest way to to this is to take it from the javascript
+  // code already written to preform these calculations....
+  column_vector* coords = new column_vector[thlx.num_nodes];
+  
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  column_vector D(3);
+  column_vector Dgoal(3);    
+
+  // Note we use right-handed coordinates.
+  // This diagram matches (approximately) the diagram in the paper.
+
+  A = 0.0,0.0,0.0;
+  B = 10.0,0.0,0.0;
+  C = 0.0,10.0,0.0;
+  D = 0.893668,0.755959,10.8463;
+  Dgoal = 0.0,0.0,12.0;
+
+  // Note: This is done in this order so that we -Z will be 
+  coords[0] = A;
+  coords[1] = B;
+  coords[2] = C;
+  coords[3] = D;
+
+
+  thlx.distance(0) = distance_3d(A,B);
+  thlx.distance(1) = distance_3d(A,C);
+  thlx.distance(2) = distance_3d(A,D);
+  thlx.distance(3) = distance_3d(B,C);
+  thlx.distance(4) = distance_3d(B,D);
+  thlx.distance(5) = distance_3d(C,D);
+
+  // Now we will lengthen edge 2 by precisely 0.1...
+  //  thlx.distance(2) += 1.0;
+
+  // This is really 4 points, but it will just read the first three..
+  thlx.init_fixed_coords(coords);
+  
+  
+  solve_forward_find_coords(&thlx,coords);
+
+  cout << "ABOUT TO SOLVE_FORWARD_FIND_COORDS \n";
+  for(int i = 0; i < thlx.num_nodes; i++) {
+    print_vec(coords[i]);
+  }
+  
+  column_vector goal = Dgoal;
+  thlx.add_goal_node(3,Dgoal(0),Dgoal(1),Dgoal(2),1.0);
+
+  column_vector d = thlx.compute_goal_derivative_c(coords,4,thlx.goal_nodes[0]);
+  cout << "computed directional derivative for edge 4:\n";
+  print_vec(d);
+
+}
+
 // This is an attempt to set up a very particular situation which allows
 // us to test effectively.
 BOOST_AUTO_TEST_CASE( test_derivatives )
@@ -887,7 +991,7 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
   B = 10.0,0.0,0.0;
   C = 0.0,10.0,0.0;
   D = 0.0,0.0,10.0;
-  Dgoal = 0.0,0.0,20.0;
+  Dgoal = 0.0,0.0,12.0;
 
   // Note: This is done in this order so that we -Z will be 
   coords[0] = A;
@@ -896,9 +1000,9 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
   coords[3] = D;
 
 
-  thlx.distance(0) = 10.0;
-  thlx.distance(1) = 10.0;
-  thlx.distance(2) = 10.0;
+  thlx.distance(0) = distance_3d(A,B);
+  thlx.distance(1) = distance_3d(A,C);
+  thlx.distance(2) = distance_3d(A,D);
   thlx.distance(3) = distance_3d(B,C);
   thlx.distance(4) = distance_3d(B,D);
   thlx.distance(5) = distance_3d(C,D);
@@ -955,16 +1059,23 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
   
   // print_vec(thlx.goals[0]);
 
-  column_vector ds(thlx.var_edges);
+  double obj;
+  column_vector deriv = compute_derivative_for_single_tet_testing(&inv,inv.an,
+								  coords,goal,&obj);
+  cout << "Objective: " << obj << "\n";
 
-  const column_vector* dsa = &ds;
+  // column_vector ds(thlx.var_edges);
 
-  for(int i = 0; i < thlx.var_edges; i++) {
-    int n = thlx.edge_number_of_nth_variable_edge(i);    
-    ds(i) = thlx.distance(n);
-  }
+  // const column_vector* dsa = &ds;
 
-  column_vector deriv = inv.derivative(*dsa);
+  // for(int i = 0; i < thlx.var_edges; i++) {
+  //   int n = thlx.edge_number_of_nth_variable_edge(i);    
+  //   ds(i) = thlx.distance(n);
+  // }
+
+
+  // // set up the goal correctly....
+  // column_vector deriv = inv.derivative(*dsa);
   
   for(int i = 0; i < thlx.var_edges; i++) {
     int n = thlx.edge_number_of_nth_variable_edge(i);    
@@ -972,9 +1083,57 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
   }
   BOOST_CHECK( deriv(0) < 0 );
   BOOST_CHECK( deriv(1) < 0 );
-  BOOST_CHECK( deriv(2) < 0 );      
-}
+  BOOST_CHECK( deriv(2) < 0 );
 
+  // TODO: Compute objective here to make sure it is right.
+
+  cout << "TESTING DERIVATIVE AGAINST Z\n";
+  for(int j = 0; j < 10; j++) {
+    goal(2) = 10.0+(5-j)*1.0;
+    column_vector deriv = compute_derivative_for_single_tet_testing(&inv,inv.an,
+								    coords,goal,&obj);
+    cout << "Obj, Deriv: " << obj << " ";    
+    print_vec(goal);
+    for(int i = 0; i < thlx.var_edges; i++) {
+      int n = thlx.edge_number_of_nth_variable_edge(i);    
+      cout << n << " " << deriv(i) << "   ";
+    }
+    cout << "\n";
+  }
+  
+  goal(2) = 10.0;
+
+  cout << "TESTING DERIVATIVE AGAINST Y\n";  
+  for(int j = 0; j < 10; j++) {
+    goal(1) = 2.0+(5-j)*1.0;
+    column_vector deriv = compute_derivative_for_single_tet_testing(&inv,inv.an,
+								    coords,goal,&obj);
+    print_vec(goal);
+    cout << "Obj, Deriv: " << obj << " ";    
+    for(int i = 0; i < thlx.var_edges; i++) {
+      int n = thlx.edge_number_of_nth_variable_edge(i);    
+      cout << n << " " << deriv(i) << "   ";
+    }
+    cout << "\n";
+  }
+
+  goal(1) = 0.0;
+  
+  cout << "TESTING DERIVATIVE AGAINST X\n";  
+  for(int j = 0; j < 10; j++) {
+    goal(0) = 5.0+(5-j)*1.0;
+    column_vector deriv = compute_derivative_for_single_tet_testing(&inv,inv.an,
+								    coords,goal,&obj);
+    cout << "Obj, Deriv: " << obj << " ";
+    print_vec(goal);
+    for(int i = 0; i < thlx.var_edges; i++) {
+      int n = thlx.edge_number_of_nth_variable_edge(i);    
+      cout << n << " " << deriv(i) << "   ";
+    }
+    cout << "\n";
+  }
+
+}
 
 
 // This is an attempt to set up a very particular situation which allows
@@ -1011,7 +1170,7 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_single_tetrahedron )
   B = 10.0,0.0,0.0;
   C = 0.0,10.0,0.0;
   D = 0.0,0.0,10.0;
-  Dgoal = 0.0,0.0,13.0;
+  Dgoal = 0.0,0.0,15.0;
 
   // Note: This is done in this order so that we -Z will be 
   coords[0] = A;
@@ -1078,6 +1237,12 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_single_tetrahedron )
   inv.an = &thlx;
   inv.set_global_truss();
 
+    thlx.add_goal_node(3,Dgoal(0),Dgoal(1),Dgoal(2),1.0);
+
+    double obj;
+
+    compute_derivative_for_single_tet_testing(&inv, inv.an, coords, goal, &obj);
+
   //  cout << "BBB\n";  
 
   // Our goal now in this test is to place the goal node
@@ -1086,7 +1251,7 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_single_tetrahedron )
   // For example, we length edge 2 by 0.1, and compute this goal position.
   // Presumably then the derivative (the change of edge length towards the goal)
   // should be positive for edge 2 but zero for others.
-  thlx.add_goal_node(3,Dgoal(0),Dgoal(1),Dgoal(2),1.0);
+
 
   solve_inverse_problem(inv.an);
 
