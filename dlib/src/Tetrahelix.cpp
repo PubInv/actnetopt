@@ -583,6 +583,8 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   return tform_inv(D);
 }
 
+
+
 void solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
     FindCoords3d f;
 
@@ -625,6 +627,8 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
 
       // Although in 2-dimensions we change this, in 3D it is not needed...
       // I think there is something deeply mathmatical in that.
+      // Actually, I think that statement is wrong---we may very much have
+      // to consider chirality!!!
       f.chi = sense;
 
       // and minimize the function
@@ -742,7 +746,7 @@ double ddhedral_dvertex(double adjacent1, double adjacent2, double opposite) {
   double b = opposite;
   double num = csc(a)*csc(b)*sin(c);
   double den = sqrt(1 - csc(a)*csc(a) * csc(b)*csc(b) * pow( cos(c) - cos(a)*cos(b),2));
-  return -num/den;
+  return num/den;
 }
 
 // Compute the ccw rotation by theta about the segment A->B of M (moving) by theta
@@ -789,8 +793,11 @@ column_vector compute_rotation_about_points(column_vector A,
 }
 
 
-// DANGER --- this is not under tests.
-// Highest prioirty is to write a test for this!
+// DANGER: This code does not seem to be able to distinguish
+// the orientations of the tetrahedron. It computes from distances,
+// but there are two such possible solutions, and the derivative will be
+// quite different depending on which it is. I suspect it has a hidden
+// assumption about chirality which must be brought to light.
 // This computes the change in the x,y,z coordinates of the goal node based on a change
 // in the length of the specified edge. Note this is NOT computing the change in score
 // (that is, distance to the goal node) but the chnage in the node position.
@@ -804,10 +811,8 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   column_vector d_e_a(3);
 
 
-  // SIGH -- this is not using the goal_node_number....
-  // Somehow I am not computing anything at all!
   column_vector en = cur_coords[goal_node_number];
-  //  cout << "en = " << en << "\n";
+  cout << "en = " << en << "\n";
 
 
   // let P be the joint about which we are rotating by changing e
@@ -840,10 +845,34 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   //  cout << "edge" << e << " small " << s << " large "  << l << "\n";
   //  cout << "a b c d  " << a << " " << b << " " << c << " " << d << "\n"; 
 
+  // How does this choose the chirality? Which side of the triangle BCD does A occur on?
+  // If we look at the tip of A the BCD is on the other side (from our eye), does BCD go
+  // clockwise or anticlockwise? Is our convention that, starting from the fixed points,
+  // the normal of ABC points toward or away from D?
   column_vector A = cur_coords[a];
   column_vector B = cur_coords[b];
   column_vector C = cur_coords[c];
-  column_vector D = cur_coords[d];  
+  column_vector D = cur_coords[d];
+
+  debug = 1;
+  Chirality tet = tet_chirality(A,B,C,D);
+  if (tet != CCW ) {
+    if (debug) {
+      cout << "Non-anti-clockwise tet detected: A B C D\n";
+      print_vec(A);
+      print_vec(B);
+      print_vec(C);
+      print_vec(D);
+      cout << "\n";
+      cout << "swapping B and C to repair\n";
+    }
+    column_vector S = B;
+    column_vector B = C;
+    column_vector C = S;
+    tet = tet_chirality(A,B,C,D);    
+  }
+  
+  assert(tet == CCW);
 
   double ac = distance_3d(A,C);
   double cd = distance_3d(C,D);
@@ -853,12 +882,12 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   double ab = distance_3d(A,B);
 
   if (debug) {
-  cout << "A B C D\n";
-  print_vec(A);
-  print_vec(B);
-  print_vec(C);
-  print_vec(D);
-  cout << "\n";
+    cout << "A B C D\n";
+    print_vec(A);
+    print_vec(B);
+    print_vec(C);
+    print_vec(D);
+    cout << "\n";
   }
 
 
@@ -872,56 +901,61 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   double ang_BAC = angle_from_three_sides(ac,ab,bc);
   double ang_CAD = angle_from_three_sides(ac,ad,cd);
 
-  //  cout << " BAD BAC CAD  " << ang_BAD*180/(M_PI) << " " << ang_BAC*180/(M_PI) << " " << ang_CAD*180/(M_PI) << "\n";
+  cout << " BAD BAC CAD  " << ang_BAD*180/(M_PI) << " " << ang_BAC*180/(M_PI) << " " << ang_CAD*180/(M_PI) << "\n";
 
   // This is the change in the vertex angle c (opposite CD).
-  double dvertex_angle_dlength = dangle_from_dside(ac,ad,cd);
+  double dvertex_angle_CAD = dangle_from_dside(ac,ad,cd);
 
 
   // This the change in the dihedral angle AB based on the angles of the triangles meeting at A.
-  double ddihedral_dv = ddhedral_dvertex(ang_BAD,ang_BAC,ang_CAD);
+  // That is, it is the change of the dihedral angle around AB looking from A to B.
+  // Note: Positive means anticlockwise.
+  double ddihedral_AB = ddhedral_dvertex(ang_BAD,ang_BAC,ang_CAD);
 
+  debug = 1;
   if (debug) {
-   cout << " dvertex_angle_dlength  " << dvertex_angle_dlength*180/(M_PI) << "\n";
-   cout << " ddihedral_dv  " << ddihedral_dv*180/(M_PI) << "\n";
+   cout << " dvertex_angle_dlength  " << dvertex_angle_CAD*180/(M_PI) << "\n";
+   cout << " ddihedral_dv  " << ddihedral_AB*180/(M_PI) << "\n";
   }
 
   // This is the change in the dihedral angle AB with respect to the change in length CD
-  double dvtheta = dvertex_angle_dlength * ddihedral_dv ;
+  double dAB_LENCD = dvertex_angle_CAD * ddihedral_AB ;
     // because we use this as the INTERIOR angle, the change in the
     // interior is the negation of the EXTERIOR, so we change the sign
 
   // THIS IS THE CRUX OF MY PROBLEM....
 
     if (debug) {
-  cout << " dvtheta  " << dvtheta*180/(M_PI) << "\n";  
+      cout << " dAB_LENCD  " << dAB_LENCD*180/(M_PI) << "\n";  
 
   // now to compute the vector, we must take dvtheta rotate the vector 
   // around the line A-B the vector of the goal_node
 
-   cout << "computing rotaiton: " << dvtheta*180/(M_PI) << " of " << en << "\n";
-   cout << "about A and B "  <<  "\n";
-   print_vec(A);
-   print_vec(B);
+  //   cout << "computing rotaiton: " << dvtheta*180/(M_PI) << " of " << en << "\n";
+     cout << "about A and B "  <<  "\n";
+     print_vec(A);
+     print_vec(B);
     }
 
-    // Note: I now believe this is wrong. This is in fact a differential,
-    // instead of a derivative. I don't know what I was thinking.
-    // I think what we really want is the cross product of B->A x B->en
-    // multiplied by the dvtheta.
-    column_vector G = en - B;
+    // G is the goal direction, the vector which if added to D would place us at the goal.
+    column_vector G = en - A;
+    cout << "G = ";
+    print_vec(G);
+    cout << "\n";
     
     column_vector BA = A - B;
-    column_vector deriv = cross_product(BA,G)*dvtheta;
-
-    
-
+    // What order should this be?
+    column_vector CP = cross_product(G,BA);
+    cout << "CP \n";
+    print_vec(CP);
+    column_vector deriv = CP*dAB_LENCD;
+    deriv = deriv/l2_norm(deriv);
 
   // I now suspect this is rotating in the wrong direction! Or that I mus
   // at least be careful of the order!
-  column_vector Emoved = compute_rotation_about_points(A,B,dvtheta,en);
+  column_vector Emoved = compute_rotation_about_points(A,B,dAB_LENCD,en);
   column_vector differential = Emoved - en;  
-  debug = 0;  
+  debug = 1;  
   if (debug) {
     cout << "differential ";
     print_vec(differential);
@@ -929,7 +963,8 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
     print_vec(deriv);  
   }
   //  return Emoved - en;
-  return differential;
+  //  return differential;
+  return deriv;
 }
 
 

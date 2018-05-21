@@ -49,7 +49,7 @@ Invert3d::Invert3d() {
   }
 
   double Invert3d::objective(const column_vector& ds) {
-    int debug = 0;
+    int debug = 1;
     if (debug) {
     cout << "OBJECTIVE:  " <<  ds(0) << " " << ds(1) << " " << ds(2) << "\n";
     }
@@ -95,7 +95,8 @@ Invert3d::Invert3d() {
     // 	v += global_truss->obstacle.f(coords[j]);
     //   }
     // }
-    //    cout << "v = " << v << "\n";
+    if (debug)
+      cout << "v = " << v << "\n";
    if (v < best_score) {
      if (debug_inv)   cout << "found best: " << v << "\n";
      for (int i = 0; i < global_truss->var_edges; ++i) {
@@ -177,8 +178,8 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       // This is actually the anti-goal direction, but this is a way to
       // express that we want to move closer to the goal, so the derivative
       // goes UP as we move AWAY from the goal.
-      column_vector goal_direction = g-c;
-      // column_vector goal_direction = g - c;
+      //      column_vector goal_direction = g-c;
+      column_vector goal_direction = c - g;
 
       double ds_de = dot(goal_direction,dx)/l2_norm(goal_direction);
       if (debug) {
@@ -248,7 +249,7 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       }
     }
   }
-  debug = 0;
+  debug = 1;
   if (debug)   cout << "DERIVATIVES" << "\n";
   for(int i = 0; i < global_truss->var_edges; i++) {
     int n = global_truss->edge_number_of_nth_variable_edge(i);

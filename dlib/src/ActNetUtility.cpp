@@ -58,3 +58,20 @@ column_vector cross_product(column_vector a, column_vector b) {
   c(2) = vc(2);
   return c;
 }
+
+
+// https://stackoverflow.com/questions/19350792/calculate-normal-of-a-single-triangle-in-3d-space
+// compute the normal (AB rtoated into AC)
+column_vector normal(column_vector a, column_vector b, column_vector c) {
+  column_vector U = b - a;
+  column_vector V = c - a;
+  return cross_product(U,V);
+}
+
+
+Chirality tet_chirality(column_vector a, column_vector b, column_vector c, column_vector d)
+{
+  column_vector N = normal(a,b,c);
+  double prod = (N(0)*d(0) + N(1)*d(1) + N(2)*d(2));
+  return (prod > 0) ? CCW : CW;
+}
