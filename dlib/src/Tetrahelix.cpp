@@ -864,12 +864,12 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
       print_vec(C);
       print_vec(D);
       cout << "\n";
-      cout << "swapping B and C to repair\n";
+      cout << "swapping A and B to repair\n";
     }
     column_vector S = B;
-    column_vector B = C;
-    column_vector C = S;
-    tet = tet_chirality(A,B,C,D);    
+    B = A;
+    A = S;
+    tet = tet_chirality(A,B,C,D);
   }
   
   assert(tet == CCW);
