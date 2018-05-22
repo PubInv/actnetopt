@@ -572,13 +572,22 @@ d = \|CD \| = \sqrt{(D_x - \cos{\theta})^2 + sin^2{\theta} + D_z^2)}
 
 \subsection{Yet Another Approach}
 
+\begin{figure}
+  \centering
+     \includegraphics[width=0.90\textwidth]{figures/EasyToComputeTetDerivative.png}
+     \caption{Basic diagram of initial tetrahedron}
+  \label{fig:basic}     
+\end{figure}
+
+
 This article from Stack Exchange gives yet another approach to computing the
 dihedral angles:
 
 \url{https://math.stackexchange.com/questions/314970/dihedral-angles-between-tetrahedron-faces-from-triangles-angles-at-the-tip}
 
-This method computs the dihedral angles from the vertex angls. Let $a,b,c$ be the
-vertx angles of the triangles $A,B,C$ meeting in a point.
+This method computes the dihedral angles from the vertex angls. Let $a,b,c$ be the
+vertx angles of the triangles $A,B,C$ meeting in a point. ($\angle AB$ is a dihedral angle), and $a,b,c$ are planar angles against the vertex of the
+tetrahedron.
 
 \[
 \angle AB =\arccos{\frac{\cos{c} - \cos{b}\cos{a}}{\sin{b}\sin{a}}}
@@ -609,13 +618,70 @@ c = \arccos{\frac{x^2 + y^2 + -z^2}{2xy}}
     \frac{(x^2 + y^2 - z^2)^2}{(4 x^2 y^2)}}}
 \]
 
+
+If we have a goal node $g$ which exists further down the kinematic chain than $\overrightarrow{DC}$, then
+the change in its position can be computed as the rotation of it about $\overrightarrow{AB}$ induced by the
+chage in length $\overrightarrow{DC}$.
+
+\[
+\frac{\partial AB }{\partial \overrightarrow{DC}}  =
+\frac{z}{x y \sqrt{1 -
+    \frac{(x^2 + y^2 - z^2)^2}{(4 x^2 y^2)}}}
+\cdot
+\frac{\csc{a} \csc{b} \sin{c}}
+ {\sqrt{1 - \csc^2{a} \csc^2{b} \big( \cos{c} - \cos{a} \cos{b}\big)^2}}
+ \]
+
+ Note that the change in position of a goal point $G$ rotated about $\overrightarrow{AB}$ is:
+
+(from \url{http://reedbeta.com/blog/rotations-and-infinitesimal-generators/}:)
+
+\[
+\frac{\partial \overrightarrow{G}}{\partial \theta} = \overrightarrow{AB} \times \overrightarrow{BG}
+\]
+
+ It is important to note that this expression in terms of the tetrahedron $ABCD$ belie the rather tricky coding
+ involved. The code must be very careful to consider the chirality of the tetrahedron, in particular, and
+ the choice of the points $ABCD$ must be done carefully. In fact, my code, perhaps incompetently, choose the points $A$ and $B$
+ by swapping them if the tetrarhedron $ABCD$ is not anticlockwise (that is, $D$ is on the righ-hand side (right thumb pointing to it),
+ when the fingers rotate from $A$ to $B$ to $C$.)
+
+ Furthermore, I actually return the derivative in a ``normalized'' form. I am not sure that is justified, but it seems to work with the
+ DLIB software. In theory we should be quite able to say what the units of these derivatibves are, but I get rather confused by them.
+ 
+Let's assume however that we have a way to compute the $\frac{\partial g}{\partial \overrightarrow{DC}}$. Have we then got a way to compute
+the change in the score value?
+
+However, in order to use the DLIB numerical optimization software, what we really need to compute is
+an objective function and the change in this objective function as we change lengths within the system.
+Our basic goal is minimize an objective function $S$ which represents the sum of the distances between the
+goal node positions $C(g)$  and their target positions $T(g)$.
+
+\[
+S(C) = \sum_{g\in V} \| C(g) - T(g) \|
+\]
+
+The change in the components of this sum are captured by the inner product of the derivative with the vector
+pointing from the current node position $C(g)$ to the target $T(g)$.
+
+Our goal is to compute the change in this function with respect to the change in the length of a given edge:
+
+\[
+\frac{\partial S}{\partial \overrightarrow{DC}} =
+\sum_{g\in V} [C(g) - T(g)] \cdot \frac{\partial AB }{\partial \overrightarrow{DC}} 
+\]
+
+Note that $[C(g) - T(g)]$ points {\em away} from the goal. This because we have organized our system to {\em minimize} the objective $S$,
+as is customary.
+
+
 \section{Returning to the System}
 
 On April 13th, 2018, I finally came back to this. I'm not sure where it stands.
 
 On May 4th, 2018, after my trip to Hong Kong, I once again return to this code.
 
-Upon returning to my test code (thank God I am using TDD) I discover that I don't have ``compute_rotation_obout_points'' working.
+Upon returning to my test code (thank God I am using TDD) I discover that I don't have ``compute rotation about points'' working.
 
 As of May 5th, I believe the derivative calculation is incorrect.
 
