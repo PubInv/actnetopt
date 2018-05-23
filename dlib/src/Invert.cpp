@@ -161,7 +161,6 @@ Invert::Invert() {
 
 	  column_vector n_to_center = global_truss->obstacle.center - coords[j];
 
-	  // What is "d" here!!! OMG!
 	  double direction = dot(n_to_center,deriv_v);
 	  d_obst +=  ( direction * p);
 	}

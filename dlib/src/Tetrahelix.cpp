@@ -288,32 +288,38 @@ const int debug_find = 0;
 // I need to work out the naming very clearly! That is a task for tomorrow.
 // The input is the 6 distances.
 // This code inspired by Dave Barber: view-source:http://tamivox.org/redbear/tetra_calc/index.html
-column_vector find_point_from_transformed(Chirality sense,double AB, double AC, double AD, double BC, double BD, double CD) {
+column_vector find_point_from_transformed(Chirality sense,double AB, double AC, double AD, double BC, double BD, double CD, bool* valid) {
   // _m2 means "squared"
   double AB_m2 = AB * AB; double AC_m2 = AC * AC;
-     double AD_m2 = AD * AD; double BC_m2 = BC * BC;
-     double BD_m2 = BD * BD; double CD_m2 = CD * CD;
-     double qx = AB;
-     double rx = (AB_m2 + AC_m2 - BC_m2) / (2.0 * AB);    
-     double ry = sqrt (AC_m2 - rx * rx);
-     double sx = (AB_m2 + AD_m2 - BD_m2) / (2.0 * AB);
-     double sy = (BD_m2 - (sx - qx) * (sx - qx) - CD_m2 + (sx - rx) * (sx - rx) + ry * ry) / (2 * ry);
-     double sz = sqrt (AD_m2 - sx * sx - sy * sy);
-
-     column_vector A(3);
-     column_vector B(3);
-     column_vector C(3);     
-     A = 0.0,0.0,0.0;
-     B = qx,0.0,0.0;
-     column_vector D(3);
-     D = sx,sy,(sense == CCW) ? sz : -sz;
-
-  // cout << "A B C D\n";
-  // print_vec(A);
-  // print_vec(B);
-  // print_vec(C);
-  // print_vec(D);
-  return D;
+  double AD_m2 = AD * AD; double BC_m2 = BC * BC;
+  double BD_m2 = BD * BD; double CD_m2 = CD * CD;
+  double qx = AB;
+  double rx = (AB_m2 + AC_m2 - BC_m2) / (2.0 * AB);    
+  double ry = sqrt (AC_m2 - rx * rx);
+  double sx = (AB_m2 + AD_m2 - BD_m2) / (2.0 * AB);
+  double sy = (BD_m2 - (sx - qx) * (sx - qx) - CD_m2 + (sx - rx) * (sx - rx) + ry * ry) / (2 * ry);
+  double factor = AD_m2 - sx * sx - sy * sy;
+  double sz = 0;
+  if (factor < 0) {
+    cout << "Internal ERROR: this is not a legal tetrahedron\n";
+    cout << "AB AC AD BC BD CD\n";
+    cout << AB << " " << AC << " " << AD << " " << BC << " " << BD << " " << CD << "\n";
+    *valid = false;
+    // I have no idea what to return here -- I'll return half the average distance.
+    sz = (AB + AC + AD + BC + BD + CD) / (6*2);
+  } else {
+    sz = sqrt (AD_m2 - sx * sx - sy * sy);
+    *valid = true;
+  }
+    column_vector A(3);
+    column_vector B(3);
+    column_vector C(3);     
+    A = 0.0,0.0,0.0;
+    B = qx,0.0,0.0;
+    column_vector D(3);
+    D = sx,sy,(sense == CCW) ? sz : -sz;
+    return D;
+  
 }
 
 // my attempt to compute the necessary transform
@@ -533,16 +539,21 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
 
 column_vector find_fourth_point_given_three_points_and_three_distances(Chirality sense,
 								      column_vector pa,column_vector pb,column_vector pc,
-								      double ad,double bd,double cd
+								       double ad,double bd,double cd,
+								       bool* valid
 								      ) {
+
+  int debug = 0;
+  if (debug) cout << "ad bd cd\n";
+  if (debug) cout << ad << " " << bd << " " << cd << "\n";
   // First compute all 6 distances....
   double ab = distance_2d(pa,pb);
   double ac = distance_2d(pa,pc);
   double bc = distance_2d(pb,pc);
 
   // Now find transformation that rotates and translates to axes...
-  //  cout << "pa pb pc \n";
-  //  cout << pa << " " << pb << " " << pc << "\n";  
+  if (debug) cout << "pa pb pc \n";
+  if (debug) cout << pa << " " << pb << " " << pc << "\n";  
   point_transform_affine3d tform = compute_transform_to_axes2(pa,pb,pc);
 
   column_vector Ap(3);
@@ -550,20 +561,20 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   column_vector Cp(3);
 
   Ap = tform(pa);
-  // cout << "Ap \n";
-  // print_vec(Ap);
+  if (debug) cout << "Ap \n";
+  if (debug) print_vec(Ap);
   
   Bp = tform(pb);
-  // cout << "Bp \n";
-  // print_vec(Bp);
+  if (debug) cout << "Bp \n";
+  if (debug) print_vec(Bp);
   
   Cp = tform(pc);
-  // cout << "Cp \n";
-  // print_vec(Cp);
+  if (debug) cout << "Cp \n";
+  if (debug) print_vec(Cp);
   
   point_transform_affine3d tform_inv = inv(tform);
-  // cout << "tform inv\n";
-  // cout << tform_inv.get_m();
+  if (debug) cout << "tform inv\n";
+  if (debug) cout << tform_inv.get_m();
 
   //  column_vector X(3);
   //  X = 1.0,1.0,1.0;
@@ -576,18 +587,23 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   // cout << "XXXXXXX\n";  
 
   
-
+  
   // Now get the fourth point...
-  //  cout << ab << " " << ac << " " << ad << " " << bc << " " << bd << " " << cd << "\n";
-  column_vector D = find_point_from_transformed(sense,ab,ac,ad,bc,bd,cd);
+  if (debug) cout << "INPUT YYY\n";
+  if (debug) cout << ab << " " << ac << " " << ad << " " << bc << " " << bd << " " << cd << "\n";
+  column_vector D = find_point_from_transformed(sense,ab,ac,ad,bc,bd,cd,valid);
+  assert(!isnan(D(0)));
+  assert(!isnan(D(1)));
+  assert(!isnan(D(2)));
   return tform_inv(D);
 }
 
 
 
-void solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
+bool solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
     FindCoords3d f;
 
+    int debug = 0;
     //    Chirality sense = CCW;
     Chirality sense = CCW;
     // Is this even required?
@@ -607,6 +623,7 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
     // This only works for actuator networks in which we can
     int fs = an->fixed_nodes.size();
     //    cout << "fixed nodes " << fs << "\n";
+    bool valid = true;
     for(int i = fs; i < an->num_nodes; i++) {
       // Let's set up initial values
       // choose a starting point
@@ -638,7 +655,11 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
 
       int ecd = an->edge_between(i,i-1);
       int ebd = an->edge_between(i,i-2);
-      int ead = an->edge_between(i,i-3);            
+      int ead = an->edge_between(i,i-3);
+      if (debug) {
+	cout << "ecd ebd ead \n";
+	cout << ecd << " " << ebd << " " << ead << "\n";
+      }
 
       f.dad = an->distance(ead);
       f.dbd = an->distance(ebd);
@@ -646,18 +667,29 @@ void solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
 
       column_vector  y(3);
 
-      //      cout << f.dad << "\n";
-      //      cout << f.dbd << "\n";
-      //      cout << f.dcd << "\n";            
+      if (debug) {
+	cout << "input XXXX\n";
+	cout << f.a << "\n";
+	cout << f.b << "\n";
+	cout << f.c << "\n";      
+	cout << f.dad << "\n";
+	cout << f.dbd << "\n";
+	cout << f.dcd << "\n";
+      }
+      bool lvalid = true;
       y = find_fourth_point_given_three_points_and_three_distances(f.chi,f.a,f.b,f.c,
-								   f.dad,f.dbd,f.dcd);
+								   f.dad,f.dbd,f.dcd,&lvalid);
+      valid &= lvalid;
       
       coordsx[i].set_size(3);
       coordsx[i] = y;
-      //      cout << "SETTING " << i << "\n";
-      //      print_vec(y);
+      if (debug) {
+	cout << "SETTING " << i << "\n";
+	print_vec(y);
+      }
       if (debug_find) std::cout << "f(y) " << f(y) << std::endl;
     }
+    return valid;
 };
 
 void Tetrahelix::add_goal_node(int num,double x,double y, double z,double w)    {
@@ -812,8 +844,6 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
 
 
   column_vector en = cur_coords[goal_node_number];
-  cout << "en = " << en << "\n";
-
 
   // let P be the joint about which we are rotating by changing e
   // let M be the directly moved joint.
@@ -854,7 +884,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   column_vector C = cur_coords[c];
   column_vector D = cur_coords[d];
 
-  debug = 1;
+  debug = 0;
   Chirality tet = tet_chirality(A,B,C,D);
   if (tet != CCW ) {
     if (debug) {
@@ -871,8 +901,20 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
     A = S;
     tet = tet_chirality(A,B,C,D);
   }
-  
-  assert(tet == CCW);
+
+  if (tet != CCW) {
+    // This is a major internal error...
+    cout << "Internal error. Could not construct CCW tet via a swap.\n";
+      cout << "Non-anti-clockwise tet detected: A B C D\n";
+      print_vec(A);
+      print_vec(B);
+      print_vec(C);
+      print_vec(D);
+      cout << "\n";
+    
+    assert(tet == CCW);    
+  }
+
 
   double ac = distance_3d(A,C);
   double cd = distance_3d(C,D);
@@ -901,7 +943,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   double ang_BAC = angle_from_three_sides(ac,ab,bc);
   double ang_CAD = angle_from_three_sides(ac,ad,cd);
 
-  cout << " BAD BAC CAD  " << ang_BAD*180/(M_PI) << " " << ang_BAC*180/(M_PI) << " " << ang_CAD*180/(M_PI) << "\n";
+  if (debug) cout << " BAD BAC CAD  " << ang_BAD*180/(M_PI) << " " << ang_BAC*180/(M_PI) << " " << ang_CAD*180/(M_PI) << "\n";
 
   // This is the change in the vertex angle c (opposite CD).
   double dvertex_angle_CAD = dangle_from_dside(ac,ad,cd);
@@ -912,7 +954,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   // Note: Positive means anticlockwise.
   double ddihedral_AB = ddhedral_dvertex(ang_BAD,ang_BAC,ang_CAD);
 
-  debug = 1;
+  debug = 0;
   if (debug) {
    cout << " dvertex_angle_dlength  " << dvertex_angle_CAD*180/(M_PI) << "\n";
    cout << " ddihedral_dv  " << ddihedral_AB*180/(M_PI) << "\n";
@@ -939,26 +981,28 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
 
     // G is the goal direction, the vector which if added to D would place us at the goal.
     column_vector G = en - A;
-    cout << "G = ";
-    print_vec(G);
-    cout << "\n";
-    
     column_vector BA = A - B;
     // What order should this be?
     column_vector CP = cross_product(G,BA);
-    cout << "CP \n";
-    print_vec(CP);
     column_vector deriv = CP*dAB_LENCD;
     deriv = deriv/l2_norm(deriv);
+    if (debug) {
+      cout << "G = ";
+      print_vec(G);
+      cout << "\n";
+      
+      cout << "CP \n";
+      print_vec(CP);
+    }
 
   // I now suspect this is rotating in the wrong direction! Or that I mus
   // at least be careful of the order!
-  column_vector Emoved = compute_rotation_about_points(A,B,dAB_LENCD,en);
-  column_vector differential = Emoved - en;  
-  debug = 1;  
+    //  column_vector Emoved = compute_rotation_about_points(A,B,dAB_LENCD,en);
+    //  column_vector differential = Emoved - en;  
+  debug = 0;  
   if (debug) {
-    cout << "differential ";
-    print_vec(differential);
+    //    cout << "differential ";
+    //    print_vec(differential);
     cout << "deriv ";
     print_vec(deriv);  
   }

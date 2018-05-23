@@ -152,16 +152,16 @@ public:
   double operator() ( const column_vector& x) const;
 };
 
-void solve_forward_find_coords(Tetrahelix *an,column_vector coords[]);
+bool solve_forward_find_coords(Tetrahelix *an,column_vector coords[]);
 
 
-column_vector find_point_from_transformed(Chirality sense,double AB, double AC, double AD, double BC, double BD, double CD);
+column_vector find_point_from_transformed(Chirality sense,double AB, double AC, double AD, double BC, double BD, double CD,bool *valid);
 
   
 column_vector find_fourth_point_given_three_points_and_three_distances(
 								      Chirality sense,
 								      column_vector pa,column_vector pb,column_vector pc,
-								      double da,double db,double dc
+								      double da,double db,double dc,bool* valid
 								      );
 
 point_transform_affine3d compute_transform_to_axes(column_vector A, column_vector B, column_vector C);

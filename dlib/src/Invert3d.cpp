@@ -49,7 +49,7 @@ Invert3d::Invert3d() {
   }
 
   double Invert3d::objective(const column_vector& ds) {
-    int debug = 1;
+    int debug = 0;
     if (debug) {
     cout << "OBJECTIVE:  " <<  ds(0) << " " << ds(1) << " " << ds(2) << "\n";
     }
@@ -173,6 +173,9 @@ column_vector Invert3d::derivative(const column_vector& ds) {
 	print_vec(d);
 	abort();
       }
+      if (isnan(d(0))) {
+	cout << "DERIVIATIVE NOT DEFINED! THIS MEANS WE ARE OPTIMAL!";
+      }
       dx = (d * global_truss->goal_weights[j]);
       // This is the code I copied from Invert, but it seems wrong to me..
       // This is actually the anti-goal direction, but this is a way to
@@ -181,27 +184,33 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       //      column_vector goal_direction = g-c;
       column_vector goal_direction = c - g;
 
-      double ds_de = dot(goal_direction,dx)/l2_norm(goal_direction);
-      if (debug) {
-      cout << "ANALYSIS\n";
-      cout << "node position: ";
-      print_vec(c);
+      if (l2_norm(goal_direction) == 0.0) { // In this case, the derivative is undefined...
+	if (debug) cout << "goal_direction is null!\n";
+	prod += 0.0;
+      } else {
 
-      cout << "goal position: ";
-      print_vec(g);
-      
-      cout << "goal direction: ";
-      print_vec(goal_direction);
+	double ds_de = dot(goal_direction,dx)/l2_norm(goal_direction);
+	if (debug) {
+	  cout << "ANALYSIS\n";
+	  cout << "node position: ";
+	  print_vec(c);
 
-      cout << "derivative: ";
-      print_vec(d);
+	  cout << "goal position: ";
+	  print_vec(g);
       
-      cout << "ds/de: ";
-      cout << ds_de;
-      cout << "\n";
+	  cout << "goal direction: ";
+	  print_vec(goal_direction);
+
+	  cout << "derivative: ";
+	  print_vec(d);
+      
+	  cout << "ds/de: ";
+	  cout << ds_de;
+	  cout << "\n";
+	}
+
+	prod += ds_de;
       }
-
-      prod += ds_de;
       
     }
     //    cout << "edge,prod = " << e << " , " << prod <<"\n";    
@@ -249,7 +258,7 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       }
     }
   }
-  debug = 1;
+  debug = 0;
   if (debug)   cout << "DERIVATIVES" << "\n";
   for(int i = 0; i < global_truss->var_edges; i++) {
     int n = global_truss->edge_number_of_nth_variable_edge(i);

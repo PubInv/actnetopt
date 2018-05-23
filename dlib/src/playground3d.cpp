@@ -75,18 +75,15 @@ void solve_inverse_problem(Tetrahelix *an) {
   //  int n = an->var_edges;
 
     best_score = std::numeric_limits<float>::max();
-    cerr << an->var_edges << "\n";
-    cerr << an->num_edges << "\n";
-    cerr << an->num_nodes << "\n";    
     for (int i = 0; i < an->var_edges; ++i) {
 	   best_distances[i] = an->distance(i+3);
     }
 
     //    double score = 0.0;
     int n = an->var_edges;
-    cout << "# var edges: " << n << "\n";
+    //    cout << "# var edges: " << n << "\n";
 
-    cout << "goal node [solve_inverse] " << an->goals[0] << "\n";
+    //    cout << "goal node [solve_inverse] " << an->goals[0] << "\n";
 
     double score = find_min_box_constrained(
 					    //bfgs_search_strategy(),
@@ -103,7 +100,7 @@ void solve_inverse_problem(Tetrahelix *an) {
     			     );
     // I uses this to get rid of the warning
     score = score + 0.0;
-    cout << "got a score : " << score << "\n";
+    //    cout << "got a score : " << score << "\n";
     for (int i = 0; i < an->var_edges; ++i) {
       an->distance(i+3) = best_distances[i];
     }
