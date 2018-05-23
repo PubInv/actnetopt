@@ -124,6 +124,7 @@ column_vector compute_internal_effector_derivative_c(column_vector cur_coords[],
 						      int goal_node_number);
  
  void set_fixed_coords(column_vector coords[]);
+  void set_distances(column_vector coords[]);  
 
 };
 
@@ -196,6 +197,7 @@ column_vector compute_rotation_about_points(column_vector A,
 					    column_vector B,
 					    double theta,
 					    column_vector M);
+
 
 
 #endif

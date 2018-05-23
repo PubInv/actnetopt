@@ -322,78 +322,6 @@ column_vector find_point_from_transformed(Chirality sense,double AB, double AC, 
   
 }
 
-// my attempt to compute the necessary transform
-// The purpose of this is to create the transform that makes A->B point along the X axis, I think.
-// point_transform_affine3d compute_transform_to_axes(column_vector A, column_vector B, column_vector C) {
-//   // now we want to rotate the vector AB until it is pointing along the X axis.
-//   column_vector AB = B - A;
-
-//   // Crumb, column_vector doesn't seem to be a vector, which doesn't let me a normalize...
-//   dlib::vector<double,3> ABv(AB(0),AB(1),AB(2));
-//   dlib::vector<double,3> ABu = ABv.normalize();
-//   dlib::vector<double,3> Xu(1.0,0.0,0.0);
-//   cout << "Abu\n";
-
-//   cout << ABu;
-  
-//   // Now, following: https://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
-//   dlib::vector<double,3> v = ABu.cross(Xu);
-//   cout << v;
-//   double s = v.length();
-//   double c = ABu.dot(Xu);
- 
-
-//   cout << "s = " << s << "\n";
-//   cout << "c = " << c << "\n";
-//   // There is a possibility that c == 1.0 which must be handled...
-//   double q = 1/(1.0 +c);
-//   // Now we want a skew-symmetric cross-product matrix of v, according to the instructions...
-//   cout << "q = " << q << "\n";
-//   //  point_transform_affine3d I;
-//   //  point_transform_affine3d vx;
-//   dlib::matrix<double,3,3> vx;
-//   vx(0,0) = 0;
-//   vx(1,0) = v(3);
-//   vx(2,0) = -v(2);   
-
-//   vx(0,1) = -v(3);
-//   vx(1,1) = 0;
-//   vx(2,1) = v(1);   
-
-//   vx(0,2) = v(2);
-//   vx(1,2) = -v(1);
-//   vx(2,2) = 0;   
-
-//   dlib::matrix<double,3,3> vx2 = vx * vx;
-//   cout << "vx* vx \n";
-//   cout << vx2;
-
-//   dlib::matrix<double,3,3> I;
-//   I(0,0) = 1;
-//   I(1,0) = 0;
-//   I(2,0) = 0;   
-
-//   I(0,1) = 0;
-//   I(1,1) = 1;
-//   I(2,1) = 0;   
-
-//   I(0,2) = 0;
-//   I(1,2) = 0;
-//   I(2,2) = 1;   
-  
-//   dlib::matrix<double,3,3> R = I + vx + (vx2) ;
-//   cout << "R = \n";
-//   cout << R;
-//   //  dlib::vector<double,3> negA(-A(0),-A(1),-A(2));
-
-//   cout << "Attempt to rotate by matrix multiply\n";
-//   cout << R*AB;
-//   dlib::vector<double,3> zero(0,0,0);  
-//   point_transform_affine3d firstRotation(R,zero);
-//   point_transform_affine3d tform;
-  
-//   return firstRotation * translate_point(-A(0),-A(1),-A(2));
-// }
 
 // This is a slighlty different way based on answer by Kuba Ober in ths same way.
 // This tries to rotate the vector A-B on to the X-Axis. C should end up in the XY plane.
@@ -546,11 +474,12 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   int debug = 0;
   if (debug) cout << "ad bd cd\n";
   if (debug) cout << ad << " " << bd << " " << cd << "\n";
+  
   // First compute all 6 distances....
-  double ab = distance_2d(pa,pb);
-  double ac = distance_2d(pa,pc);
-  double bc = distance_2d(pb,pc);
-
+  double ab = distance_3d(pa,pb);
+  double ac = distance_3d(pa,pc);
+  double bc = distance_3d(pb,pc);
+  
   // Now find transformation that rotates and translates to axes...
   if (debug) cout << "pa pb pc \n";
   if (debug) cout << pa << " " << pb << " " << pc << "\n";  
@@ -576,18 +505,6 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   if (debug) cout << "tform inv\n";
   if (debug) cout << tform_inv.get_m();
 
-  //  column_vector X(3);
-  //  X = 1.0,1.0,1.0;
-  //  double phi = M_PI/6;
-  // point_transform_affine3d rotate0 = rotate_around_x(phi);
-  // cout << "XXXXXXX\n";
-  // cout << X << "\n";
-  // cout << rotate0(X) << "\n";
-  // cout << rotate0(inv(rotate0)(X)) << "\n";
-  // cout << "XXXXXXX\n";  
-
-  
-  
   // Now get the fourth point...
   if (debug) cout << "INPUT YYY\n";
   if (debug) cout << ab << " " << ac << " " << ad << " " << bc << " " << bd << " " << cd << "\n";
@@ -1011,6 +928,19 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   return deriv;
 }
 
-
+		   
 // TODO: Add number of fixed nodes as a definite function and replace all
 // references to naked literals that depend on it.
+
+void Tetrahelix::set_distances(column_vector coords[]) {
+    for (int i = 0; i < num_edges; ++i) {
+      //      int e = edge_number_of_nth_variable_edge(i);
+      int s = small_node(i);
+      int l  = large_node(i);
+      double d = distance_3d(coords[s],coords[l]);
+      //      cout << "i s l d \n";
+      //      cout << i << " " << " " << s << " " << l << " " << d << "\n";
+      distance(i) = d;
+    }
+    
+}

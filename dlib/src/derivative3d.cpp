@@ -849,13 +849,9 @@ column_vector compute_derivative_for_single_tet_testing(Invert3d *inv,Tetrahelix
   column_vector B = coords[1];
   column_vector C = coords[2];
   column_vector D = coords[3];
-  
-  an->distance(0) = distance_3d(A,B);
-  an->distance(1) = distance_3d(A,C);
-  an->distance(2) = distance_3d(A,D);
-  an->distance(3) = distance_3d(B,C);
-  an->distance(4) = distance_3d(B,D);
-  an->distance(5) = distance_3d(C,D);
+
+  an->set_distances(coords);  
+
   column_vector ds(an->var_edges);
   const column_vector* dsa = &ds;
 
@@ -915,12 +911,7 @@ BOOST_AUTO_TEST_CASE( test_directional_derivatives )
   coords[3] = D;
 
 
-  thlx.distance(0) = distance_3d(A,B);
-  thlx.distance(1) = distance_3d(A,C);
-  thlx.distance(2) = distance_3d(A,D);
-  thlx.distance(3) = distance_3d(B,C);
-  thlx.distance(4) = distance_3d(B,D);
-  thlx.distance(5) = distance_3d(C,D);
+  thlx.set_distances(coords);
 
   // Now we will lengthen edge 2 by precisely 0.1...
   //  thlx.distance(2) += 1.0;
@@ -1005,13 +996,7 @@ BOOST_AUTO_TEST_CASE( test_derivatives_by_making_sure_length_increases )
   coords[2] = C;
   coords[3] = D;
 
-
-  thlx.distance(0) = distance_3d(A,B);
-  thlx.distance(1) = distance_3d(A,C);
-  thlx.distance(2) = distance_3d(A,D);
-  thlx.distance(3) = distance_3d(B,C);
-  thlx.distance(4) = distance_3d(B,D);
-  thlx.distance(5) = distance_3d(C,D);
+  thlx.set_distances(coords);
 
   // Now we will lengthen edge 2 by precisely 0.1...
   //  thlx.distance(2) += 1.0;
@@ -1099,13 +1084,7 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
   coords[2] = C;
   coords[3] = D;
 
-
-  thlx.distance(0) = distance_3d(A,B);
-  thlx.distance(1) = distance_3d(A,C);
-  thlx.distance(2) = distance_3d(A,D);
-  thlx.distance(3) = distance_3d(B,C);
-  thlx.distance(4) = distance_3d(B,D);
-  thlx.distance(5) = distance_3d(C,D);
+  thlx.set_distances(coords);
 
   // Now we will lengthen edge 2 by precisely 0.1...
   //  thlx.distance(2) += 1.0;
@@ -1277,13 +1256,8 @@ BOOST_AUTO_TEST_CASE( test_solving_when_goal_is_current_position)
   coords[3] = D;
 
 
-  thlx.distance(0) = distance_3d(A,B);
-  thlx.distance(1) = distance_3d(A,C);
-  thlx.distance(2) = distance_3d(A,D);
-  thlx.distance(3) = distance_3d(B,C);
-  thlx.distance(4) = distance_3d(B,D);
-  thlx.distance(5) = distance_3d(C,D);
-
+  thlx.set_distances(coords);
+  
   // Now we will lengthen edge 2 by precisely 0.1...
   //  thlx.distance(2) += 1.0;
 
@@ -1391,13 +1365,7 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_single_tetrahedron )
   coords[2] = C;
   coords[3] = D;
 
-
-  thlx.distance(0) = distance_3d(A,B);
-  thlx.distance(1) = distance_3d(A,C);
-  thlx.distance(2) = distance_3d(A,D);
-  thlx.distance(3) = distance_3d(B,C);
-  thlx.distance(4) = distance_3d(B,D);
-  thlx.distance(5) = distance_3d(C,D);
+  thlx.set_distances(coords);
 
   // Now we will lengthen edge 2 by precisely 0.1...
   //  thlx.distance(2) += 1.0;
