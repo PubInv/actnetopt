@@ -166,8 +166,8 @@ BOOST_AUTO_TEST_CASE( test_computation_change_angle_wrt_length )
 
     //    cout << "vc, vd, vb " << vc*180.0/M_PI << " " << vd*180.0/M_PI << " " << vb*180.0/M_PI << "\n";
 
-// find the dihedral angle of <AB given vertex angles...
-//    double ztheta = dihedral_from_vertex_angles(vc,vd,vb);
+    // find the dihedral angle of <AB given vertex angles...
+    //    double ztheta = dihedral_from_vertex_angles(vc,vd,vb);
 
     // now I need to compute change in theta via another method...
     double dvertex_angle_dlength = dangle_from_dside(ac,ad,cd);
@@ -312,7 +312,7 @@ BOOST_AUTO_TEST_CASE( test_find_fourth_point )
 
   bool valid;
   column_vector Dp = find_fourth_point_given_three_points_and_three_distances(CCW,
-									     A,B,C,
+									      A,B,C,
 									      da,db,dc,&valid);
   //  cout << "Dp = " << "\n";
   //  print_vec(Dp);
@@ -325,11 +325,11 @@ BOOST_AUTO_TEST_CASE( test_find_fourth_point )
 BOOST_AUTO_TEST_CASE( find_coords_matches_distances )
 {
   Tetrahelix thlx(20,
-			   UPPER_BOUND,
-			   LOWER_BOUND,
-			   MEDIAN,
-			   INITIAL
-	       );
+		  UPPER_BOUND,
+		  LOWER_BOUND,
+		  MEDIAN,
+		  INITIAL
+		  );
 
   //  cout << "START\n";
   //  cout << "thlx.num_nodes: " << thlx.num_nodes << "\n";
@@ -350,23 +350,24 @@ BOOST_AUTO_TEST_CASE( find_coords_matches_distances )
 
   //  cout << "num_edges " << thlx.num_edges << "\n";
   for(int i = 4; i < thlx.num_edges; i++) {
-        int ai = thlx.small_node(i);
-        int bi = thlx.large_node(i);
-	double actual = distance_3d(coords[ai],coords[bi]);
-	double expected = thlx.distance(i);
-	BOOST_CHECK(abs(expected-actual) < 1e-2);
+    int ai = thlx.small_node(i);
+    int bi = thlx.large_node(i);
+    double actual = distance_3d(coords[ai],coords[bi]);
+    double expected = thlx.distance(i);
+    BOOST_CHECK(abs(expected-actual) < 1e-2);
   }
+  delete[] coords;
 }
 
 
 BOOST_AUTO_TEST_CASE( make_sure_axis_is_followed )
 {
   Tetrahelix thlx(20,
-			   UPPER_BOUND,
-			   LOWER_BOUND,
-			   MEDIAN,
-			   INITIAL
-	       );
+		  UPPER_BOUND,
+		  LOWER_BOUND,
+		  MEDIAN,
+		  INITIAL
+		  );
 
   // Now we want to set up the coordinates of the first three nodes
   // very carefully so that we follow the X-axis specifically.
@@ -394,18 +395,18 @@ BOOST_AUTO_TEST_CASE( make_sure_axis_is_followed )
   for(int i = 4; i < thlx.num_nodes; i++) {
     //        int ai = thlx.small_node(i);
     //        int bi = thlx.large_node(i);
-	//	double actual = distance_3d(coords[ai],coords[bi]);
-	//	double expected = thlx.distance(i);
+    //	double actual = distance_3d(coords[ai],coords[bi]);
+    //	double expected = thlx.distance(i);
 
-	// we want to make sure each point is not too far
-	// from the y axis.
-	// This is a little tricky...let me just test the coords
-	// stay close to the x axis...
+    // we want to make sure each point is not too far
+    // from the y axis.
+    // This is a little tricky...let me just test the coords
+    // stay close to the x axis...
 
     //    cout << i << " " << coords[i](0) << "\n";
     BOOST_CHECK(abs(coords[i](0)) < 2.0);
   }
-
+  delete[] coords;
 }
 
 BOOST_AUTO_TEST_CASE( test_compute_transform_to_axes2_invertable )
@@ -630,11 +631,11 @@ BOOST_AUTO_TEST_CASE( test_rotation_about_points_sense )
 BOOST_AUTO_TEST_CASE( test_can_compute_chirality )
 {
   Tetrahelix thlx(4,
-			   UPPER_BOUND,
-			   LOWER_BOUND,
-			   MEDIAN,
-			   INITIAL
-	       );
+		  UPPER_BOUND,
+		  LOWER_BOUND,
+		  MEDIAN,
+		  INITIAL
+		  );
 
   // Now we want to set up the coordinates of the first three nodes
   // very carefully so that we follow the X-axis specifically.
@@ -669,11 +670,11 @@ BOOST_AUTO_TEST_CASE( test_can_compute_chirality )
 BOOST_AUTO_TEST_CASE( test_compute_goal_derivative_c )
 {
   Tetrahelix thlx(4,
-			   UPPER_BOUND,
-			   LOWER_BOUND,
-			   MEDIAN,
-			   INITIAL
-	       );
+		  UPPER_BOUND,
+		  LOWER_BOUND,
+		  MEDIAN,
+		  INITIAL
+		  );
 
   // Now we want to set up the coordinates of the first three nodes
   // very carefully so that we follow the X-axis specifically.
@@ -697,13 +698,6 @@ BOOST_AUTO_TEST_CASE( test_compute_goal_derivative_c )
   // We should write a test to make sure that we can distinguish such.
   D = 0.0,0.0,-10.0;      
   
-  column_vector* coords = new column_vector[thlx.num_nodes];
-
-  coords[0] = A;
-  coords[1] = B;
-  coords[2] = C;
-  coords[3] = D;
-
   Chirality senseABC = tet_chirality(A,B,C,D);
   Chirality senseACB = tet_chirality(A,C,B,D);  
   BOOST_CHECK(senseABC == CW);
@@ -744,12 +738,12 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
 
   int debug = 0;
   if (debug) {
-  cout << "DONE WITH FORWARD\n";
+    cout << "DONE WITH FORWARD\n";
 
-  // Just check this is what I expect...
-  for(int i = 0; i < thlx.num_nodes; i++) {
-    print_vec(coords[i]);
-  }
+    // Just check this is what I expect...
+    for(int i = 0; i < thlx.num_nodes; i++) {
+      print_vec(coords[i]);
+    }
   }
   
   Invert3d inv;
@@ -757,7 +751,7 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
   inv.set_global_truss();
 
   if (debug) {
-  cout << "BBB\n";
+    cout << "BBB\n";
   }
 
   thlx.add_goal_node(3,0.0,0.0,-20.0,1.0);
@@ -777,7 +771,7 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
   thlx.goals[thlx.goals.size() - 1] = gl;
 
   if (debug) {
-  // Now our goal should be set.
+    // Now our goal should be set.
     for(int i = 0; i < thlx.goal_nodes.size(); i++) {
       cout << "goal_nodes " << i << "  " << thlx.goal_nodes[i] << "\n";
     }
@@ -798,11 +792,11 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
   column_vector deriv0 = inv.derivative(*dsa);
 
   if (debug) {
-  cout << "DERIVATIVE COMPUTED\n";
-  for (int i = 0; i < thlx.var_edges; ++i) {
-    int n = thlx.edge_number_of_nth_variable_edge(i);
-    cout << "edge " << n << " " << deriv0(i) << "\n";
-  }
+    cout << "DERIVATIVE COMPUTED\n";
+    for (int i = 0; i < thlx.var_edges; ++i) {
+      int n = thlx.edge_number_of_nth_variable_edge(i);
+      cout << "edge " << n << " " << deriv0(i) << "\n";
+    }
   }
   
   solve_forward_find_coords(&thlx,coords);
@@ -835,7 +829,9 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
 
   double v1 = inv.objective(*dsa);
   // object at max should be lower than the objective at min!!!!
-  BOOST_CHECK( v0 < v1 );  
+  BOOST_CHECK( v0 < v1 );
+
+  delete[] coords;
 }
 
 
@@ -951,7 +947,7 @@ BOOST_AUTO_TEST_CASE( test_directional_derivatives )
   BOOST_CHECK( d5(1) < 0 );
   BOOST_CHECK( d5(2) > 0 );
   
-  
+  delete[] coords;  
 }
 
 // This is an attempt to set up a very particular situation which allows
@@ -1035,11 +1031,12 @@ BOOST_AUTO_TEST_CASE( test_derivatives_by_making_sure_length_increases )
   
   solve_forward_find_coords(&thlx,coords);
   deriv = compute_derivative_for_single_tet_testing(&inv,inv.an,
-								  coords,goal,&obj);
+						    coords,goal,&obj);
   
   BOOST_CHECK( deriv(0) > 0 );
   BOOST_CHECK( deriv(1) < 0 );
   BOOST_CHECK( deriv(2) < 0 );
+  delete[] coords;
 }
 
 // This is an attempt to set up a very particular situation which allows
@@ -1212,7 +1209,7 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
     }
     if (debug) cout << "\n";
   }
-
+  delete[] coords;
 }
 
 BOOST_AUTO_TEST_CASE( test_solving_when_goal_is_current_position)
@@ -1299,7 +1296,7 @@ BOOST_AUTO_TEST_CASE( test_solving_when_goal_is_current_position)
   BOOST_CHECK(deriv(0) == 0);
   BOOST_CHECK(deriv(1) == 0);
   BOOST_CHECK(deriv(2) == 0);    
-
+  delete[] coords;
 }
 
 // This really only works with a tetrahedron; I just check the first fixed coords against the
@@ -1374,18 +1371,18 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_single_tetrahedron )
   thlx.init_fixed_coords(coords);
 
   if (debug) {
-  for (int i = 0; i < thlx.num_edges; ++i) {
-    cout << " i, distances(i) " << i << " , " << thlx.distance(i) << "\n";
-  }
+    for (int i = 0; i < thlx.num_edges; ++i) {
+      cout << " i, distances(i) " << i << " , " << thlx.distance(i) << "\n";
+    }
   }
   
   solve_forward_find_coords(&thlx,coords);
 
   if (debug) {
-  cout << "DONE SOLVING_FORWARD_FIND_COORDS \n";
-  for(int i = 0; i < thlx.num_nodes; i++) {
-    print_vec(coords[i]);
-  }
+    cout << "DONE SOLVING_FORWARD_FIND_COORDS \n";
+    for(int i = 0; i < thlx.num_nodes; i++) {
+      print_vec(coords[i]);
+    }
   }
 
   column_vector goal = Dgoal;
@@ -1456,7 +1453,7 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_single_tetrahedron )
   for(int i = 0; i < thlx.num_nodes; i++) {
     print_vec(coords[i]);
   }
-  
+  delete[] coords;
 }
 
 
