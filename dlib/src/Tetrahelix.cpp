@@ -301,12 +301,12 @@ column_vector find_point_from_transformed(Chirality sense,double AB, double AC, 
   double factor = AD_m2 - sx * sx - sy * sy;
   double sz = 0;
   if (factor < 0) {
-    cout << "Internal ERROR: this is not a legal tetrahedron\n";
+    cout << "INTERNAL ERROR: this is not a legal tetrahedron\n";
     cout << "AB AC AD BC BD CD\n";
     cout << AB << " " << AC << " " << AD << " " << BC << " " << BD << " " << CD << "\n";
-    *valid = false;
     // I have no idea what to return here -- I'll return half the average distance.
     sz = (AB + AC + AD + BC + BD + CD) / (6*2);
+    *valid = false;
   } else {
     sz = sqrt (AD_m2 - sx * sx - sy * sy);
     *valid = true;
@@ -318,8 +318,23 @@ column_vector find_point_from_transformed(Chirality sense,double AB, double AC, 
     B = qx,0.0,0.0;
     column_vector D(3);
     D = sx,sy,(sense == CCW) ? sz : -sz;
+    // We compute this only for debugging purposesn
+    C = rx,ry,0.0;
+    int debug = 1;
+    if (debug) {
+      Chirality senseABC = tet_chirality(A,B,C,D);
+      cout << "chirality (demanded, computed) " << sense << ", " << senseABC << "\n";
+      if (sense != senseABC) {
+	cout << "SENSE CHECK ON TET FAILED!\n";
+	print_vec(A);
+	print_vec(B);
+	print_vec(C);
+	print_vec(D);
+      }
+      assert(sense == senseABC);	      
+    }
     return D;
-  
+
 }
 
 
@@ -329,7 +344,7 @@ column_vector find_point_from_transformed(Chirality sense,double AB, double AC, 
 // that causes a problem here. In that case we are 180 degrees out of sync. I need to think
 // carefully about how to handle this.
 point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vector pB, column_vector pC) {
-
+  int debug = 1;
   // first we translate to the origin
   point_transform_affine3d trans = translate_point(-pA(0),-pA(1),-pA(2));
   column_vector pAp = trans(pA);
@@ -426,43 +441,78 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
 
   // Here we rotate C via our transform....
   column_vector Cn = alignX(pC);
-  
-   // cout << "Cn\n";
-   // print_vec(Cn);
+  if (debug)  {  
+   cout << "Cn\n";
+   print_vec(Cn);
 
-  //   double len = alignX(pC).length();
-   // cout << "len " << len << "\n";
-   // cout << "Cn(2) " << Cn(2) << "\n";
-   // cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
-  
+    
+   cout << "Cn(2) " << Cn(2) << "\n";
+   cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
+  }
+
+  double len = alignX(pC).length();  
   double denom = sqrt(Cn(0)*Cn(0) + Cn(1)*Cn(1));
-  // cout << "denom: " << denom << "\n";
-  // cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
+  if (debug) {
+   cout << "len " << len << "\n";
+   cout << "denom: " << denom << "\n";
+   cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
+  }
   
   double value = Cn(2)/denom;
 
-  //  cout << "value " << value << "\n";
-  //  cout << "near zero " << abs(value - 1.0) << "\n";    
-  double theta;
-  if (abs(value - 1.0) < 1e-3) {
-    //    cout << "UNITARY\n";
-    theta = -M_PI/2;
-  } else {
-    // how do we know this is the correct sign?    
-    theta = -atan2(Cn(2),Cn(1));
+  if (debug) {
+    cout << "value " << value << "\n";
+    cout << "near zero " << abs(value - 1.0) << "\n";
   }
-  //  cout << "theta: " << theta*180/(M_PI) << "\n";
+  double theta;
+
+  theta = -atan2(Cn(2),Cn(1));
+
+  if (debug) cout << "theta: " << theta*180/(M_PI) << "\n";      
+
+  // // The big question here is does this transform in some since reverse chirality?
+  // // Is there a way for us to test that this maintains chirality?
+  // if (abs(value - 1.0) < 1e-3) {
+  //    cout << "UNITARY\n";
+  //     theta = -M_PI/2;
+  //   } else {
+  //   // how do we know this is the correct sign?
+  //   if (debug) cout << "Cn(2),Cn(1) " << Cn(2) << ", " << Cn(1) << "\n";
+
+  //   // I actually think this value needs to be chosen so that the transform does not change
+  //   // the chirality of a point from the triangle ABC. This is not obvious to me.
+  //   // We can obviously make two choises on how to rotate...
+  //   // These two are opposite directions because atan2(x,y) + atan2(y,x) = PI/2.
+  //    theta = atan2(Cn(1),Cn(2));
+  //   //  theta = -atan2(Cn(2),Cn(1));    
+  //   if (debug) cout << "theta: " << theta*180/(M_PI) << "\n";    
+  // }
+
   // Now, if theta is a multiple of 180 degrees, we don't really need to rotate...
+  point_transform_affine3d result;
   if ((((int) round(theta*180/(M_PI))) % 180) == 0) {
     // cout << "Yes, this happened to be a 180 rotation, so avoiding!\n";
     // cout << "pc " << pC << "\n";
     // cout << alignX(pC) << "\n";
     // cout << alignX.get_m() << "\n";
     // cout << alignX.get_b() << "\n";  
-    return rotate_around_x(0) *alignX;    
+    result = rotate_around_x(0) *alignX;    
   } else {
-    return rotate_around_x(theta) * alignX;
+    result = rotate_around_x(theta) * alignX;
   }
+
+  if (debug) {
+    cout << "These should be aligned... \n";
+    column_vector lA = result(pA);
+    column_vector lB = result(pB);
+    column_vector lC = result(pC);    
+    
+    print_vec(lA);
+    print_vec(lB);
+    print_vec(lC);        
+  }
+  
+  return result;
 }
 
 column_vector find_fourth_point_given_three_points_and_three_distances(Chirality sense,
@@ -471,7 +521,7 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
 								       bool* valid
 								      ) {
 
-  int debug = 0;
+  int debug = 1;
   if (debug) cout << "ad bd cd\n";
   if (debug) cout << ad << " " << bd << " " << cd << "\n";
   
@@ -512,6 +562,12 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   assert(!isnan(D(0)));
   assert(!isnan(D(1)));
   assert(!isnan(D(2)));
+
+  Chirality untransformed = tet_chirality(pa,pb,pc,tform_inv(D));
+  Chirality transformed = tet_chirality(Ap,Bp,Cp,D);
+  cout << "Chirality demanded: " << sense << "\n";  
+  cout << "Chirality of transformed computations: " << transformed << "\n";
+  cout << "Chirality of untransformed computations: " << untransformed << "\n";  
   return tform_inv(D);
 }
 
@@ -520,21 +576,23 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
 bool solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
     FindCoords3d f;
 
-    int debug = 0;
+    int debug = 1;
     //    Chirality sense = CCW;
     Chirality sense = CCW;
     // Is this even required?
     an->restore_fixed_coords(coordsx);
 
-    //    cout << "in solve distances:\n";
-    //    for(int i = 0; i < an->num_edges; i++) {
-    //      cout << "i, d " << i << " , " << an->distance(i) << "\n";
-    //    }
+    if (debug) {
+       cout << "in solve distances:\n";
+       for(int i = 0; i < an->num_edges; i++) {
+         cout << "i, d " << i << " , " << an->distance(i) << "\n";
+       }
 
-    //    cout << "SOLVE_FORWARD_FIND_COORDS \n";
-    //    for(int i = 0; i < an->num_nodes; i++) {
-    //      print_vec(coordsx[i]);
-    //    }
+       cout << "SOLVE_FORWARD_FIND_COORDS \n";
+       for(int i = 0; i < an->num_nodes; i++) {
+         print_vec(coordsx[i]);
+       }
+    }
     
     // Basic structure: Iteratively find coordinates based on simple triangulations.
     // This only works for actuator networks in which we can
@@ -559,10 +617,6 @@ bool solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
       // print_vec(f.b);
       // print_vec(f.c);
 
-      // Although in 2-dimensions we change this, in 3D it is not needed...
-      // I think there is something deeply mathmatical in that.
-      // Actually, I think that statement is wrong---we may very much have
-      // to consider chirality!!!
       f.chi = sense;
 
       // and minimize the function
@@ -585,10 +639,14 @@ bool solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
       column_vector  y(3);
 
       if (debug) {
-	cout << "input XXXX\n";
+	cout << "input XXXX (chirality) " << f.chi << "\n";
+
 	cout << f.a << "\n";
+	cout << f.a << "\n";
+	
 	cout << f.b << "\n";
-	cout << f.c << "\n";      
+	cout << f.c << "\n";
+	cout << "=======\n";
 	cout << f.dad << "\n";
 	cout << f.dbd << "\n";
 	cout << f.dcd << "\n";
@@ -597,12 +655,22 @@ bool solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
       y = find_fourth_point_given_three_points_and_three_distances(f.chi,f.a,f.b,f.c,
 								   f.dad,f.dbd,f.dcd,&lvalid);
       valid &= lvalid;
+
       
       coordsx[i].set_size(3);
       coordsx[i] = y;
       if (debug) {
 	cout << "SETTING " << i << "\n";
 	print_vec(y);
+	cout << "valid?: " << valid << "\n";
+	cout << " distances \n";
+	for (int i = 0; i < an->num_nodes-1; ++i) {
+	  for (int j = i+1; j <  an->num_nodes; ++j) {    
+	    cout << " i,j : " << i << "," << j << " ";
+	    cout << distance_3d(coordsx[i],coordsx[j]) << "\n";
+	  }
+	}
+	
       }
       if (debug_find) std::cout << "f(y) " << f(y) << std::endl;
     }

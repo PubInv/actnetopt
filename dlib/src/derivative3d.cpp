@@ -283,6 +283,117 @@ BOOST_AUTO_TEST_CASE( test_transform_triangle )
   //  cout << tform.get_b() << "\n";  
 }
 
+BOOST_AUTO_TEST_CASE( test_transform_to_axes2_0 )
+{
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  column_vector D(3);
+
+  // For testing, let's put:
+  A = 10.0,0.0,0.0;
+  B = 0.0,10.0,0.0;
+  C = 0.0,0.0,10.0;
+  
+ // First compute all 6 distances....
+  //  double bc = distance_3d(B,C);
+  //  double bd = distance_3d(B,D);
+  //  double cd = distance_3d(D,D);
+  
+  
+  // Now find transformation that rotates and translates to axes...
+  int debug = 1;
+  if (debug) cout << "A B C \n";
+  if (debug) cout << A  << " " << B  << " " << C << "\n";  
+  point_transform_affine3d tform = compute_transform_to_axes2(A,B,C);
+
+  column_vector Cp(3);
+
+  Cp = tform(C);
+  if (debug) {
+    print_vec(Cp);
+    cout << "\n";
+  }
+  
+  // Now, the point Cp needs to be in the XY plane (that is, Z = 0).
+  BOOST_CHECK(abs(Cp(2)) < 1e-4);
+}
+
+BOOST_AUTO_TEST_CASE( test_transform_to_axes2_1 )
+{
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  column_vector D(3);
+
+  // For testing, let's put:
+  A = -13.0,0.0,0.0;
+  B = 4.0,10.0,0.0;
+  C = 0.0,1.0,10.0;
+  
+ // First compute all 6 distances....
+  //  double bc = distance_3d(B,C);
+  //  double bd = distance_3d(B,D);
+  //  double cd = distance_3d(D,D);
+  
+  
+  // Now find transformation that rotates and translates to axes...
+  int debug = 1;
+  if (debug) cout << "A B C \n";
+  if (debug) cout << A  << " " << B  << " " << C << "\n";  
+  point_transform_affine3d tform = compute_transform_to_axes2(A,B,C);
+
+  column_vector Cp(3);
+
+  Cp = tform(C);
+  if (debug) {
+    print_vec(Cp);
+    cout << "\n";
+  }
+
+  
+  // Now, the point Ep needs to be in the XY plane (that is, Z = 0).
+  BOOST_CHECK(abs(Cp(2)) < 1e-4);
+}
+
+BOOST_AUTO_TEST_CASE( test_transform_to_axes2_2 )
+{
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  column_vector D(3);
+
+  // For testing, let's put:
+  A = 0.0,0.0,0.0;
+  B = 0.0,10.0,0.0;
+  C = 4.0,1.0,10.0;
+  
+ // First compute all 6 distances....
+  //  double bc = distance_3d(B,C);
+  //  double bd = distance_3d(B,D);
+  //  double cd = distance_3d(D,D);
+  
+  
+  // Now find transformation that rotates and translates to axes...
+  int debug = 1;
+  if (debug) cout << "A B C \n";
+  if (debug) cout << A  << " " << B  << " " << C << "\n";  
+  point_transform_affine3d tform = compute_transform_to_axes2(A,B,C);
+
+  column_vector Cp(3);
+
+  Cp = tform(C);
+  if (debug) {
+    print_vec(Cp);
+    cout << "\n";
+  }
+
+  
+  // Now, the point Ep needs to be in the XY plane (that is, Z = 0).
+  BOOST_CHECK(abs(Cp(2)) < 1e-4);
+}
+
+
 BOOST_AUTO_TEST_CASE( test_find_fourth_point )
 {
   column_vector A(3);
@@ -296,8 +407,8 @@ BOOST_AUTO_TEST_CASE( test_find_fourth_point )
   // C on the z axis,
   // and then let's aim to have D be the unit point.
   A = 0.0,0.0,0.0;
-  B = 10.0,0.0,0.1;
-  C = 0.0,10.0,0.1;
+  B = 10.0,0.0,0.0;
+  C = 0.0,10.0,0.0;
   D = 5,5,5;
 
   // now compute the distances...
@@ -314,9 +425,18 @@ BOOST_AUTO_TEST_CASE( test_find_fourth_point )
   column_vector Dp = find_fourth_point_given_three_points_and_three_distances(CCW,
 									      A,B,C,
 									      da,db,dc,&valid);
-  //  cout << "Dp = " << "\n";
-  //  print_vec(Dp);
+  Chirality senseABCD = tet_chirality(A,B,C,D);
+  Chirality senseABCDp = tet_chirality(A,B,C,Dp);
+
+  int debug = 1;
+  
+  if (debug) {
+    cout << "Dp = " << "\n";
+    print_vec(Dp);
+    cout << " chirality actual, computed " << senseABCD << " " << senseABCDp << "\n";
+  }
   column_vector diff = Dp - D;
+  BOOST_CHECK(senseABCD == senseABCDp);  
   BOOST_CHECK(l2_norm(diff) < 1e-3);
 }
 
@@ -1453,6 +1573,155 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_single_tetrahedron )
   for(int i = 0; i < thlx.num_nodes; i++) {
     print_vec(coords[i]);
   }
+  delete[] coords;
+}
+
+
+// This is an attempt to set up a very particular situation which allows
+// us to test effectively.
+BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron )
+{
+  //  cout << "TEST ABILITY TO SOLVE A SINGLE TETRAHEDRONXSD\n";
+  // This is an attempt to make sure that the "distance_to_goal" after
+  // solving our "standard start" tetrahelix goes down
+  // if variable edges get bigger
+  Tetrahelix thlx(5,
+		  18.0,
+		  10.0,
+		  MEDIAN,
+		  INITIAL
+		  );
+
+  // Now we want to set up the coordinates of the first three nodes
+  // very carefully so that we follow the X-axis specifically.
+  // The easiest way to to this is to take it from the javascript
+  // code already written to preform these calculations....
+  column_vector* coords = new column_vector[thlx.num_nodes];
+  
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  column_vector D(3);
+  column_vector E(3);
+  column_vector Egoal(3);    
+
+  // Note we use right-handed coordinates.
+  // This diagram matches (approximately) the diagram in the paper.
+
+  A = 0.0,0.0,0.0;
+  B = 10.0,0.0,0.0;
+  C = 0.0,10.0,0.0;
+  D = 0.0,0.0,10.0;
+  // put the fourth node at a cube corner!
+  E = 10.0,10.0,10.0;
+  // Let's extend the E node just a little at first...
+  Egoal = 12.0,12.0,12.0;
+
+  // Note: This is done in this order so that we -Z will be 
+  coords[0] = A;
+  coords[1] = B;
+  coords[2] = C;
+  coords[3] = D;
+  coords[4] = E;  
+
+
+
+  // This is really 5 points, but it will just read the first three..
+  thlx.init_fixed_coords(coords);
+
+  thlx.set_distances(coords);  
+  int debug = 1;
+  
+  if (debug) {
+    for (int i = 0; i < thlx.num_edges; ++i) {
+      cout << " i, distances(i) " << i << " , " << thlx.distance(i) << "\n";
+    }
+  }
+  
+  solve_forward_find_coords(&thlx,coords);
+  cout << " BCDE chirality :" << tet_chirality(B,C,D,E) << "\n";
+
+  if (debug) {
+    cout << "DONE SOLVING_FORWARD_FIND_COORDS \n";
+    for(int i = 0; i < thlx.num_nodes; i++) {
+      print_vec(coords[i]);
+    }
+  }
+  
+  const int goal_node = 4;
+  
+  // THE point E should be close to the cube corner
+  double d = l2_norm(coords[goal_node] - E);
+  cout << "CHECK DISTANCE (SMALL)" << d << "\n";
+  BOOST_CHECK(l2_norm(coords[goal_node] - E) < 1e-2);
+  
+  // //  column_vector goal = Egoal;
+  // Invert3d inv;
+  // inv.an = &thlx;
+  // inv.set_global_truss();
+
+
+
+  // thlx.add_goal_node(goal_node,Egoal(0),Egoal(1),Egoal(2),1.0);
+
+  // // Now we will create an iteration of points in space, checking many of them.
+  // int num = 1;
+  // for(int i = 0; i < num; i++) {
+  //   Egoal(0) = i * 1.0;
+  //   for(int j = 0; j < num; j++ ) {
+  //     Egoal(1) = j * 1.0;
+  //     thlx.goals[thlx.goals.size() - 1] = Egoal;
+      
+  //     if (debug) cout << "Experiment (i,j) :" << i << " " << j <<  "\n";
+	
+  //     int e = errant_max_distance(10.0,20.0,coords,4,Egoal);
+  //     if (e > -1) {
+  // 	cout << "errant edge length: " << e << "\n";
+  // 	print_vec(Egoal);
+  //     } else {
+  // 	double obj;
+  // 	if (debug) cout << "pre-computation\n";
+      
+  // 	if (debug) print_vec(coords[goal_node]);
+      
+  // 	column_vector deriv = compute_derivative_for_single_tet_testing(&inv, inv.an, coords, Egoal, &obj);
+  // 	if (debug) {
+  // 	  cout << "deriv \n";
+  // 	  print_vec(deriv);
+  // 	  cout << "post-computation\n";
+  // 	  print_vec(coords[goal_node]);
+  // 	}
+  // 	if (isnan(deriv(0))) { // This means that the current coords is actually equal to the goal node
+  // 	  cout << "deriv is undefined!\n";
+  // 	} else {
+  // 	  //	  cout << "deriv:\n";
+  // 	  //	  print_vec(deriv);
+  // 	  //	  for (int i = 0; i < thlx.num_edges; ++i) {
+  // 	  //	    cout << " i, distances(i) " << i << " , " << thlx.distance(i) << "\n";
+  // 	  //	  }
+  // 	  solve_inverse_problem(inv.an);
+  // 	  // cout << "solving forward!\n";
+  // 	  bool solved = solve_forward_find_coords(&thlx,coords);
+  // 	  if (!solved) {
+  // 	    cout << "INTERNAL ERROR: Could solved these coords forward!\n";
+  // 	  }
+  // 	}
+  // 	if (debug) {
+  // 	  cout << "coords!!!\n";
+  // 	  print_vec(coords[goal_node]);
+  // 	  print_vec(Egoal);
+  // 	  cout << "NORM: " << l2_norm(coords[goal_node] - Egoal) << "\n";	  
+  // 	};
+
+  // 	BOOST_CHECK(l2_norm(coords[goal_node] - Egoal) < 1e-2);
+  //     }
+  //   }
+  // }
+
+  // // Just check this is what I expect...
+  // for(int i = 0; i < thlx.num_nodes; i++) {
+  //   print_vec(coords[i]);
+  // }
   delete[] coords;
 }
 
