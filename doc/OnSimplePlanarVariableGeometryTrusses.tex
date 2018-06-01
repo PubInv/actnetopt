@@ -541,7 +541,7 @@ so, using Wolframalpha:
 \]
 
 
-\subsection{A Different Approach}
+\subsection{A Different (Unused) Approach}
 
 We can rotate the tetrahedron in space so that one face lies in the X-Z plane with
 one edge on the Z axis and the other point on the XY plane (as theta rotates.)
@@ -570,75 +570,118 @@ d = \|CD \| = \sqrt{(D_x - \cos{\theta})^2 + sin^2{\theta} + D_z^2)}
 \frac{\partial \theta }{\partial d}   =  \frac{d}{x \sqrt{1 - \frac{(-d^2 + x^2 + z^2 + 1)^2}{4 x^2}}}
 \]
 
-\subsection{Yet Another Approach}
+\subsection{Current Approach}
 
-\begin{figure}
-  \centering
-     \includegraphics[width=0.90\textwidth]{figures/EasyToComputeTetDerivative.png}
-     \caption{Basic diagram of initial tetrahedron}
-  \label{fig:basic}     
-\end{figure}
+Assuming that we consider three nodes at one end of a tetrahelical robot fixed (either phyiscally fixed in our frame or reference, or simply fixed within
+our coordinate system), then the act of lengthening any one particular actuator changes the shape of the tetrobot.
 
+
+Although we can easily solve the forward problem, that is, find the position of all nodes in space given a set of lengths,
+in order to efficiently solve the inverse problem, that is, to find lengths which move the nodes into positions in Cartesian space,
+using numerical optimization, we need to be able to compute the derivative of the change of the goal node position based on
+the change of length of an actuator.
+
+The impact upon any one goal node that we are trying to change depends upon where it is relative to the changing edge and fixed base.
+Every actuator connects two nodes, one of which has a smaller number and the other greater number.
+No node smaller than the greater node changes its position due to this action.
+Every node number greater or equal to the greater numbered node does change its position.
+
+If we change the length of a rail edge, the action on all nodes can be described simply: it is a rotation about the edge
+of the greatest-numbered fixed tetrahedron having the changing edge which is opposite the changing edge. This edge will always
+be an edge connecting two different rails. Change a red rail always causes a rotation about a line connecting a blue node to a yellow node.
+
+On the other hand, if we change the length crossing rail, we are simulataneously creating a rotation about a rail edge and
+changing the shape of a triangular face which acts as a kinematic base of most of the nodes greater node number, producing a rather
+complicated effect on those nodes.
+
+It is the purpose of this section to work out the mathematics of these two situations.
+
+We first consider act changing the length of a single edge of a single tetrahedron. This produces a change to a single node.
+
+Note: We label all tetrahedra anticlockwise, that is, taking the right hand curling around the triangle $ABC$ from $A$ to $B$ to that
+the fingers curl toward $C$, the thumb points in the direction of $D$.
 
 This article from Stack Exchange gives yet another approach to computing the
 dihedral angles:
 
 \url{https://math.stackexchange.com/questions/314970/dihedral-angles-between-tetrahedron-faces-from-triangles-angles-at-the-tip}
 
-This method computes the dihedral angles from the vertex angls. Let $a,b,c$ be the
-vertx angles of the triangles $A,B,C$ meeting in a point. ($\angle AB$ is a dihedral angle), and $a,b,c$ are planar angles against the vertex of the
+\begin{figure}
+  \centering
+     \includegraphics[width=0.70\textwidth]{figures/EasyToComputeTetDerivative.png}
+     \caption{Basic diagram of initial tetrahedron}
+  \label{fig:basic}     
+\end{figure}
+
+This method computes the dihedral angles from the vertex angls. Let $\angle b, \angle c,\angle d$ be the
+vertx angles of the triangles $\Delta ACD, \Delta ABD, \Delta ABC$ meeting in a point (angles being named after the opposing edged).
+($\angle AB$ is a dihedral angle), and $b,c,d$ are planar angles against the vertex of the
 tetrahedron.
 
+\begin{equation}
+  \label{dihedral}
+ \angle AB =\arccos{\frac{\cos{b} - \cos{c}\cos{d}}{\sin{c}\sin{d}}}
+\end{equation}
+
+When moving one edge $CD$ of a tetrahedron $ABCD$ assuming $A,B$ and $C$ are fixed, we are most interested in the change of
+the dihedral angle $\angle \theta = \angle AB$ opposite the edge $CD$. This can be computed as the derivative of the angle $\angle AB$
+with respect to the change in a single vertex angle $b$, which changes as the length $CD$
+changes. Because $D$ is on a fixed hinge rotating about $AB$, The change in the postion of $D$ is a function of the change in
+the angle $\angle AB$.
+
+By the chain rule,
+
+\begin{equation}
+\frac{\partial \theta }{\partial \overline{DC}}   =  \frac{\partial \angle AB }{\partial b} \frac{\partial b}{\partial \overline{DC}} 
+\end{equation}
+
+By differentiation \ref{dihedral} with respect to $b$, we obtain:
+\begin{equation}
+\frac{\partial \angle AB }{\partial b} =
+\frac{\csc{c} \csc{d} \sin{b}}
+ {\sqrt{1 - \csc^2{c} \csc^2{d} \big( \cos{b} - \cos{c} \cos{d}\big)^2}}
+\end{equation}
+
+Via cosine law, let $x = \overline{AC}, y = \overline{AD}, z = \overline{CD}$,
 \[
-\angle AB =\arccos{\frac{\cos{c} - \cos{b}\cos{a}}{\sin{b}\sin{a}}}
+b = \arccos{\frac{x^2 + y^2 + -z^2}{2xy}}
 \]
 
-When moving one edge of a tetrahedron, we are most interested in the change of
-the opposite angle. This can be computed as the derivative of the angle $\angle AB$
-with respect to the change in a single vertex angle, which changes as the length
-changes.
-
 \[
-\frac{\partial AB }{\partial \overrightarrow{DC}}   =  \frac{\partial AB }{\partial b} \frac{\partial b}{\partial \overrightarrow{DC}} 
-\]
-
-\[
-\frac{\partial AB }{\partial c} =
-\frac{\csc{a} \csc{b} \sin{c}}
- {\sqrt{1 - \csc^2{a} \csc^2{b} \big( \cos{c} - \cos{a} \cos{b}\big)^2}}
-\]
-
-Via cosine law, let $x = \overrightarrow{AC}, y = \overrightarrow{AD}, z = \overrightarrow{CD}$,
-\[
-c = \arccos{\frac{x^2 + y^2 + -z^2}{2xy}}
-\]
-
-\[
-\frac{\partial c}{\partial \overrightarrow{DC}} = \frac{z}{x y \sqrt{1 -
+\frac{\partial b}{\partial \overline{DC}} = \frac{z}{x y \sqrt{1 -
     \frac{(x^2 + y^2 - z^2)^2}{(4 x^2 y^2)}}}
 \]
 
 
-If we have a goal node $g$ which exists further down the kinematic chain than $\overrightarrow{DC}$, then
-the change in its position can be computed as the rotation of it about $\overrightarrow{AB}$ induced by the
-chage in length $\overrightarrow{DC}$.
+If we have a goal node $g$ which exists further down the kinematic chain than $\overline{DC}$, then
+the change in its position can be computed as the rotation of it about $\overline{AB}$ induced by the
+chage in length $\overline{DC}$.
 
-\[
-\frac{\partial AB }{\partial \overrightarrow{DC}}  =
+\begin{equation}
+\frac{\partial \angle AB }{\partial \overline{DC}}  =
 \frac{z}{x y \sqrt{1 -
     \frac{(x^2 + y^2 - z^2)^2}{(4 x^2 y^2)}}}
 \cdot
-\frac{\csc{a} \csc{b} \sin{c}}
- {\sqrt{1 - \csc^2{a} \csc^2{b} \big( \cos{c} - \cos{a} \cos{b}\big)^2}}
- \]
+\frac{\csc{c} \csc{d} \sin{b}}
+ {\sqrt{1 - \csc^2{c} \csc^2{d} \big( \cos{b} - \cos{c} \cos{d}\big)^2}}
+\end{equation}
 
  Note that the change in position of a goal point $G$ rotated about $\overrightarrow{AB}$ is:
 
-(from \url{http://reedbeta.com/blog/rotations-and-infinitesimal-generators/}:)
+ (from \url{http://reedbeta.com/blog/rotations-and-infinitesimal-generators/}:)
 
-\[
-\frac{\partial \overrightarrow{G}}{\partial \theta} = \overrightarrow{AB} \times \overrightarrow{BG}
-\]
+That is, if there was an object rigidly attached to the triangular face $\Delta ABD$ at postion $G$, and $\partial \theta = \partial \angle AB$,
+then its change in positions would be given by:
+
+\begin{equation}
+\frac{\partial \overrightarrow{G}}{\partial \angle AB} = \overrightarrow{AB} \times \overrightarrow{BG}
+\end{equation}
+
+so:
+\begin{equation}
+\frac{\partial \overrightarrow{G}}{\partial \overline{DC}} =  \frac{\partial \overrightarrow{G}}{\partial \angle AB } \frac{\partial \angle AB }{\partial \overline{DC}} = (\overrightarrow{AB} \times \overrightarrow{BG}) \cdot \frac{\partial \angle AB }{\partial \overline{DC}}
+\end{equation}
+
 
  It is important to note that this expression in terms of the tetrahedron $ABCD$ belie the rather tricky coding
  involved. The code must be very careful to consider the chirality of the tetrahedron, in particular, and
@@ -649,7 +692,7 @@ chage in length $\overrightarrow{DC}$.
  Furthermore, I actually return the derivative in a ``normalized'' form. I am not sure that is justified, but it seems to work with the
  DLIB software. In theory we should be quite able to say what the units of these derivatibves are, but I get rather confused by them.
  
-Let's assume however that we have a way to compute the $\frac{\partial g}{\partial \overrightarrow{DC}}$. Have we then got a way to compute
+Let's assume however that we have a way to compute the $\frac{\partial g}{\partial \overline{DC}}$. Have we then got a way to compute
 the change in the score value?
 
 However, in order to use the DLIB numerical optimization software, what we really need to compute is
@@ -667,12 +710,13 @@ pointing from the current node position $C(g)$ to the target $T(g)$.
 Our goal is to compute the change in this function with respect to the change in the length of a given edge:
 
 \[
-\frac{\partial S}{\partial \overrightarrow{DC}} =
-\sum_{g\in V} [C(g) - T(g)] \cdot \frac{\partial AB }{\partial \overrightarrow{DC}} 
+\frac{\partial S}{\partial \overline{DC}} =
+\sum_{g\in V} [C(g) - T(g)] \cdot \frac{\partial AB }{\partial \overline{DC}} 
 \]
 
 Note that $[C(g) - T(g)]$ points {\em away} from the goal. This because we have organized our system to {\em minimize} the objective $S$,
 as is customary.
+
 
 
 \section{Returning to the System}
