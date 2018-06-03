@@ -11,6 +11,10 @@
 \usepackage{relsize}
 \usepackage{draftwatermark}
 \usepackage[mathscr]{eucal}
+\usepackage{amsmath, amssymb, graphics, setspace}
+
+\newcommand{\mathsym}[1]{{}}
+\newcommand{\unicode}[1]{{}}
 
 \SetWatermarkText{DRAFT}
 \SetWatermarkScale{6}
@@ -25,7 +29,7 @@
 
 % See the ``Article customise'' template for come common customisations
 
-\title{On Simple Planar Variable Geometry Trusses}
+\title{Numerical Optimization of Tetrahelical Robots via Derivatives}
 \author{Robert L. Read
   \thanks{read.robert@gmail.com}
 }
@@ -683,7 +687,82 @@ so:
 \frac{\partial \overrightarrow{G}}{\partial \overline{DC}} =  \frac{\partial \overrightarrow{G}}{\partial \angle AB } \frac{\partial \angle AB }{\partial \overline{DC}} = (\overrightarrow{AB} \times \overrightarrow{BG}) \cdot \frac{\partial \angle AB }{\partial \overline{DC}}
 \end{equation}
 
-\subsection{Derivatives of objects attached to $\Delta BCD$}
+By assigning $G = D$, we now have an analytic calculation of $\frac{\partial D}{\partial \overline{DC}}$.
+
+\subsection{The change in addtional nodes}
+
+Assuming that $A, B$, and $C$ are fixed, the computation of motion of $D,E$, and $F$ as the length $ \overline{DC} $ changes is interesting
+because each is in a sense different. If we had a formula for each of these, they would all be different.
+
+However, nodes further away from $\overline{CD}$, that is, those that would be numbered $H$ and above, have a uniformity because changing
+$\overline{CD}$ changes the orientation and position, but not the shape, of the triangle $\Delta D, E, F$. Therefore, every point fixed
+to this triangle can modeled as a change to this fixed frames. Therefore, to compute the change in the position of any point attached beyond
+nodes $\Delta D, E, F$ can be calculated simply from the change to $D,E$ and $F$.
+
+It is therefore advantageous to be able to efficiently and clearly caclulate
+$\frac{\partial D}{\partial \overline{DC}}$,
+$\frac{\partial E}{\partial \overline{DC}}$ and
+$\frac{\partial F}{\partial \overline{DC}}$.
+
+If we cannot produce closed-form expressions for these derivatives, we need to be able to approximate them well via differentials.
+
+The motion of $E$ is a pure rotation about the fixed nodes $B$ and $E$. We will have no such luck with $F$ and $G$.
+
+Similar to our deriviation of the motion of $D$, we compute the motion of $E$ by finding the change to the angle $\psi$ around the
+vector $\overrightarrow{CB}$. We compute this change in motion by differentiating the formula for the dihedral angle $\angle BC$ of
+the tetrahedron $BCDE$ from the apex $C$:
+
+\begin{equation}
+ \angle BC  =\arccos{\frac{\cos{\angle DCE} - \cos{\angle BCD}\cos{\angle BCE}}{\sin{\angle BCD}\sin{\angle BCE}}}
+\end{equation}
+
+The angle $\angle BCE$ does not change as $CD$ changes its length. The angles $\angle BCD$ and $\angle DCE$ do both
+change their length in response to a change to $\overline{CD}$, so we rewrite this formula in terms of that to facilitate differentiation.
+
+\begin{equation}
+\angle BCD  = \arccos{\frac{\overline{BC}^2 + \overline{CD}^2 + -\overline{BD}^2}{2\overline{BC}\cdot\overline{CD}}}
+\end{equation}
+
+% arccos((r^2 + z^2 - t^2)/(2*r*z)
+
+\begin{equation}
+\angle DCE  = \arccos{\frac{\overline{CD}^2 + \overline{CE}^2 + -\overline{DE}^2}{2\overline{CD}\cdot \overline{CE}}}
+\end{equation}
+
+% arccos((z^2 + q^2 - t^2)/(2*q*z)
+
+Via cosine law, let $x = \overline{AC}, y = \overline{AD}, z = \overline{CD}, r = \overline{BC}, s = \overline{ED},
+t = \overline{BD}, q = \overline{CE},$
+
+\begin{align*}
+  f(z) =  & \frac{z^2 + q^2 + -s^2}{2z\cdot q} \\
+  f'(z) = & \frac{-q^2 + s^2 + z^2}{2 q z^2}
+\end{align*}
+
+\begin{align*}
+  g(z) = &  \frac{r^2 + z^2 + -t^2}{2r\cdot z} \\
+  g'(z) = & \frac{-r^2 + t^2 + z^2}{2 r z^2}
+\end{align*}
+
+\begin{equation}
+  \frac{\partial \angle BC}{\partial z} =
+  \frac{\partial }{\partial z} \arccos{\frac{f(z) - g(z)\cos{\angle BCE}}{\sin{\arccos{g(z)}}\sin{\angle BCE}}}
+\end{equation}
+
+Let: $a = \angle BCE$.
+
+\begin{equation}
+  \frac{\partial \angle BC}{\partial z} =
+  -\frac{\frac{\sin{a} (f'(z) - \cos{a} g'(z))}{\sqrt{1 - g(z)^2}} + \frac{\sin{a} g(z) g'(z) (f(z) - \cos{a} g(z))}{(1 - g(z)^2)^(3/2)}}
+{\sqrt{1 - \frac{\sin^2{a} (f(z) - \cos{a} g(z))^2}{1 - g(z)^2}}}
+\end{equation}
+
+
+As we did before, any point $M$ attached rigidely to the triange $\Delta BCE$ is  computable via the expression:
+\begin{equation}
+  \frac{\partial M}{\partial \overline{CD}} = \overrightarrow{CE} \times \overrightarrow{CB}
+  \frac{\partial \angle BC}{\partial \overline{CD}}
+  \end{equation}
 
 In order to discuss goal nodes greater than $D$ as $\overline{CD}$ changes, recall that $E$ is attached as tetrahedron $BCDE$ to nodes $B, C$ and $D$
 with joints allowing angular displacement. 
@@ -724,16 +803,6 @@ Note that $[C(g) - T(g)]$ points {\em away} from the goal. This because we have 
 as is customary.
 
 
-
-\section{Returning to the System}
-
-On April 13th, 2018, I finally came back to this. I'm not sure where it stands.
-
-On May 4th, 2018, after my trip to Hong Kong, I once again return to this code.
-
-Upon returning to my test code (thank God I am using TDD) I discover that I don't have ``compute rotation about points'' working.
-
-As of May 5th, I believe the derivative calculation is incorrect.
 
 
 \section{Unvetted References}
