@@ -802,8 +802,23 @@ Our goal is to compute the change in this function with respect to the change in
 Note that $[C(g) - T(g)]$ points {\em away} from the goal. This because we have organized our system to {\em minimize} the objective $S$,
 as is customary.
 
+\subsection{Notes on the motion of node $F$}
 
+In our standard model, $F$ is the final node whose motion must be independently considered. However, it is highly constrained by
+its unchanging distances to $C, D, E$ and $F$.
+\begin{itemize}
+\item It's motion vector must be perpendicular to the vector $\overrightarrow{CF}$.
+\item It can be approximated by the modition of the midpoint $\overline{DE}$ around the center $C$.
+\item If $\overline{CD}$ contracts it must move away from $F$, conversely of $\overline{CD}$ expands, it must move toward $D$.
+\end{itemize}
 
+We could probably construct an approximation just from these. A better student of classical mechanics can probably produce a
+closed-form expression, which is worth investigation---possibly asking of StackExchange.
+
+\subsection{Motion of frame $D$, $E$, and $F$}
+
+Given the derivative of position of the three corners of the triangle $\Delta DEF$ it should be possible to
+compute the motion of any point attached to this frame. Presumably this can found on a textbook on classical mechanics.
 
 \section{Unvetted References}
 
