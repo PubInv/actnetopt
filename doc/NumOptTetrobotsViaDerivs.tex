@@ -486,6 +486,35 @@ Can we add other weights into the Derivatives and Objective (such as all joints 
 
 \section{Moving to Tetrahedral Trusses}
 
+\subsection{Node and Edge Numbering}
+
+Numbering and labeling the nodes of a tetrahelix can be so confusing that it is worth a diversion to standardize.
+
+Every tetrahelix may be thought of as having three ``rails'', each of which, in a regular tetrahelix, coils about
+the central axis. Call these red, blue and yellow ($R$,$B$, and $Y$). We number nodes froms zero.
+
+\[ \text{Color}(n) = \begin{cases} 
+      R & n \bmod 3 = 0 \\
+      B & n \bmod 3 = 1 \\
+      Y & n \bmod 3 = 2 \\
+   \end{cases}
+\]
+
+In considering a given section of a tetrahelix of any extent, we may often label the nodes with capital letter names sequentially ($A$, $B$, $C$, etc.)
+
+Generally we consider the nodes $A$, $B$, and $C$ to be fixed, and statically determine the position of all other nodes sequentially
+from the coordnates in 3-space of these nodes and the lengths of edges.
+
+Edge numbering is somewhat more complicated than node numbering, because the edges start from a boundary condition.
+We obey the rule that edges are always ordered first by the smallest-numbered node they connect, and then the largest-numbered node
+that they connect. Because of this boundary condition, the first variable length edge is edge number $2$, and edge number $3$ ($\overline{BC}$)
+is fixed. In this code this handled by a special function that returns the edge number of the $n$th variable edge, and
+functions which compute the number of the larger-numbered and smaller-numbered node connected by a given edge.
+These functions have to deal with the boundary-condition irregularity; they will not be repeated here, but if interested
+refer to the file ``Tetrahelix.cpp''.
+
+\subsection{An obsolete approach}
+
 We can develop the mathematics analogously. To do this, we must undestand the trigonometry
 of the tetrahedron. According to the Wikipedia
 article\cite{https://en.wikipedia.org/wiki/Tetrahedron}, there is a Law of cosines that relates areas of faces to dihedral angles.
