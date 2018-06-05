@@ -6,7 +6,9 @@
 
 #include <SDL.h>
 
-Tetrahelix *init_Tetrahelix();
+
+Tetrahelix *init_Tetrahelix(int truss_nodes,double upper, double lower, double initial);
+
 void render_all(SDL_Renderer* renderer, Tetrahelix *an,column_vector* coordsx,Obstacle obstacle);
 
 extern const int WIN_WIDTH;
@@ -16,7 +18,7 @@ extern double* best_distances;
 extern double best_score;
 
 
-#define TRUSS_NODES 10
+#define TRUSS_NODES 6
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5

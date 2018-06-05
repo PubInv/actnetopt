@@ -56,8 +56,10 @@ public:
   int large_node(int e);
   int small_node(int e);
   int edge_between(int ndh,int ndl);
-  bool rail_edge(int e);  
-
+  bool simple_hinge_p(int e);
+  
+  int color_of_node(int n);
+  bool rail_edge_p(int e);
   void add_goal_node(int num, double x,double y, double z,double w);
 
   Tetrahelix(int nodes,
@@ -125,6 +127,19 @@ column_vector compute_internal_effector_derivative_c(column_vector cur_coords[],
  
  void set_fixed_coords(column_vector coords[]);
   void set_distances(column_vector coords[]);  
+
+
+  double private_f(double CD, double CE, double ED);
+  double private_g(double CD, double BC, double BD); 
+  double private_fdz(double CD, double CE, double ED);
+  double private_gdz(double CD, double BC, double BD);
+
+// This is an preliminiary attempt to test the
+
+  double d_dihedralBC_dCD_aux(double BC, double BD, double CD, double CE, double DE, double aBCE);
+  
+  double d_dihedralBC_dCD(column_vector cur_coords[],
+				    int edge_number);
 
 };
 

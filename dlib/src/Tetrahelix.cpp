@@ -63,6 +63,7 @@ int Tetrahelix::edge_number_of_nth_variable_edge(int n) {
     //  }
 }
 
+
 int Tetrahelix::edges_in_tetrahelix(int n) {
   if (n >= 3) {
     return (n -2) *3;
@@ -118,6 +119,34 @@ int Tetrahelix::small_node(int e) {
   return large_node(e) - (3 - (e % 3));
 }
 
+int Tetrahelix::color_of_node(int n) {
+  return n % 3;
+}
+
+// unfortunately this also has some exceptions (sigh)
+bool Tetrahelix::rail_edge_p(int e) {
+  if (e == 0) {
+    return true;
+  } else if (e < 6) {
+    return false;
+  } else {
+    int s = small_node(e);
+    int l = large_node(e);
+    return color_of_node(s) == color_of_node(l);
+  }
+}
+
+// This is a unclear at present: I'm trying to distinguish
+// between edges that move all further goal nodes as a
+// simple hinge from those that require more complicated consideration.
+// To some extent this is the same as being an "outside" edge,
+// but not the same as being a "rail" edge.
+// This is assuming A,B,C are fixed as usual.
+bool Tetrahelix::simple_hinge_p(int e) {
+  int from_back = num_edges - e;
+  return (e < 3) || (from_back == 1) || (from_back == 2) || (from_back == 3) || rail_edge_p(e);
+}
+
 int edge_between_aux(int x,int y) {
   int d = y - x;
   if (y  == 0) {
@@ -159,15 +188,6 @@ int Tetrahelix::edge_between(int x,int y) {
     abort();    
     return -1;
   } else return (x < y) ? edge_between_aux(x,y) : edge_between_aux(y,x);
-}
-
-// under the current numbering, externals are odd...
-bool Tetrahelix::rail_edge(int edge) {
-  // WARNING--this needs to be rewritten -- not sure how this works for tetrahelix...
-  // really the questin is are we changing rails, which is best done where we can
-  // detect the small and large node numbers.
-  
-  return ((edge % 2) == 1);
 }
 
 
@@ -320,7 +340,7 @@ column_vector find_point_from_transformed(Chirality sense,double AB, double AC, 
     D = sx,sy,(sense == CCW) ? sz : -sz;
     // We compute this only for debugging purposesn
     C = rx,ry,0.0;
-    int debug = 1;
+    int debug = 0;
     if (debug) {
       Chirality senseABC = tet_chirality(A,B,C,D);
       cout << "chirality (demanded, computed) " << sense << ", " << senseABC << "\n";
@@ -344,7 +364,7 @@ column_vector find_point_from_transformed(Chirality sense,double AB, double AC, 
 // that causes a problem here. In that case we are 180 degrees out of sync. I need to think
 // carefully about how to handle this.
 point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vector pB, column_vector pC) {
-  int debug = 1;
+  int debug = 0;
   // first we translate to the origin
   point_transform_affine3d trans = translate_point(-pA(0),-pA(1),-pA(2));
   column_vector pAp = trans(pA);
@@ -521,7 +541,7 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
 								       bool* valid
 								      ) {
 
-  int debug = 1;
+  int debug = 0;
   if (debug) cout << "ad bd cd\n";
   if (debug) cout << ad << " " << bd << " " << cd << "\n";
   
@@ -565,9 +585,11 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
 
   Chirality untransformed = tet_chirality(pa,pb,pc,tform_inv(D));
   Chirality transformed = tet_chirality(Ap,Bp,Cp,D);
-  cout << "Chirality demanded: " << sense << "\n";  
-  cout << "Chirality of transformed computations: " << transformed << "\n";
-  cout << "Chirality of untransformed computations: " << untransformed << "\n";  
+  if (debug) {
+    cout << "Chirality demanded: " << sense << "\n";  
+    cout << "Chirality of transformed computations: " << transformed << "\n";
+    cout << "Chirality of untransformed computations: " << untransformed << "\n";
+  }
   return tform_inv(D);
 }
 
@@ -576,7 +598,7 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
 bool solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
     FindCoords3d f;
 
-    int debug = 1;
+    int debug = 0;
     //    Chirality sense = CCW;
     Chirality sense = CCW;
     // Is this even required?
@@ -674,6 +696,15 @@ bool solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
       }
       if (debug_find) std::cout << "f(y) " << f(y) << std::endl;
     }
+
+
+    if (debug) {
+       cout << "FINAL COORDS \n";
+       for(int i = 0; i < an->num_nodes; i++) {
+         print_vec(coordsx[i]);
+       }
+    }
+    
     return valid;
 };
 
@@ -758,14 +789,13 @@ double dangle_from_dside(double adjacent1, double adjacent2, double opposite) {
 // the the dihedral angle across AB based on the tip angles BAD (adjacent1)
 // and BAD (adjacent2)  and CAD (opposite) is geiven by this function.
 double ddhedral_dvertex(double adjacent1, double adjacent2, double opposite) {
-  double a = adjacent1;
-  double c = adjacent2;
-  double b = opposite;
-  double num = csc(a)*csc(b)*sin(c);
-  double den = sqrt(1 - csc(a)*csc(a) * csc(b)*csc(b) * pow( cos(c) - cos(a)*cos(b),2));
+  double r = adjacent1;
+  double t = adjacent2;
+  double s = opposite;
+  double num = csc(r)*csc(t)*sin(s);
+  double den = sqrt(1 - csc(r)*csc(r) * csc(t)*csc(t) * pow( cos(s) - cos(r)*cos(t),2));
   return num/den;
 }
-
 // Compute the ccw rotation by theta about the segment A->B of M (moving) by theta
 // TODO: This needs to be decleared in the .hpp place.
 
@@ -821,8 +851,11 @@ column_vector compute_rotation_about_points(column_vector A,
 column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
 								int edge_number,
 								int goal_node_number) {
-  int debug = 0;
 
+
+  int debug = 0;
+  if (edge_number == 5) debug = 1;
+  if (debug) cout << "INIT COMPUTE_GOAL_DERIVATIVE\n";
   //  cout << "iniit! \n";  
   // This has to be reconstructed....
   column_vector d_e_a(3);
@@ -857,8 +890,8 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   }
 
 
-  //  cout << "edge" << e << " small " << s << " large "  << l << "\n";
-  //  cout << "a b c d  " << a << " " << b << " " << c << " " << d << "\n"; 
+  if (debug)  cout << "edge" << e << " small " << s << " large "  << l << "\n";
+  if (debug)  cout << "a b c d  " << a << " " << b << " " << c << " " << d << "\n"; 
 
   // How does this choose the chirality? Which side of the triangle BCD does A occur on?
   // If we look at the tip of A the BCD is on the other side (from our eye), does BCD go
@@ -869,7 +902,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   column_vector C = cur_coords[c];
   column_vector D = cur_coords[d];
 
-  debug = 0;
+  //  debug = 0;
   Chirality tet = tet_chirality(A,B,C,D);
   if (tet != CCW ) {
     if (debug) {
@@ -939,7 +972,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   // Note: Positive means anticlockwise.
   double ddihedral_AB = ddhedral_dvertex(ang_BAD,ang_BAC,ang_CAD);
 
-  debug = 0;
+  //  debug = 0;
   if (debug) {
    cout << " dvertex_angle_dlength  " << dvertex_angle_CAD*180/(M_PI) << "\n";
    cout << " ddihedral_dv  " << ddihedral_AB*180/(M_PI) << "\n";
@@ -949,8 +982,6 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   double dAB_LENCD = dvertex_angle_CAD * ddihedral_AB ;
     // because we use this as the INTERIOR angle, the change in the
     // interior is the negation of the EXTERIOR, so we change the sign
-
-  // THIS IS THE CRUX OF MY PROBLEM....
 
     if (debug) {
       cout << " dAB_LENCD  " << dAB_LENCD*180/(M_PI) << "\n";  
@@ -965,6 +996,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
     }
 
     // G is the goal direction, the vector which if added to D would place us at the goal.
+    // WARNING: I don't understand this line:
     column_vector G = en - A;
     column_vector BA = A - B;
     // What order should this be?
@@ -984,7 +1016,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   // at least be careful of the order!
     //  column_vector Emoved = compute_rotation_about_points(A,B,dAB_LENCD,en);
     //  column_vector differential = Emoved - en;  
-  debug = 0;  
+    //  debug = 0;  
   if (debug) {
     //    cout << "differential ";
     //    print_vec(differential);
@@ -995,6 +1027,142 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   //  return differential;
   return deriv;
 }
+
+double Tetrahelix::private_f(double CD, double CE, double ED) {
+  double z = CD;
+  double q = CE;
+  double s = ED;
+  return (z*z + q*q + -s*s) / (2*z*q);
+}
+
+double Tetrahelix::private_g(double CD, double BC, double BD) {
+  double z = CD;
+  double r = BC;
+  double t = BD;
+  return (z*z + r*r + -t*t) / (2*z*r);
+}
+
+double Tetrahelix::private_fdz(double CD, double CE, double ED) {
+  double z = CD;
+  double q = CE;
+  double s = ED;
+  return (z*z + -q*q + s*s) / (2*z*z*q);
+}
+
+double Tetrahelix::private_gdz(double CD, double BC, double BD) {
+  double z = CD;
+  double r = BC;
+  double t = BD;
+  return (z*z + -r*r + t*t) / (2*z*z*r);
+}
+
+// This is an preliminiary attempt to test the
+
+double Tetrahelix::d_dihedralBC_dCD_aux(double BC, double BD, double CD, double CE, double DE, double aBCE) {
+  double a = aBCE;
+
+  // f = cos DCE
+  double f = private_f(CD,CE,DE);
+  // g = cos BCD
+  double g = private_g(CD,BC,BD);
+
+  cout << " f g \n";
+  cout << f << " " << g << "\n";
+  cout << "CD BC BD\n";
+  cout << CD << " " << BC << " " << BD << "\n";
+
+  double fp = private_fdz(CD,CE,DE);
+  double gp = private_gdz(CD,BC,BD);
+  
+  double sa = sin(a);
+  double ca = cos(a);
+
+  // Got 1 - g is negative!
+  double t1 = sa*(fp - ca*gp)/sqrt(1 - g*g);
+  cout << "sa fp ca gp  g \n";    
+  cout << sa << " " << fp << " " << ca << " " << gp << " " << g << "\n";  
+  double t2 = sa*g*gp*(f - ca*g);
+  
+  double num = t1 + t2;
+  double n1 = pow(sa*(f - ca*g),2);
+  double den = sqrt(1 - (n1/(1-g*g)));
+
+  cout << "internal debug values:\n";
+  cout << "num den n1 t1 t2:\n";
+  cout << num << " " << den << " " << n1 << " " << t1 << " " << t2 << "\n";
+  
+  return num/den;
+}
+
+double Tetrahelix::d_dihedralBC_dCD(column_vector cur_coords[],
+			   int edge_number) {
+  int debug = 1;
+  if (debug) cout << "d_dihedralBC_dCD\n";
+
+  // This has to be reconstructed....
+  column_vector d_e_a(3);
+
+  // let P be the joint about which we are rotating by changing e
+  // let M be the directly moved joint.
+  // let S be the "stable" joint connected to M by e.
+  int e_n = edge_number;
+  int s = small_node(e_n);
+  int l  = large_node(e_n);
+  if (l + 1 > num_nodes) {
+    cout << "edge number too high!\n";
+    cout << "abort!";
+    abort();
+  }
+
+  // The edget that is changing is the "CD" edge--opposite AB
+  // Note the edge numbering here is a little tricky....
+  int c = s;
+  int d = l;
+  int a = -1;
+  int b = -1;
+  if (c == l-1) {
+    a = l - 3;
+    b = l - 2;
+  } else if (c == l-2) {
+    a = l - 3;
+    b = l - 1;
+  } else if (c == l-3) {
+    a = l - 2;
+    b = l - 1;
+  }
+  int e = d+1;
+
+  if (debug)  cout << "edge" << e << " small " << s << " large "  << l << "\n";
+  if (debug)  cout << "a b c d  e" << a << " " << b << " " << c << " " << d << " " << e_n << "\n"; 
+
+  // How does this choose the chirality? Which side of the triangle BCD does A occur on?
+  // If we look at the tip of A the BCD is on the other side (from our eye), does BCD go
+  // clockwise or anticlockwise? Is our convention that, starting from the fixed points,
+  // the normal of ABC points toward or away from D?
+  column_vector A = cur_coords[a];
+  column_vector B = cur_coords[b];
+  column_vector C = cur_coords[c];
+  column_vector D = cur_coords[d];
+  column_vector E = cur_coords[e];
+
+  double bc = distance_3d(B,C);
+  double bd = distance_3d(B,D);
+  double be = distance_3d(B,E);  
+  double cd = distance_3d(C,D);        
+  double ce = distance_3d(C,E);
+  double de = distance_3d(D,E);
+
+  if (debug)  cout << "bc bd be cd ce de" << bc << " " << bd << " " << be << " " << cd << " " << ce << " " << de << "\n";   
+
+  double ang_BCE = angle_from_three_sides(bc,ce,be);
+
+  cout << "Ang : " << ang_BCE*180/M_PI << "\n";
+
+  double d_dihedral = d_dihedralBC_dCD_aux(bc, bd, cd, ce, de, ang_BCE);
+  
+  return d_dihedral;
+}
+
 
 		   
 // TODO: Add number of fixed nodes as a definite function and replace all

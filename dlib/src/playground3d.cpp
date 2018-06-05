@@ -50,6 +50,11 @@ Tetrahelix *Invert3d::global_truss = 0;
 // Obstacle obstacle;
 
 void solve_inverse_problem(Tetrahelix *an) {
+
+    cout << "goal node [solve_inverse] " << an->goals[0] << "\n";
+    cout << "QQQ goal node [solve_inverse] \n";
+    print_vec(an->goals[0]);
+  
   column_vector sp(an->var_edges);
   column_vector lb(an->var_edges);
   column_vector ub(an->var_edges);      
@@ -81,9 +86,11 @@ void solve_inverse_problem(Tetrahelix *an) {
 
     //    double score = 0.0;
     int n = an->var_edges;
-    //    cout << "# var edges: " << n << "\n";
+    cout << "# var edges: " << n << "\n";
 
-    //    cout << "goal node [solve_inverse] " << an->goals[0] << "\n";
+    cout << "goal node [solve_inverse] " << an->goals[0] << "\n";
+    cout << "AAAA goal node [solve_inverse] \n";
+    print_vec(an->goals[0]);
 
     double score = find_min_box_constrained(
 					    //bfgs_search_strategy(),
@@ -100,7 +107,7 @@ void solve_inverse_problem(Tetrahelix *an) {
     			     );
     // I uses this to get rid of the warning
     score = score + 0.0;
-    //    cout << "got a score : " << score << "\n";
+    cout << "got a score : " << score << "\n";
     for (int i = 0; i < an->var_edges; ++i) {
       an->distance(i+3) = best_distances[i];
     }
@@ -132,24 +139,8 @@ int mainx(Tetrahelix *an,column_vector* coords)
 	  solve_forward_find_coords(an,coords);
 	  cout << "SOLVE_INVERSE\n";
 	  solve_inverse_problem(an);
-
 	  solve_forward_find_coords(an,coords);
-
-	  //	  find_all_coords(an,coords);
-	  // Invert3d inv;
-	  // inv.an = an;
-	  // inv.set_global_truss();
-	  // column_vector sp(an->var_edges);
-	  // for (int i = 0; i < an->var_edges; i++) {
-	  //   sp(i) = an->distance(i + 1);
-	  // }	  
-	  // double final = inv(sp);
-	  // std::cout << "inv(x) final : " << final << std::endl;
-	  // for(int i = 0; i < an->num_nodes; i++) {
-	  //   std::cout << " d["<< i << "]" << coords[i](0) << "," << coords[i](1) << std::endl;
-	  // }
-	  // should now deallocate coords
-
+	  
 	}
     }
     catch (std::exception& e)
@@ -166,7 +157,7 @@ int mainx(Tetrahelix *an,column_vector* coords)
 
 // TODO: reorganized this so that initialization is in a separate routine
 
-Tetrahelix *init_Tetrahelix() {
+Tetrahelix *init_Tetrahelix(int truss_nodes,double upper, double lower,double initial) {
 
   // This needs to be generalized but for now I'm going to
   // just add an obstacle.  If I can successfully work around
@@ -176,12 +167,13 @@ Tetrahelix *init_Tetrahelix() {
   // obstacle.center = -2.0, 10.0;
   // obstacle.weight = 4.0;
 
+  double median = (upper+lower)/2.0;
 
-    Tetrahelix *an = new Tetrahelix(TRUSS_NODES,
-		  UPPER_BOUND,
-		  LOWER_BOUND,
-		  MEDIAN,
-		  INITIAL);
+    Tetrahelix *an = new Tetrahelix(truss_nodes,
+		  upper,
+		  lower,
+		  median,
+		  initial);
 
   int last_node = an->num_nodes - 1;
   double bx = ((last_node % 2) == 0) ? 0.0 : an->median_d * cos(30.0*M_PI/180);

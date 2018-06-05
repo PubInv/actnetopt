@@ -49,16 +49,23 @@ Invert3d::Invert3d() {
   }
 
   double Invert3d::objective(const column_vector& ds) {
-    int debug = 0;
+    int debug = 1;
     if (debug) {
-    cout << "OBJECTIVE:  " <<  ds(0) << " " << ds(1) << " " << ds(2) << "\n";
+      cout << "OBJECTIVE:  \n"; 
     }
 
     //    if (debug_inv) std::cout << "OBJECTIVE INPUTS" << std::endl;
     for (int i = 0; i < global_truss->var_edges; ++i) {
       int n = global_truss->edge_number_of_nth_variable_edge(i);
       global_truss->distance(n) = ds(i);
+      if (debug) {
+	cout << ds(i) << " ";
+      }
     }
+      if (debug) {
+	cout << "\n";
+      }
+    
   //   cout << "OBJECTIVE AAA\n";
   // for (int i = 0; i < global_truss->num_edges; ++i) {
   //   cout << " i, distances(i) " << i << " , " << global_truss->distance(i) << "\n";
@@ -125,7 +132,7 @@ column_vector normalize3(column_vector v) {
 
   // compute the derivatives of the objective as the configuration ds.
 column_vector Invert3d::derivative(const column_vector& ds) {
-  int debug = 0;
+  int debug = 1;
   if (debug) {
   cout << "DERIVATIVE CALLED\n";
   }
@@ -146,12 +153,12 @@ column_vector Invert3d::derivative(const column_vector& ds) {
 
   solve_forward_find_coords(global_truss,coords);	     
 
-  debug = 0;
+  debug = 1;
   for (int i = 0; i < global_truss->num_nodes; ++i) {
     if (debug) cout << " nodes " << i <<  "\n";
     if (debug) print_vec(coords[i]);
   }
-  debug = 0;
+  debug = 1;
   
   column_vector d(global_truss->var_edges);
       
@@ -163,10 +170,14 @@ column_vector Invert3d::derivative(const column_vector& ds) {
     double prod = 0.0;
     for(int j = 0; j < global_truss->goals.size(); j++) {
       column_vector g = global_truss->goals[j];
+      cout << "GOAL COORDS: \n";
+      print_vec(g);
       int idx = global_truss->goal_nodes[j];	
       column_vector c = coords[idx];
 
-      column_vector d = global_truss->compute_goal_derivative_c(coords,e,global_truss->goal_nodes[j]);
+      cout << "GOAL INDEX: " << idx << "\n";
+
+      column_vector d = global_truss->compute_goal_derivative_c(coords,e,idx);
 
       if ((d(0) > 1000.0) || (abs(d(1)) > 1000.0)) {
 	cout << "CRISIS!\n";
@@ -181,7 +192,6 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       // This is actually the anti-goal direction, but this is a way to
       // express that we want to move closer to the goal, so the derivative
       // goes UP as we move AWAY from the goal.
-      //      column_vector goal_direction = g-c;
       column_vector goal_direction = c - g;
 
       if (l2_norm(goal_direction) == 0.0) { // In this case, the derivative is undefined...
@@ -258,7 +268,7 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       }
     }
   }
-  debug = 0;
+  debug = 1;
   if (debug)   cout << "DERIVATIVES" << "\n";
   for(int i = 0; i < global_truss->var_edges; i++) {
     int n = global_truss->edge_number_of_nth_variable_edge(i);

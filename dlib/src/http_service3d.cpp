@@ -103,8 +103,7 @@ int main( const int, const char** )
     //    settings->set_default_header( "Connection", "close" );
     settings->set_default_header( "Access-Control-Allow-Origin", "*" );    
 
-    an = init_Tetrahelix();
-  
+    an = init_Tetrahelix(TRUSS_NODES,UPPER_BOUND,LOWER_BOUND,INITIAL);
     coordsx = new column_vector[an->num_nodes];
 
 

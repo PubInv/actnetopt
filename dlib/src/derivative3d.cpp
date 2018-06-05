@@ -428,7 +428,7 @@ BOOST_AUTO_TEST_CASE( test_find_fourth_point )
   Chirality senseABCD = tet_chirality(A,B,C,D);
   Chirality senseABCDp = tet_chirality(A,B,C,Dp);
 
-  int debug = 1;
+  int debug = 0;
   
   if (debug) {
     cout << "Dp = " << "\n";
@@ -1419,20 +1419,25 @@ BOOST_AUTO_TEST_CASE( test_solving_when_goal_is_current_position)
   delete[] coords;
 }
 
-// This really only works with a tetrahedron; I just check the first fixed coords against the
+// This really only works with a SINGLE tetrahedron; I just check the first fixed coords against the
 // goal --- this does not work in any more general situation, so I am putting this here in the test file.
 int errant_max_distance(double lower_bound, double upper_bound, column_vector coords[],int len,column_vector goal) {
+  int debug = 1;
   for(int i = 0; i < len - 1 ; i++) {
     double d = distance_3d(coords[i],goal);
     if (d < lower_bound) {
-      cout << "ERRANT LOW\n";
-      print_vec(coords[i]);
-      print_vec(goal);      
+      if (debug) {
+	cout << "ERRANT LOW: " << d << "\n";
+	print_vec(coords[i]);
+	print_vec(goal);
+      }
       return i;
     } if (d > upper_bound) {
-      cout << "ERRANT HIGH\n";
-      print_vec(coords[i]);
-      print_vec(goal);            
+      if (debug) {
+	cout << "ERRANT HIGH: " << d << "\n";
+	print_vec(coords[i]);
+	print_vec(goal);
+      }
       return i;
     }
   }
@@ -1515,7 +1520,7 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_single_tetrahedron )
 
   // Now we will create an iteration of points in space, checking many of them.
 
-  int debug = 0;
+  int debug = 1;
   for(int i = 0; i < 8; i++) {
     goal(0) = i * 1.0;
     for(int j = 0; j < 8; j++ ) {
@@ -1524,9 +1529,9 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_single_tetrahedron )
       
       if (debug) cout << "Experiment (i,j) :" << i << " " << j <<  "\n";
 	
-      int e = errant_max_distance(10.0,20.0,coords,4,goal);
+      int e = errant_max_distance(thlx.lower_bound,thlx.upper_bound,coords,4,goal);
       if (e > -1) {
-	cout << "errant edge length: " << e << "\n";
+	cout << "errant edge: " << e << "\n";
 	print_vec(goal);
       } else {
 	double obj;
@@ -1577,8 +1582,8 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_single_tetrahedron )
 }
 
 
-// This is an attempt to set up a very particular situation which allows
-// us to test effectively.
+// // This is an attempt to set up a very particular situation which allows
+// // us to test effectively.
 BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron )
 {
   //  cout << "TEST ABILITY TO SOLVE A SINGLE TETRAHEDRONXSD\n";
@@ -1655,68 +1660,68 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron )
   cout << "CHECK DISTANCE (SMALL)" << d << "\n";
   BOOST_CHECK(l2_norm(coords[goal_node] - E) < 1e-2);
   
-  // //  column_vector goal = Egoal;
-  // Invert3d inv;
-  // inv.an = &thlx;
-  // inv.set_global_truss();
+  //  column_vector goal = Egoal;
+  Invert3d inv;
+  inv.an = &thlx;
+  inv.set_global_truss();
 
 
 
-  // thlx.add_goal_node(goal_node,Egoal(0),Egoal(1),Egoal(2),1.0);
+  thlx.add_goal_node(goal_node,Egoal(0),Egoal(1),Egoal(2),1.0);
 
-  // // Now we will create an iteration of points in space, checking many of them.
-  // int num = 1;
-  // for(int i = 0; i < num; i++) {
-  //   Egoal(0) = i * 1.0;
-  //   for(int j = 0; j < num; j++ ) {
-  //     Egoal(1) = j * 1.0;
-  //     thlx.goals[thlx.goals.size() - 1] = Egoal;
+  // Now we will create an iteration of points in space, checking many of them.
+  int num = 4;
+  for(int i = 0; i < num; i++) {
+    Egoal(0) = 10.0 +  i * 1.0;
+    for(int j = 0; j < num; j++ ) {
+      Egoal(1) = 10.0 + j * 1.0;
+      thlx.goals[thlx.goals.size() - 1] = Egoal;
       
-  //     if (debug) cout << "Experiment (i,j) :" << i << " " << j <<  "\n";
+      if (debug) cout << "Experiment (i,j) :" << i << " " << j <<  "\n";
 	
-  //     int e = errant_max_distance(10.0,20.0,coords,4,Egoal);
-  //     if (e > -1) {
-  // 	cout << "errant edge length: " << e << "\n";
-  // 	print_vec(Egoal);
-  //     } else {
-  // 	double obj;
-  // 	if (debug) cout << "pre-computation\n";
+      // int e = errant_max_distance(thlx.lower_bound,thlx.upper_bound,coords,4,Egoal);
+      // if (e > -1) {
+      // 	cout << "errant edge length: " << e << "\n";
+      // 	print_vec(Egoal);
+      // } else {
+  	double obj;
+  	if (debug) cout << "pre-computation\n";
       
-  // 	if (debug) print_vec(coords[goal_node]);
+  	if (debug) print_vec(coords[goal_node]);
       
-  // 	column_vector deriv = compute_derivative_for_single_tet_testing(&inv, inv.an, coords, Egoal, &obj);
-  // 	if (debug) {
-  // 	  cout << "deriv \n";
-  // 	  print_vec(deriv);
-  // 	  cout << "post-computation\n";
-  // 	  print_vec(coords[goal_node]);
-  // 	}
-  // 	if (isnan(deriv(0))) { // This means that the current coords is actually equal to the goal node
-  // 	  cout << "deriv is undefined!\n";
-  // 	} else {
-  // 	  //	  cout << "deriv:\n";
-  // 	  //	  print_vec(deriv);
-  // 	  //	  for (int i = 0; i < thlx.num_edges; ++i) {
-  // 	  //	    cout << " i, distances(i) " << i << " , " << thlx.distance(i) << "\n";
-  // 	  //	  }
-  // 	  solve_inverse_problem(inv.an);
-  // 	  // cout << "solving forward!\n";
-  // 	  bool solved = solve_forward_find_coords(&thlx,coords);
-  // 	  if (!solved) {
-  // 	    cout << "INTERNAL ERROR: Could solved these coords forward!\n";
-  // 	  }
-  // 	}
-  // 	if (debug) {
-  // 	  cout << "coords!!!\n";
-  // 	  print_vec(coords[goal_node]);
-  // 	  print_vec(Egoal);
-  // 	  cout << "NORM: " << l2_norm(coords[goal_node] - Egoal) << "\n";	  
-  // 	};
+  	column_vector deriv = compute_derivative_for_single_tet_testing(&inv, inv.an, coords, Egoal, &obj);
+  	if (debug) {
+  	  cout << "deriv \n";
+  	  print_vec(deriv);
+  	  cout << "post-computation\n";
+  	  print_vec(coords[goal_node]);
+  	}
+  	if (isnan(deriv(0))) { // This means that the current coords is actually equal to the goal node
+  	  cout << "deriv is undefined!\n";
+  	} else {
+  	  //	  cout << "deriv:\n";
+  	  //	  print_vec(deriv);
+  	  //	  for (int i = 0; i < thlx.num_edges; ++i) {
+  	  //	    cout << " i, distances(i) " << i << " , " << thlx.distance(i) << "\n";
+  	  //	  }
+  	  solve_inverse_problem(inv.an);
+  	  // cout << "solving forward!\n";
+  	  bool solved = solve_forward_find_coords(&thlx,coords);
+  	  if (!solved) {
+  	    cout << "INTERNAL ERROR: Could solved these coords forward!\n";
+  	  }
+  	}
+  	if (debug) {
+  	  cout << "coords!!!\n";
+  	  print_vec(coords[goal_node]);
+  	  print_vec(Egoal);
+  	  cout << "NORM: " << l2_norm(coords[goal_node] - Egoal) << "\n";	  
+  	};
 
-  // 	BOOST_CHECK(l2_norm(coords[goal_node] - Egoal) < 1e-2);
-  //     }
-  //   }
-  // }
+  	BOOST_CHECK(l2_norm(coords[goal_node] - Egoal) < 1e-2);
+	//      }
+    }
+  }
 
   // // Just check this is what I expect...
   // for(int i = 0; i < thlx.num_nodes; i++) {
@@ -1724,5 +1729,352 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron )
   // }
   delete[] coords;
 }
+
+BOOST_AUTO_TEST_CASE( test_rail_dege_p) {
+  Tetrahelix *thlx_ptr = init_Tetrahelix(5,2.0,1.2,1.5);
+  Tetrahelix thlx = *thlx_ptr;
+  for(int i = 0; i < thlx.num_edges; i++) {
+    //    bool rail = thlx.rail_edge_p(i);
+    // cout << "edge, rail: " << i << " " << rail << "\n";
+    cout << "edge, simple: " << i << " " << thlx.simple_hinge_p(i) << "\n";    
+  }
+}
+
+// This is to test a double tetrahedron in smaller coordinates
+// which I have had some trouble with in the "playground" GUI that I am trying.
+BOOST_AUTO_TEST_CASE( test_internal_edge_d_dihedral_computation_double_tetrahedron_with_playground_coords )
+{
+  cout << "TEST INTERNAL EDGE d_DIHEDRAL DOUBLE TETRAHEDRON \n";
+  // This is an attempt to make sure that the "distance_to_goal" after
+  // solving our "standard start" tetrahelix goes down
+  // if variable edges get bigger
+  Tetrahelix *thlx_ptr = init_Tetrahelix(5,2.0,1.2,1.5);
+  Tetrahelix thlx = *thlx_ptr;
+  
+  // Now we want to set up the coordinates of the first three nodes
+  // very carefully so that we follow the X-axis specifically.
+  // The easiest way to to this is to take it from the javascript
+  // code already written to preform these calculations....
+  column_vector* coords = new column_vector[thlx.num_nodes];
+  
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  column_vector D(3);
+  column_vector E(3);
+  //  column_vector Egoal(3);    
+
+  // Note we use right-handed coordinates.
+  // This diagram matches (approximately) the diagram in the paper.
+
+  A = thlx.fixed[0];
+  B = thlx.fixed[1];
+  C = thlx.fixed[2];
+  // This is the "standard" solution.
+  D = 0.6350852961085883,2.790116647275517,-1.57697505292423;
+
+  double Ex = -0.7601778544330073;
+  double Ey = 2.5104011833827586;
+  double Ez = -1.102633403898972;
+  
+  E = Ex,Ey,Ez;
+
+  // Let's extend the E node just a little at first...
+  //  Egoal = Ex,Ey+0.1,Ez;
+
+  // Note: This is done in this order so that we -Z will be 
+  coords[0] = A;
+  coords[1] = B;
+  coords[2] = C;
+  coords[3] = D;
+  coords[4] = E;  
+
+  // This is really 5 points, but it will just read the first three..
+  thlx.init_fixed_coords(coords);
+
+  thlx.set_distances(coords);  
+  int debug = 1;
+  
+  if (debug) {
+    for (int i = 0; i < thlx.num_edges; ++i) {
+      cout << " i, distances(i) " << i << " , " << thlx.distance(i) << "\n";
+    }
+  }
+
+  //  thlx.goals[thlx.goals.size() - 1] = Egoal;
+      
+  solve_forward_find_coords(&thlx,coords);
+  
+  if (debug) {
+    cout << "DONE SOLVING_FORWARD_FIND_COORDS \n";
+    for(int i = 0; i < thlx.num_nodes; i++) {
+      print_vec(coords[i]);
+    }
+  }
+  
+  for(int i = 0; i < thlx.var_edges; i++) {
+    int n = thlx.edge_number_of_nth_variable_edge(i);
+    bool internal = !thlx.simple_hinge_p(n);
+    if (internal) {
+      cout << "internal edge: " << n << "\n";
+      double d_dihedralBC = thlx.d_dihedralBC_dCD(coords,n);
+      cout << d_dihedralBC*180.0/M_PI << "\n";
+    } 
+
+  }
+}
+
+// This is to test a double tetrahedron in smaller coordinates
+// which I have had some trouble with in the "playground" GUI that I am trying.
+BOOST_AUTO_TEST_CASE( test_ability_to_solve_unique_double_tetrahedron_with_playground_coords )
+{
+  cout << "TEST ABILITY TO SOLVE A UNIQUE DOUBLE TETRAHEDRON \n";
+  // This is an attempt to make sure that the "distance_to_goal" after
+  // solving our "standard start" tetrahelix goes down
+  // if variable edges get bigger
+  Tetrahelix *thlx_ptr = init_Tetrahelix(5,2.0,1.2,1.5);
+  Tetrahelix thlx = *thlx_ptr;
+  
+  // Now we want to set up the coordinates of the first three nodes
+  // very carefully so that we follow the X-axis specifically.
+  // The easiest way to to this is to take it from the javascript
+  // code already written to preform these calculations....
+  column_vector* coords = new column_vector[thlx.num_nodes];
+  
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  column_vector D(3);
+  column_vector E(3);
+  column_vector Egoal(3);    
+
+  // Note we use right-handed coordinates.
+  // This diagram matches (approximately) the diagram in the paper.
+
+  A = thlx.fixed[0];
+  B = thlx.fixed[1];
+  C = thlx.fixed[2];
+  // This is the "standard" solution.
+  D = 0.6350852961085883,2.790116647275517,-1.57697505292423;
+
+  double Ex = -0.7601778544330073;
+  double Ey = 2.5104011833827586;
+  double Ez = -1.102633403898972;
+  
+  E = Ex,Ey,Ez;
+
+  // Let's extend the E node just a little at first...
+  Egoal = Ex,Ey+0.1,Ez;
+
+  // Note: This is done in this order so that we -Z will be 
+  coords[0] = A;
+  coords[1] = B;
+  coords[2] = C;
+  coords[3] = D;
+  coords[4] = E;  
+
+  // This is really 5 points, but it will just read the first three..
+  thlx.init_fixed_coords(coords);
+
+  thlx.set_distances(coords);  
+  int debug = 1;
+  
+  if (debug) {
+    for (int i = 0; i < thlx.num_edges; ++i) {
+      cout << " i, distances(i) " << i << " , " << thlx.distance(i) << "\n";
+    }
+  }
+  
+  solve_forward_find_coords(&thlx,coords);
+  cout << " BCDE chirality :" << tet_chirality(B,C,D,E) << "\n";
+
+  if (debug) {
+    cout << "DONE SOLVING_FORWARD_FIND_COORDS \n";
+    for(int i = 0; i < thlx.num_nodes; i++) {
+      print_vec(coords[i]);
+    }
+  }
+  
+  const int goal_node = 4;
+  
+  // THE point E should be close to the cube corner
+  double d = l2_norm(coords[goal_node] - E);
+  cout << "CHECK DISTANCE (SMALL)" << d << "\n";
+  BOOST_CHECK(l2_norm(coords[goal_node] - E) < 1e-2);
+  
+  //  column_vector goal = Egoal;
+  Invert3d inv;
+  inv.an = &thlx;
+  inv.set_global_truss();
+
+  // Note: using init creates a goal node already!
+  thlx.goals[thlx.goals.size() - 1] = Egoal;  
+  solve_inverse_problem(inv.an);
+
+  bool solved = solve_forward_find_coords(&thlx,coords);
+  if (!solved) {
+    cout << "INTERNAL ERROR: Could solved these coords forward!\n";
+  }
+  if (debug) {
+    cout << "coords!!!\n";
+    print_vec(coords[goal_node]);
+    print_vec(Egoal);
+    cout << "NORM: " << l2_norm(coords[goal_node] - Egoal) << "\n";	  
+  };
+  BOOST_CHECK(l2_norm(coords[goal_node] - Egoal) < 1e-2);
+
+}
+
+// // This is to test a double tetrahedron in smaller coordinates
+// // which I have had some trouble with in the "playground" GUI that I am trying.
+// BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron_with_playground_coords )
+// {
+//   //  cout << "TEST ABILITY TO SOLVE A SINGLE TETRAHEDRONXSD\n";
+//   // This is an attempt to make sure that the "distance_to_goal" after
+//   // solving our "standard start" tetrahelix goes down
+//   // if variable edges get bigger
+//   Tetrahelix *thlx_ptr = init_Tetrahelix();
+//   Tetrahelix thlx = *thlx_ptr;
+  
+//   // Now we want to set up the coordinates of the first three nodes
+//   // very carefully so that we follow the X-axis specifically.
+//   // The easiest way to to this is to take it from the javascript
+//   // code already written to preform these calculations....
+//   column_vector* coords = new column_vector[thlx.num_nodes];
+  
+//   column_vector A(3);
+//   column_vector B(3);
+//   column_vector C(3);
+//   column_vector D(3);
+//   column_vector E(3);
+//   column_vector Egoal(3);    
+
+//   // Note we use right-handed coordinates.
+//   // This diagram matches (approximately) the diagram in the paper.
+
+//   A = thlx.fixed[0];
+//   B = thlx.fixed[1];
+//   C = thlx.fixed[2];
+//   // This is the "standard" solution.
+//   D = 0.6350852961085883,2.790116647275517,-1.57697505292423;
+
+//   double Ex = -0.7601778544330073;
+//   double Ey = 2.5104011833827586;
+//   double Ez = -1.102633403898972;
+  
+//   E = Ex,Ey,Ez;
+
+//   // Let's extend the E node just a little at first...
+//   Egoal = Ex,Ey+0.1,Ez;
+
+//   // Note: This is done in this order so that we -Z will be 
+//   coords[0] = A;
+//   coords[1] = B;
+//   coords[2] = C;
+//   coords[3] = D;
+//   coords[4] = E;  
+
+//   // This is really 5 points, but it will just read the first three..
+//   thlx.init_fixed_coords(coords);
+
+//   thlx.set_distances(coords);  
+//   int debug = 1;
+  
+//   if (debug) {
+//     for (int i = 0; i < thlx.num_edges; ++i) {
+//       cout << " i, distances(i) " << i << " , " << thlx.distance(i) << "\n";
+//     }
+//   }
+  
+//   solve_forward_find_coords(&thlx,coords);
+//   cout << " BCDE chirality :" << tet_chirality(B,C,D,E) << "\n";
+
+//   if (debug) {
+//     cout << "DONE SOLVING_FORWARD_FIND_COORDS \n";
+//     for(int i = 0; i < thlx.num_nodes; i++) {
+//       print_vec(coords[i]);
+//     }
+//   }
+  
+//   const int goal_node = 4;
+  
+//   // THE point E should be close to the cube corner
+//   double d = l2_norm(coords[goal_node] - E);
+//   cout << "CHECK DISTANCE (SMALL)" << d << "\n";
+//   BOOST_CHECK(l2_norm(coords[goal_node] - E) < 1e-2);
+  
+//   //  column_vector goal = Egoal;
+//   Invert3d inv;
+//   inv.an = &thlx;
+//   inv.set_global_truss();
+
+
+
+//   // Note: using init creates a goal node already!
+//   thlx.goals[thlx.goals.size() - 1] = Egoal;  
+
+//   // Now we will create an iteration of points in space, checking many of them.
+//   int numi = 1;
+//   int numj = 3;
+//   double frac = 0.05;
+//   for(int i = 0; i < numi; i++) {
+//     Egoal(0) = Ex +  i * frac;
+//     for(int j = 0; j < numj; j++ ) {
+//       Egoal(1) = Ey + j * frac;
+//       thlx.goals[thlx.goals.size() - 1] = Egoal;
+      
+//       if (debug) cout << "Experiment (i,j) :" << i << " " << j <<  "\n";
+//       if (debug) print_vec(Egoal);
+//       if (debug) cout << "BBB\n";
+//       if (debug) print_vec(thlx.goals[thlx.goals.size() - 1]); 
+	
+//       //      int e = errant_max_distance(thlx.lower_bound,thlx.upper_bound,coords,4,Egoal);
+//       // if (e > -1) {
+//       // 	cout << "errant edge: " << e << "\n";
+//       // 	print_vec(Egoal);
+//       // } else {
+//   	double obj;
+//   	if (debug) cout << "pre-computation\n";
+      
+//   	if (debug) print_vec(coords[goal_node]);
+      
+//   	column_vector deriv = compute_derivative_for_single_tet_testing(&inv, inv.an, coords, Egoal, &obj);
+//   	if (debug) {
+//   	  cout << "deriv \n";
+//   	  print_vec(deriv);
+//   	  cout << "post-computation\n";
+//   	  print_vec(coords[goal_node]);
+//   	}
+//   	if (isnan(deriv(0))) { // This means that the current coords is actually equal to the goal node
+//   	  cout << "deriv is undefined!\n";
+//   	} else {
+ 
+// 	  if (debug) cout << "YYY " << thlx.goals.size() - 1 << "\n";
+// 	  if (debug) print_vec(inv.an->goals[thlx.goals.size() - 1]); 
+//   	  solve_inverse_problem(inv.an);
+//   	  // cout << "solving forward!\n";
+//   	  bool solved = solve_forward_find_coords(&thlx,coords);
+//   	  if (!solved) {
+//   	    cout << "INTERNAL ERROR: Could solved these coords forward!\n";
+//   	  }
+//   	}
+//   	if (debug) {
+//   	  cout << "coords!!!\n";
+//   	  print_vec(coords[goal_node]);
+//   	  print_vec(Egoal);
+//   	  cout << "NORM: " << l2_norm(coords[goal_node] - Egoal) << "\n";	  
+//   	};
+
+//   	BOOST_CHECK(l2_norm(coords[goal_node] - Egoal) < 1e-2);
+//       }
+//     //        }
+//   }
+
+//   // // Just check this is what I expect...
+//   // for(int i = 0; i < thlx.num_nodes; i++) {
+//   //   print_vec(coords[i]);
+//   // }
+//   delete[] coords;
+// }
 
 
