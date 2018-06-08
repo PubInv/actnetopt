@@ -113,9 +113,19 @@ double compute_dtheta_internal_da(column_vector A,
 			 double f,
 				     double g);
 
+column_vector compute_goal_differential_c(column_vector cur_coords[],
+			    int edge_number,
+			    int goal_node_number,
+			    double delta_fraction = 0.01);  
+  
 column_vector compute_goal_derivative_c(column_vector cur_coords[],
 								int edge_number,
 						   int goal_node_number);
+
+column_vector compute_goal_derivative_after_edge_internal(column_vector cur_coords[],
+								int edge_number,
+							   int goal_node_number);
+  
  
 column_vector compute_external_effector_derivative_c(column_vector cur_coords[],
 						     int edge_number,
@@ -129,10 +139,10 @@ column_vector compute_internal_effector_derivative_c(column_vector cur_coords[],
   void set_distances(column_vector coords[]);  
 
 
-  double private_f(double CD, double CE, double ED);
-  double private_g(double CD, double BC, double BD); 
-  double private_fdz(double CD, double CE, double ED);
-  double private_gdz(double CD, double BC, double BD);
+  //  double private_f(double CD, double CE, double ED);
+  //  double private_g(double CD, double BC, double BD); 
+  double dcos_adj(double adj1, double adj2, double opp);
+  //  double private_gdz(double CD, double BC, double BD);
 
 // This is an preliminiary attempt to test the
 

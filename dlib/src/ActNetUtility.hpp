@@ -55,4 +55,6 @@ column_vector normal(column_vector a, column_vector b, column_vector c);
 
 Chirality tet_chirality(column_vector a, column_vector b, column_vector c, column_vector d);
 
+column_vector normalized(column_vector a);
+  
 #endif

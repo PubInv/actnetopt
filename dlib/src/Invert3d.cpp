@@ -49,7 +49,7 @@ Invert3d::Invert3d() {
   }
 
   double Invert3d::objective(const column_vector& ds) {
-    int debug = 1;
+    int debug = 0;
     if (debug) {
       cout << "OBJECTIVE:  \n"; 
     }
@@ -130,9 +130,11 @@ column_vector normalize3(column_vector v) {
   return r;
 }
 
+const bool USE_DIFFERENTIAL = true;
+
   // compute the derivatives of the objective as the configuration ds.
 column_vector Invert3d::derivative(const column_vector& ds) {
-  int debug = 1;
+  int debug = 0;
   if (debug) {
   cout << "DERIVATIVE CALLED\n";
   }
@@ -153,12 +155,12 @@ column_vector Invert3d::derivative(const column_vector& ds) {
 
   solve_forward_find_coords(global_truss,coords);	     
 
-  debug = 1;
+  debug = 0;
   for (int i = 0; i < global_truss->num_nodes; ++i) {
     if (debug) cout << " nodes " << i <<  "\n";
     if (debug) print_vec(coords[i]);
   }
-  debug = 1;
+  debug = 0;
   
   column_vector d(global_truss->var_edges);
       
@@ -170,14 +172,23 @@ column_vector Invert3d::derivative(const column_vector& ds) {
     double prod = 0.0;
     for(int j = 0; j < global_truss->goals.size(); j++) {
       column_vector g = global_truss->goals[j];
-      cout << "GOAL COORDS: \n";
-      print_vec(g);
+      if (debug) {
+	cout << "GOAL COORDS: \n";
+	print_vec(g);
+      }
       int idx = global_truss->goal_nodes[j];	
       column_vector c = coords[idx];
 
-      cout << "GOAL INDEX: " << idx << "\n";
+      if (debug) {
+	cout << "GOAL INDEX: " << idx << "\n";
+      }
 
-      column_vector d = global_truss->compute_goal_derivative_c(coords,e,idx);
+      column_vector d;
+      if (USE_DIFFERENTIAL) {
+	d = global_truss->compute_goal_differential_c(coords,e,idx);
+      } else {
+	d = global_truss->compute_goal_derivative_c(coords,e,idx);
+      }
 
       if ((d(0) > 1000.0) || (abs(d(1)) > 1000.0)) {
 	cout << "CRISIS!\n";
@@ -268,7 +279,7 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       }
     }
   }
-  debug = 1;
+  debug = 0;
   if (debug)   cout << "DERIVATIVES" << "\n";
   for(int i = 0; i < global_truss->var_edges; i++) {
     int n = global_truss->edge_number_of_nth_variable_edge(i);

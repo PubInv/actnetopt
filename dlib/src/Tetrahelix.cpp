@@ -765,11 +765,15 @@ double dihedral_from_vertex_angles(double a, double b, double c) {
 
 // This is the two dimension angle of a triangle from lengths
 // based on triangle law.
-double angle_from_three_sides(double adjacent1, double adjacent2, double opposite) {
+double cosine_from_three_sides(double adjacent1, double adjacent2, double opposite) {
   double a = adjacent1;
   double b = adjacent2;
   double c = opposite;
-  return acos((a*a + b*b - c*c)/(2*a*b));
+  return (a*a + b*b - c*c)/(2*a*b);
+}
+
+double angle_from_three_sides(double adjacent1, double adjacent2, double opposite) {
+  return acos(cosine_from_three_sides(adjacent1, adjacent2, opposite));
 }
 // This is change in the angle c wrt to a change to the length DC given
 // lengthe a, b (adjajent to ANGLE ACB and c (the opposite length).
@@ -839,12 +843,31 @@ column_vector compute_rotation_about_points(column_vector A,
   return M_final;
 }
 
+// This is differential calculator for the purpose of testing the derivatives.
+// We change the specified edge by the differential "delta" and compute
+// the change in the position of the goal node as report that as an
+// approximation of the derivative. Possibly this could even be
+// used as an estimate of the deriviative, although it is embarassing to me
+// that I am having so much trouble figuring it out analytically, but the
+// truth is I am. Possibly figuring out the derivative in all cases
+// would be considered a "starred" problem in a textbook. I doubt seriously
+// it is an open problem, however.
+column_vector Tetrahelix::compute_goal_differential_c(column_vector cur_coords[],
+								int edge_number,
+						      int goal_node_number,
+						      double delta_fraction) {
+  set_distances(cur_coords);
+  solve_forward_find_coords(this,cur_coords);
+  column_vector g_orig = cur_coords[goal_node_number];
+  double orig_length = distance(edge_number);
+  distance(edge_number) += delta_fraction * distance(edge_number);
+  solve_forward_find_coords(this,cur_coords);
+  column_vector differential = (cur_coords[goal_node_number] - g_orig)/delta_fraction;
+  distance(edge_number) = orig_length;
+  solve_forward_find_coords(this,cur_coords);  
+  return differential;
+}
 
-// DANGER: This code does not seem to be able to distinguish
-// the orientations of the tetrahedron. It computes from distances,
-// but there are two such possible solutions, and the derivative will be
-// quite different depending on which it is. I suspect it has a hidden
-// assumption about chirality which must be brought to light.
 // This computes the change in the x,y,z coordinates of the goal node based on a change
 // in the length of the specified edge. Note this is NOT computing the change in score
 // (that is, distance to the goal node) but the chnage in the node position.
@@ -854,7 +877,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
 
 
   int debug = 0;
-  if (edge_number == 5) debug = 1;
+  //  if (edge_number == 5) debug = 1;
   if (debug) cout << "INIT COMPUTE_GOAL_DERIVATIVE\n";
   //  cout << "iniit! \n";  
   // This has to be reconstructed....
@@ -1028,75 +1051,51 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   return deriv;
 }
 
-double Tetrahelix::private_f(double CD, double CE, double ED) {
-  double z = CD;
-  double q = CE;
-  double s = ED;
-  return (z*z + q*q + -s*s) / (2*z*q);
-}
 
-double Tetrahelix::private_g(double CD, double BC, double BD) {
-  double z = CD;
-  double r = BC;
-  double t = BD;
-  return (z*z + r*r + -t*t) / (2*z*r);
-}
-
-double Tetrahelix::private_fdz(double CD, double CE, double ED) {
-  double z = CD;
-  double q = CE;
-  double s = ED;
+// This is the deriviative of the cosine wrt the first argument
+double Tetrahelix::dcos_adj(double adj1, double adj2, double opp) {
+  double z = adj1;
+  double q = adj2;
+  double s = opp;
   return (z*z + -q*q + s*s) / (2*z*z*q);
 }
 
-double Tetrahelix::private_gdz(double CD, double BC, double BD) {
-  double z = CD;
-  double r = BC;
-  double t = BD;
-  return (z*z + -r*r + t*t) / (2*z*z*r);
-}
-
 // This is an preliminiary attempt to test the
-
 double Tetrahelix::d_dihedralBC_dCD_aux(double BC, double BD, double CD, double CE, double DE, double aBCE) {
   double a = aBCE;
 
   // f = cos DCE
-  double f = private_f(CD,CE,DE);
+  double f = cosine_from_three_sides(CD,CE,DE); 
   // g = cos BCD
-  double g = private_g(CD,BC,BD);
+  double g = cosine_from_three_sides(CD,BC,BD);
 
-  cout << " f g \n";
-  cout << f << " " << g << "\n";
-  cout << "CD BC BD\n";
-  cout << CD << " " << BC << " " << BD << "\n";
-
-  double fp = private_fdz(CD,CE,DE);
-  double gp = private_gdz(CD,BC,BD);
+  double fp = dcos_adj(CD,CE,DE);
+  double gp = dcos_adj(CD,BC,BD);
   
   double sa = sin(a);
   double ca = cos(a);
 
   // Got 1 - g is negative!
   double t1 = sa*(fp - ca*gp)/sqrt(1 - g*g);
-  cout << "sa fp ca gp  g \n";    
-  cout << sa << " " << fp << " " << ca << " " << gp << " " << g << "\n";  
   double t2 = sa*g*gp*(f - ca*g);
+  double t2den = pow((1 - g*g),3.0/2.0);
   
-  double num = t1 + t2;
+  double num = t1 + t2/t2den;
   double n1 = pow(sa*(f - ca*g),2);
   double den = sqrt(1 - (n1/(1-g*g)));
 
-  cout << "internal debug values:\n";
-  cout << "num den n1 t1 t2:\n";
-  cout << num << " " << den << " " << n1 << " " << t1 << " " << t2 << "\n";
+  //  cout << "internal debug values:\n";
+  //  cout << "num den n1 t1 t2:\n";
+  //  cout << num << " " << den << " " << n1 << " " << t1 << " " << t2 << "\n";
   
   return num/den;
 }
 
+// The computation of "e" here is too simple.
+// it is not computing it correctly.
 double Tetrahelix::d_dihedralBC_dCD(column_vector cur_coords[],
 			   int edge_number) {
-  int debug = 1;
+  int debug = 0;
   if (debug) cout << "d_dihedralBC_dCD\n";
 
   // This has to be reconstructed....
@@ -1133,7 +1132,7 @@ double Tetrahelix::d_dihedralBC_dCD(column_vector cur_coords[],
   int e = d+1;
 
   if (debug)  cout << "edge" << e << " small " << s << " large "  << l << "\n";
-  if (debug)  cout << "a b c d  e" << a << " " << b << " " << c << " " << d << " " << e_n << "\n"; 
+  if (debug)  cout << "a b c d  e" << a << " " << b << " " << c << " " << d << " " << e << "\n"; 
 
   // How does this choose the chirality? Which side of the triangle BCD does A occur on?
   // If we look at the tip of A the BCD is on the other side (from our eye), does BCD go
@@ -1152,18 +1151,102 @@ double Tetrahelix::d_dihedralBC_dCD(column_vector cur_coords[],
   double ce = distance_3d(C,E);
   double de = distance_3d(D,E);
 
-  if (debug)  cout << "bc bd be cd ce de" << bc << " " << bd << " " << be << " " << cd << " " << ce << " " << de << "\n";   
+  //  if (debug)  cout << "bc bd be cd ce de" << bc << " " << bd << " " << be << " " << cd << " " << ce << " " << de << "\n";   
 
   double ang_BCE = angle_from_three_sides(bc,ce,be);
 
-  cout << "Ang : " << ang_BCE*180/M_PI << "\n";
+  if (debug)
+    cout << "Ang : " << ang_BCE*180/M_PI << "\n";
+
+  // I'm worried that this is not signed!! Is it always positive? If so, how can it represent both counter clockwise and
+  // clockwise rotations! I think this must depend on the chirality of BC somehow!
+  // Which side of BCD is E on?
+  Chirality tet = tet_chirality(B,C,D,E);
 
   double d_dihedral = d_dihedralBC_dCD_aux(bc, bd, cd, ce, de, ang_BCE);
-  
-  return d_dihedral;
+
+  if (debug)
+    cout << "TET : " << tet << "\n";
+  return (tet == CCW) ? d_dihedral : -d_dihedral;
 }
 
+// MAJOR WARNING: There is something wrong with my sign here.
+// Either I am not signing the dihedral correctly, or I am making some other mistake.
+// I am having BC change directions, but the dihedral calculations does not change!
+// WARNING: this is using the node E (not using goal_number)
+column_vector Tetrahelix::compute_goal_derivative_after_edge_internal(column_vector cur_coords[],
+								int edge_number,
+								int goal_node_number) {
+  int debug = 0;
 
+  if (debug) cout << "d_dihedralBC_dCD\n";
+
+  // let P be the joint about which we are rotating by changing e
+  // let M be the directly moved joint.
+  // let S be the "stable" joint connected to M by e.
+  int e_n = edge_number;
+  int s = small_node(e_n);
+  int l  = large_node(e_n);
+  if (l + 1 > num_nodes) {
+    cout << "edge number too high!\n";
+    cout << "abort!";
+    abort();
+  }
+
+  // The edge that is changing is the "CD" edge--opposite AB
+  // Note the edge numbering here is a little tricky....
+  int c = s;
+  int d = l;
+  int a = -1;
+  int b = -1;
+  if (c == l-1) {
+    a = l - 3;
+    b = l - 2;
+  } else if (c == l-2) {
+    a = l - 3;
+    b = l - 1;
+  } else if (c == l-3) {
+    a = l - 2;
+    b = l - 1;
+  }
+  int e = d+1;
+
+  if (debug)  cout << "edge" << e_n << " small " << s << " large "  << l << "\n";
+  if (debug)  cout << "a b c d  e\n" << a << " " << b << " " << c << " " << d << " " << e << "\n"; 
+
+  // How does this choose the chirality? Which side of the triangle BCD does A occur on?
+  // If we look at the tip of A the BCD is on the other side (from our eye), does BCD go
+  // clockwise or anticlockwise? Is our convention that, starting from the fixed points,
+  // the normal of ABC points toward or away from D?
+  column_vector A = cur_coords[a];
+  column_vector B = cur_coords[b];
+  column_vector C = cur_coords[c];
+  column_vector D = cur_coords[d];
+  column_vector E = cur_coords[e];
+
+  double d_BC = d_dihedralBC_dCD(cur_coords,
+			    edge_number);
+
+  // Possibly E here should be coords[goal_number] instead; that would
+  // work for something rigidly attached to E relative to BC.
+
+  column_vector C_to_E = E-C;
+  column_vector B_to_C = C-B;
+  if (debug) {
+    cout << "C to E\n";
+    print_vec(C_to_E);
+    cout << "B to C\n";  
+    print_vec(B_to_C);
+  }
+  column_vector cp = cross_product(B_to_C,C_to_E);
+  if (debug) {
+    cout << "cross product\n";
+    print_vec(cp);
+  }
+  
+  column_vector dE_dl = cp * d_BC;
+  return dE_dl;
+}
 		   
 // TODO: Add number of fixed nodes as a definite function and replace all
 // references to naked literals that depend on it.

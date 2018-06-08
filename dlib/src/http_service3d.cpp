@@ -15,11 +15,12 @@
 #include <restbed>
 #include "json.hpp"
 #include "Tetrahelix.hpp"
+
 // #include "Obstacle.hpp"
 #include "playground3d.hpp"
 #include <dlib/optimization.h>
-
 #include "custom_logger.hpp"
+
 
 using namespace std;
 using namespace restbed;
@@ -101,7 +102,8 @@ int main( const int, const char** )
     auto settings = make_shared< Settings >( );
     //    settings->set_port( 1984 );
     //    settings->set_default_header( "Connection", "close" );
-    settings->set_default_header( "Access-Control-Allow-Origin", "*" );    
+    settings->set_default_header( "Access-Control-Allow-Origin", "*" );
+    cout << "TRUSS_NODES : " << TRUSS_NODES << "\n";
 
     an = init_Tetrahelix(TRUSS_NODES,UPPER_BOUND,LOWER_BOUND,INITIAL);
     coordsx = new column_vector[an->num_nodes];

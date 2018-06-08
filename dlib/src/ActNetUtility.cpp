@@ -75,3 +75,8 @@ Chirality tet_chirality(column_vector a, column_vector b, column_vector c, colum
   double prod = (N(0)*d(0) + N(1)*d(1) + N(2)*d(2));
   return (prod > 0) ? CCW : CW;
 }
+
+column_vector normalized(column_vector a) {
+  column_vector b = a / l2_norm(a);
+  return b;
+}

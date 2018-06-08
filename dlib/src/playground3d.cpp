@@ -50,10 +50,12 @@ Tetrahelix *Invert3d::global_truss = 0;
 // Obstacle obstacle;
 
 void solve_inverse_problem(Tetrahelix *an) {
-
+  int debug = 0;
+  if (debug) {
     cout << "goal node [solve_inverse] " << an->goals[0] << "\n";
     cout << "QQQ goal node [solve_inverse] \n";
     print_vec(an->goals[0]);
+  }
   
   column_vector sp(an->var_edges);
   column_vector lb(an->var_edges);
@@ -86,11 +88,13 @@ void solve_inverse_problem(Tetrahelix *an) {
 
     //    double score = 0.0;
     int n = an->var_edges;
-    cout << "# var edges: " << n << "\n";
+    if (debug) {
+      cout << "# var edges: " << n << "\n";
 
-    cout << "goal node [solve_inverse] " << an->goals[0] << "\n";
-    cout << "AAAA goal node [solve_inverse] \n";
-    print_vec(an->goals[0]);
+      cout << "goal node [solve_inverse] " << an->goals[0] << "\n";
+      cout << "AAAA goal node [solve_inverse] \n";
+      print_vec(an->goals[0]);
+    }
 
     double score = find_min_box_constrained(
 					    //bfgs_search_strategy(),
@@ -107,7 +111,8 @@ void solve_inverse_problem(Tetrahelix *an) {
     			     );
     // I uses this to get rid of the warning
     score = score + 0.0;
-    cout << "got a score : " << score << "\n";
+    if (debug) 
+      cout << "got a score : " << score << "\n";
     for (int i = 0; i < an->var_edges; ++i) {
       an->distance(i+3) = best_distances[i];
     }
