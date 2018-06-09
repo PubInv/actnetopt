@@ -1263,3 +1263,31 @@ void Tetrahelix::set_distances(column_vector coords[]) {
     }
     
 }
+
+// This is my attempt to follow the Lee-Sanderson approach to computing
+// a Jacobian. At present this is simplified to really work with node #3 of a single tet.
+matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
+  // First I will attempt to construct Btet.
+
+  matrix<double> Btet(3,3);
+
+  column_vector DA = normalize(coords[3] - coords[0]);
+  column_vector DB = normalize(coords[3] - coords[1]);
+  column_vector DC = normalize(coords[3] - coords[2]);
+
+  Btet(0,0) = DA(0);
+  Btet(0,1) = DA(1);
+  Btet(0,2) = DA(2);
+
+  Btet(1,0) = DB(0);
+  Btet(1,1) = DB(1);
+  Btet(1,2) = DB(2);
+
+  Btet(2,0) = DC(0);
+  Btet(2,1) = DC(1);
+  Btet(2,2) = DC(2);
+  
+  
+  matrix<double> Btet_inv = inv(Btet);
+  return Btet_inv;
+}

@@ -151,6 +151,8 @@ column_vector compute_internal_effector_derivative_c(column_vector cur_coords[],
   double d_dihedralBC_dCD(column_vector cur_coords[],
 				    int edge_number);
 
+  matrix<double> Jacobian(column_vector coords[],int node);
+  
 };
 
 class FindCoords3d {
