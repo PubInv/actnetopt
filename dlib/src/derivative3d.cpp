@@ -2289,18 +2289,21 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation )
   column_vector B(3);
   column_vector C(3);
   column_vector D(3);
+  column_vector E(3);  
 
-  A = -3.0,0.0,0.0;
+  A = 0.0,0.0,0.0;
   B = 10.0,0.0,0.0;
-  C = 0.0,10.0,3.0;
+  C = 0.0,10.0,0.0;
   // This is the "standard" solution.
   D = 0.0, 0.0, 10.0;
+  E = 12.0,12.0, 12.0;
 
   // Note: This is done in this order so that we -Z will be 
   coords[0] = A;
   coords[1] = B;
   coords[2] = C;
   coords[3] = D;
+  coords[4] = E;
 
 // This is really 4 points, but it will just read the first three..
   thlx.init_fixed_coords(coords);
@@ -2320,7 +2323,7 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation )
   // My goal here is to compute the Jacobian as per Lee-Sanderson and
   // compare ti to the differential.
   // Here I shall attempt to compute it---not even sure what shape it is!
-  matrix<double> J_3 = thlx.Jacobian(coords,3);
+  matrix<double> J_3 = thlx.JacobianBase(coords);
 
   cout << "Jacobian:\n";
   cout << J_3;
@@ -2337,6 +2340,86 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation )
     
     int n = thlx.edge_number_of_nth_variable_edge(i);
     column_vector diff = normalize(thlx.compute_goal_differential_c(coords,n,3));
+    cout << "differential:\n";
+    print_vec(diff);
+    column_vector deriv_col(3);
+    deriv_col = deriv_i(0),deriv_i(1),deriv_i(2);
+    double expect_vs_actual = l2_norm(diff-deriv_col);
+    cout << "error:" << " " << expect_vs_actual << "\n";
+    BOOST_CHECK(expect_vs_actual  < 5e-2);
+  }
+}
+
+BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation_second )
+{
+  //  cout << "TEST ABILITY TO SOLVE A SINGLE TETRAHEDRONXSD\n";
+  // This is an attempt to make sure that the "distance_to_goal" after
+  // solving our "standard start" tetrahelix goes down
+  // if variable edges get bigger
+  Tetrahelix *thlx_ptr = init_Tetrahelix(5,20.0,10.0,10.0);
+  Tetrahelix thlx = *thlx_ptr;
+  
+  // Now we want to set up the coordinates of the first three nodes
+  // very carefully so that we follow the X-axis specifically.
+  // The easiest way to to this is to take it from the javascript
+  // code already written to preform these calculations....
+  column_vector* coords = new column_vector[thlx.num_nodes];
+  
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  column_vector D(3);
+  column_vector E(3);  
+
+  A = 0.0,0.0,0.0;
+  B = 10.0,0.0,0.0;
+  C = 0.0,10.0,0.0;
+  // This is the "standard" solution.
+  D = 0.0, 0.0, 10.0;
+  E = 10.0,10.0,10.0;
+
+  // Note: This is done in this order so that we -Z will be 
+  coords[0] = A;
+  coords[1] = B;
+  coords[2] = C;
+  coords[3] = D;
+  coords[4] = E;  
+
+// This is really 4 points, but it will just read the first three..
+  thlx.init_fixed_coords(coords);
+
+  thlx.set_distances(coords);  
+  
+  int debug = 1;
+  
+  if (debug) {
+    for (int i = 0; i < thlx.num_edges; ++i) {
+      cout << " i, distances(i) " << i << " , " << thlx.distance(i) << "\n";
+    }
+  }
+  
+  solve_forward_find_coords(&thlx,coords);
+
+  // My goal here is to compute the Jacobian as per Lee-Sanderson and
+  // compare ti to the differential.
+  // Here I shall attempt to compute it---not even sure what shape it is!
+  matrix<double> J_3 = thlx.Jacobian(coords,4);
+
+  cout << "Jacobian:\n";
+  cout << J_3;
+  cout << "End Jacobian\n";  
+  
+  for(int i = 3; i < thlx.var_edges; i++) {
+    column_vector edge_length(3);
+    edge_length = 0.0,0.0,0.0;
+    edge_length(i-3) = 1.0;
+    matrix<double> deriv_i = normalize(J_3*edge_length);
+    cout << "i, deriv:\n";
+    cout << deriv_i;
+    cout << "\n";
+    
+    int n = thlx.edge_number_of_nth_variable_edge(i);
+    column_vector diff = normalize(thlx.compute_goal_differential_c(coords,n,4));
     cout << "differential:\n";
     print_vec(diff);
     column_vector deriv_col(3);

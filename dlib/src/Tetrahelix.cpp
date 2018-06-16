@@ -1264,9 +1264,14 @@ void Tetrahelix::set_distances(column_vector coords[]) {
     
 }
 
+void set_row_from_vector(matrix<double> *M, column_vector c, int row, int col, int n) {
+  for(int i = 0; i < n; i++) {
+    (*M)(row,col+i) = c(i);
+  }
+}
 // This is my attempt to follow the Lee-Sanderson approach to computing
 // a Jacobian. At present this is simplified to really work with node #3 of a single tet.
-matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
+matrix<double> Tetrahelix::JacobianBase(column_vector coords[]) {
   // First I will attempt to construct Btet.
 
   matrix<double> Btet(3,3);
@@ -1275,19 +1280,88 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
   column_vector DB = normalize(coords[3] - coords[1]);
   column_vector DC = normalize(coords[3] - coords[2]);
 
-  Btet(0,0) = DA(0);
-  Btet(0,1) = DA(1);
-  Btet(0,2) = DA(2);
-
-  Btet(1,0) = DB(0);
-  Btet(1,1) = DB(1);
-  Btet(1,2) = DB(2);
-
-  Btet(2,0) = DC(0);
-  Btet(2,1) = DC(1);
-  Btet(2,2) = DC(2);
+  set_row_from_vector(&Btet,DA,0,0,3);
+  set_row_from_vector(&Btet,DB,1,0,3);
+  set_row_from_vector(&Btet,DC,2,0,3);
   
-  
-  matrix<double> Btet_inv = inv(Btet);
+  matrix<double> Btet_inv = pinv(Btet);
   return Btet_inv;
+}
+
+// This is my attempt to follow the Lee-Sanderson approach to computing
+// a Jacobian.
+// The idea is to compute the Jacobian node "node" from the coords.
+// At present this is recursive operation.
+matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
+  // First I will attempt to construct Btet.
+
+  if (node == 3) {
+    return JacobianBase(coords);
+  } else {
+    // Now here we are supposed to "stack" (multiply the Jacobians).
+    matrix<double> JacobPrev = Jacobian(coords,node-1);
+
+  cout << "JacobPrev \n";
+  cout << JacobPrev;
+  cout << "JacobPrev\n";
+    
+    matrix<double> Btet(3,3);
+  
+  int n = node;
+  
+  column_vector DA = normalize(coords[n] - coords[n-3]);
+  column_vector DB = normalize(coords[n] - coords[n-2]);
+  column_vector DC = normalize(coords[n] - coords[n-1]);
+
+  set_row_from_vector(&Btet,DA,0,0,3);
+  set_row_from_vector(&Btet,DB,1,0,3);
+  set_row_from_vector(&Btet,DC,2,0,3);
+  
+  matrix<double> Atet = zeros_matrix<double>(3,9);
+  cout << "Atet \n";
+  cout << Atet;
+  cout << "End Atet\n";
+  
+  set_row_from_vector(&Atet,-DA,0,0,3);
+  set_row_from_vector(&Atet,-DB,1,3,3);
+  set_row_from_vector(&Atet,-DC,2,6,3);
+  
+  matrix<double> Btet_inv = pinv(Btet);
+
+  cout << "Btet_inv \n";
+  cout << Btet_inv;
+  cout << "End Btet_inv\n";
+
+  cout << "Atet \n";
+  cout << Atet;
+  cout << "End Atet\n";
+  // Note: Instead of using just "JacobPrev" here,
+  // I believe the three Jacobians of the previous three nodes
+  // should be stacked vertically to make a 9 x 3 matrix to make it
+  // work out in dimension.
+  // In the case of the fixed nodes, it is unclear to me what
+  // the Jacobian should be: --- identity or zero?
+  cout << "JacobPrev \n";
+  cout << JacobPrev;
+  cout << "JacobPrev\n";
+  
+  cout << "part1 \n";
+  cout << Atet * JacobPrev;
+  cout << "part1\n";
+  cout << "part1 \n";
+  cout << Atet * JacobPrev;
+  cout << "part1\n";
+  cout << "part1 \n";
+  cout << Atet * JacobPrev;
+  cout << "part1\n";
+
+  
+  matrix<double> Ju = Btet_inv - (Btet_inv*(Atet*JacobPrev));
+
+  cout << "Ju \n";
+  cout << Ju;
+  cout << "Ju\n";
+  
+  return Ju;
+  }
 }

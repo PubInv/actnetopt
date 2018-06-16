@@ -152,6 +152,8 @@ column_vector compute_internal_effector_derivative_c(column_vector cur_coords[],
 				    int edge_number);
 
   matrix<double> Jacobian(column_vector coords[],int node);
+
+  matrix<double> JacobianBase(column_vector coords[]);
   
 };
 
