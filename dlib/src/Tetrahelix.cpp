@@ -1269,8 +1269,29 @@ void set_row_from_vector(matrix<double> *M, column_vector c, int row, int col, i
     (*M)(row,col+i) = c(i);
   }
 }
-// This is my attempt to follow the Lee-Sanderson approach to computing
-// a Jacobian. At present this is simplified to really work with node #3 of a single tet.
+
+void stack_9x3_matrix(matrix<double> *JK,matrix<double> J1,matrix<double> J2,matrix<double> J3) {
+  for(int i = 0; i < 3; i++) {
+    for(int j = 0; j < 3; j++) {    
+      (*JK)(i,j) = J1(i,j);
+    }
+  }
+  for(int i = 0; i < 3; i++) {
+    for(int j = 0; j < 3; j++) {    
+      (*JK)(i+3,j) = J2(i,j);
+    }
+  }
+  for(int i = 0; i < 3; i++) {
+    for(int j = 0; j < 3; j++) {    
+      (*JK)(i+6,j) = J3(i,j);
+    }
+  }
+}
+
+// This is my attempt to follow the Lee-Sanderson approach to computing the
+// Jacobian, which I find rather daunting. For the purpose of testing,
+// I am considering only a 5-node tet. This fixes the number of struts at 9,
+// an important aspect of the dimensionality of Jacobians.
 matrix<double> Tetrahelix::JacobianBase(column_vector coords[]) {
   // First I will attempt to construct Btet.
 
@@ -1285,83 +1306,109 @@ matrix<double> Tetrahelix::JacobianBase(column_vector coords[]) {
   set_row_from_vector(&Btet,DC,2,0,3);
   
   matrix<double> Btet_inv = pinv(Btet);
-  return Btet_inv;
+  // now somehow I have to construct a 3 x 9 matrix with zero columns...
+  // Since the base is the node numbered 3, stuts 0,1,2, 6,7,8, and 9
+  // should be zero...this is very error prone.
+  matrix<double> J3 = zeros_matrix<double>(3,9);
+  // Now, hopefully we can lay Btet_inv right in as 3,4,5....
+  for(int i = 0; i < 3; i++) {
+    for(int j = 0; j < 3; j++) {    
+      J3(i,j+3) = Btet_inv(i,j);
+    }
+  }
+  return J3;
 }
 
 // This is my attempt to follow the Lee-Sanderson approach to computing
 // a Jacobian.
 // The idea is to compute the Jacobian node "node" from the coords.
 // At present this is recursive operation.
+// In a sense, J5 is the ultimate, because it includes all other
+// Jacobians, though all Jacobians technically map changes strut lengths
+// to the change in position: That is, all Jacobian are shaped as 3x9 matrices
+// for a 5-node tetrobot. However, it is not valid to compute the
+// change in node 5 with J4. However, if you only need the change in node
+// 4, you could stop at J4.
+// Note that this is dangerously mixing my numbering scheme with
+// the Lee-Anderson numbering scheme.
 matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
   // First I will attempt to construct Btet.
-
-  if (node == 3) {
+  if (node < 3) {
+    return zeros_matrix<double>(3,9);
+  } else if (node == 3) {
     return JacobianBase(coords);
   } else {
     // Now here we are supposed to "stack" (multiply the Jacobians).
-    matrix<double> JacobPrev = Jacobian(coords,node-1);
+    // Each of these will have the shape 3 x 9 (for a 5-tet).
+    matrix<double> J1 = Jacobian(coords,node-1);
+    matrix<double> J2 = Jacobian(coords,node-2);
+    matrix<double> J3 = Jacobian(coords,node-3);
 
-  cout << "JacobPrev \n";
-  cout << JacobPrev;
-  cout << "JacobPrev\n";
-    
+
+
     matrix<double> Btet(3,3);
   
-  int n = node;
+    int n = node;
   
-  column_vector DA = normalize(coords[n] - coords[n-3]);
-  column_vector DB = normalize(coords[n] - coords[n-2]);
-  column_vector DC = normalize(coords[n] - coords[n-1]);
+    column_vector DA = normalize(coords[n] - coords[n-3]);
+    column_vector DB = normalize(coords[n] - coords[n-2]);
+    column_vector DC = normalize(coords[n] - coords[n-1]);
 
-  set_row_from_vector(&Btet,DA,0,0,3);
-  set_row_from_vector(&Btet,DB,1,0,3);
-  set_row_from_vector(&Btet,DC,2,0,3);
+    set_row_from_vector(&Btet,DA,0,0,3);
+    set_row_from_vector(&Btet,DB,1,0,3);
+    set_row_from_vector(&Btet,DC,2,0,3);
   
-  matrix<double> Atet = zeros_matrix<double>(3,9);
-  cout << "Atet \n";
-  cout << Atet;
-  cout << "End Atet\n";
+    matrix<double> Atet = zeros_matrix<double>(3,9);
+    cout << "Atet \n";
+    cout << Atet;
+    cout << "End Atet\n";
   
-  set_row_from_vector(&Atet,-DA,0,0,3);
-  set_row_from_vector(&Atet,-DB,1,3,3);
-  set_row_from_vector(&Atet,-DC,2,6,3);
+    set_row_from_vector(&Atet,-DA,0,0,3);
+    set_row_from_vector(&Atet,-DB,1,3,3);
+    set_row_from_vector(&Atet,-DC,2,6,3);
   
-  matrix<double> Btet_inv = pinv(Btet);
+    matrix<double> Btet_inv = pinv(Btet);
 
-  cout << "Btet_inv \n";
-  cout << Btet_inv;
-  cout << "End Btet_inv\n";
 
-  cout << "Atet \n";
-  cout << Atet;
-  cout << "End Atet\n";
-  // Note: Instead of using just "JacobPrev" here,
-  // I believe the three Jacobians of the previous three nodes
-  // should be stacked vertically to make a 9 x 3 matrix to make it
-  // work out in dimension.
-  // In the case of the fixed nodes, it is unclear to me what
-  // the Jacobian should be: --- identity or zero?
-  cout << "JacobPrev \n";
-  cout << JacobPrev;
-  cout << "JacobPrev\n";
-  
-  cout << "part1 \n";
-  cout << Atet * JacobPrev;
-  cout << "part1\n";
-  cout << "part1 \n";
-  cout << Atet * JacobPrev;
-  cout << "part1\n";
-  cout << "part1 \n";
-  cout << Atet * JacobPrev;
-  cout << "part1\n";
+    cout << "Atet \n";
+    cout << Atet;
+    cout << "End Atet\n";
 
+    //    matrix<double> JK = zeros_matrix<double>(9,3);
+    matrix<double> JK = join_cols(join_cols(J1,J2),J3);
+    
+    cout << "JK \n";
+    cout << JK;
+    cout << "JK\n";
   
-  matrix<double> Ju = Btet_inv - (Btet_inv*(Atet*JacobPrev));
+    cout << "part1 \n";
+    cout << Atet * JK;
+    cout << "part1\n";
 
-  cout << "Ju \n";
-  cout << Ju;
-  cout << "Ju\n";
+    cout << "part2 \n";
+    cout << (Btet_inv*(Atet*JK));
+    cout << "part2\n";
+
+    
+    cout << "Btet_inv \n";
+    cout << Btet_inv;
+    cout << "End Btet_inv\n";
+
+    // according to the paper, Ctet is Btet_inv with zero columns added...
+    // not entirely sure how that will work.
+    matrix<double> Ctet = zeros_matrix<double>(3,9);
+
+    for(int i = 0; i < 3; i++) {
+      for(int j = 0; j < 3; j++) {
+	Ctet(i,j+6) = Btet_inv(i,j);
+      }
+    }
+    matrix<double> Ju = Ctet - (Btet_inv*(Atet*JK));
+
+    cout << "Ju \n";
+    cout << Ju;
+    cout << "Ju\n";
   
-  return Ju;
+    return Ju;
   }
 }

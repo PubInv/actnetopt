@@ -37,9 +37,6 @@ using namespace std;
 #define TRUSS_NODES 4
 
 
-
-
-
 BOOST_AUTO_TEST_CASE( test_edge_numbering )
 {
   Tetrahelix thlx(TRUSS_NODES+3,
@@ -2289,21 +2286,18 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation )
   column_vector B(3);
   column_vector C(3);
   column_vector D(3);
-  column_vector E(3);  
 
   A = 0.0,0.0,0.0;
   B = 10.0,0.0,0.0;
   C = 0.0,10.0,0.0;
   // This is the "standard" solution.
   D = 0.0, 0.0, 10.0;
-  E = 12.0,12.0, 12.0;
 
   // Note: This is done in this order so that we -Z will be 
   coords[0] = A;
   coords[1] = B;
   coords[2] = C;
   coords[3] = D;
-  coords[4] = E;
 
 // This is really 4 points, but it will just read the first three..
   thlx.init_fixed_coords(coords);
@@ -2329,25 +2323,25 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation )
   cout << J_3;
   cout << "End Jacobian\n";  
   
-  for(int i = 0; i < thlx.var_edges; i++) {
-    column_vector edge_length(3);
-    edge_length = 0.0,0.0,0.0;
-    edge_length(i) = 1.0;
-    matrix<double> deriv_i = normalize(J_3*edge_length);
-    cout << "i, deriv:\n";
-    cout << deriv_i;
-    cout << "\n";
+  // for(int i = 0; i < thlx.var_edges; i++) {
+  //   column_vector edge_length(3);
+  //   edge_length = 0.0,0.0,0.0;
+  //   edge_length(i) = 1.0;
+  //   matrix<double> deriv_i = normalize(J_3*edge_length);
+  //   cout << "i, deriv:\n";
+  //   cout << deriv_i;
+  //   cout << "\n";
     
-    int n = thlx.edge_number_of_nth_variable_edge(i);
-    column_vector diff = normalize(thlx.compute_goal_differential_c(coords,n,3));
-    cout << "differential:\n";
-    print_vec(diff);
-    column_vector deriv_col(3);
-    deriv_col = deriv_i(0),deriv_i(1),deriv_i(2);
-    double expect_vs_actual = l2_norm(diff-deriv_col);
-    cout << "error:" << " " << expect_vs_actual << "\n";
-    BOOST_CHECK(expect_vs_actual  < 5e-2);
-  }
+  //   int n = thlx.edge_number_of_nth_variable_edge(i);
+  //   column_vector diff = normalize(thlx.compute_goal_differential_c(coords,n,3));
+  //   cout << "differential:\n";
+  //   print_vec(diff);
+  //   column_vector deriv_col(3);
+  //   deriv_col = deriv_i(0),deriv_i(1),deriv_i(2);
+  //   double expect_vs_actual = l2_norm(diff-deriv_col);
+  //   cout << "error:" << " " << expect_vs_actual << "\n";
+  //   BOOST_CHECK(expect_vs_actual  < 5e-2);
+  // }
 }
 
 BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation_second )
@@ -2371,8 +2365,8 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation_second )
   column_vector D(3);
   column_vector E(3);  
 
-  A = 0.0,0.0,0.0;
-  B = 10.0,0.0,0.0;
+  A = -2.0,0.0,0.0;
+  B = 13.0,-1.0,0.0;
   C = 0.0,10.0,0.0;
   // This is the "standard" solution.
   D = 0.0, 0.0, 10.0;
@@ -2403,29 +2397,62 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation_second )
   // My goal here is to compute the Jacobian as per Lee-Sanderson and
   // compare ti to the differential.
   // Here I shall attempt to compute it---not even sure what shape it is!
-  matrix<double> J_3 = thlx.Jacobian(coords,4);
+  matrix<double> J_4 = thlx.Jacobian(coords,4);
 
   cout << "Jacobian:\n";
-  cout << J_3;
-  cout << "End Jacobian\n";  
+  cout << J_4;
+  cout << "End Jacobian\n";
+
+  column_vector edge_length_deriv(9);
+  edge_length_deriv = 0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0;
+
+  // an inititial test is that modifying the edget from node 3 to 4
+  // should be a rotation about BC, and therefore Increase X and Y and decrease Z
+
+  {
+  int n_DE = thlx.edge_between(3,4);
+  cout << "n_DE = " << n_DE << "\n";
+  edge_length_deriv(n_DE) = 1.0;
+  matrix<double> deriv_i = normalize(J_4*edge_length_deriv);
+  cout << "i, deriv:\n";
+  cout << deriv_i;
+  cout << "\n";
   
-  for(int i = 3; i < thlx.var_edges; i++) {
-    column_vector edge_length(3);
-    edge_length = 0.0,0.0,0.0;
-    edge_length(i-3) = 1.0;
-    matrix<double> deriv_i = normalize(J_3*edge_length);
-    cout << "i, deriv:\n";
-    cout << deriv_i;
-    cout << "\n";
-    
-    int n = thlx.edge_number_of_nth_variable_edge(i);
-    column_vector diff = normalize(thlx.compute_goal_differential_c(coords,n,4));
-    cout << "differential:\n";
-    print_vec(diff);
-    column_vector deriv_col(3);
-    deriv_col = deriv_i(0),deriv_i(1),deriv_i(2);
-    double expect_vs_actual = l2_norm(diff-deriv_col);
-    cout << "error:" << " " << expect_vs_actual << "\n";
-    BOOST_CHECK(expect_vs_actual  < 5e-2);
+  column_vector diff = normalize(thlx.compute_goal_differential_c(coords,n_DE,4));
+  cout << "differential:\n";
+  print_vec(diff);
+  column_vector deriv_col(3);
+  deriv_col = deriv_i(0),deriv_i(1),deriv_i(2);
+
+  double expect_vs_actual = l2_norm(diff-deriv_col);
+  cout << "error:" << " " << expect_vs_actual << "\n";
+  BOOST_CHECK(expect_vs_actual  < 5e-2);
+
+  // RESET TO ZERO!
+  edge_length_deriv(n_DE) = 0.0;  
   }
+
+
+  {
+  int n_CE = thlx.edge_between(2,4);
+  cout << "n_CE = " << n_CE << "\n";
+  edge_length_deriv(n_CE) = 1.0;
+  matrix<double> deriv_i = normalize(J_4*edge_length_deriv);
+
+  // This one should decrease Y, Increase X, and Increase Z?
+  cout << "i, deriv:\n";
+  cout << deriv_i;
+  cout << "\n";
+  
+  column_vector diff = normalize(thlx.compute_goal_differential_c(coords,n_CE,4));
+  cout << "differential:\n";
+  print_vec(diff);
+  column_vector deriv_col(3);
+  deriv_col = deriv_i(0),deriv_i(1),deriv_i(2);
+
+  double expect_vs_actual = l2_norm(diff-deriv_col);
+  cout << "error:" << " " << expect_vs_actual << "\n";
+  BOOST_CHECK(expect_vs_actual  < 5e-2);
+  }
+  
 }
