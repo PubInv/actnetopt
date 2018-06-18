@@ -131,6 +131,7 @@ column_vector normalize3(column_vector v) {
 }
 
 const bool USE_DIFFERENTIAL = true;
+const bool USE_JACOBIAN = false;
 
   // compute the derivatives of the objective as the configuration ds.
 column_vector Invert3d::derivative(const column_vector& ds) {
@@ -144,7 +145,6 @@ column_vector Invert3d::derivative(const column_vector& ds) {
     global_truss->distance(n) = ds(i);
   }
 
-  
   for (int i = 0; i < global_truss->num_edges; ++i) {
     if (debug) cout << " i, distances(i) " << i << " , " << global_truss->distance(i) << "\n";
   }
@@ -153,7 +153,17 @@ column_vector Invert3d::derivative(const column_vector& ds) {
   column_vector *coords = new column_vector[global_truss->num_nodes];
   if (debug) cout << "NUM NODES " << global_truss->num_nodes << "\n";
 
-  solve_forward_find_coords(global_truss,coords);	     
+  // This entire approach is very inefficent.
+  // The derivatives are dependent on the coords; until we change the
+  // coords we don't need to recompute these things. However, that will
+  // require a major rework to make this obvious.
+  solve_forward_find_coords(global_truss,coords);
+  
+  matrix<double> Ju = global_truss->Jacobian(coords,global_truss->num_nodes-1);
+  cout << "Jacobian:\n";
+  cout << Ju;
+  cout << "End Jacobian\n";
+  global_truss->Jacobian_temp = Ju;
 
   debug = 0;
   for (int i = 0; i < global_truss->num_nodes; ++i) {
@@ -186,8 +196,10 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       column_vector d;
       if (USE_DIFFERENTIAL) {
 	d = global_truss->compute_goal_differential_c(coords,e,idx);
+      } else if (USE_JACOBIAN) {
+	d = global_truss->compute_goal_derivative_j(coords,e,idx);
       } else {
-	d = global_truss->compute_goal_derivative_c(coords,e,idx);
+	d = global_truss->compute_goal_derivative_c(coords,e,idx);	
       }
 
       if ((d(0) > 1000.0) || (abs(d(1)) > 1000.0)) {
@@ -217,6 +229,7 @@ column_vector Invert3d::derivative(const column_vector& ds) {
 	  print_vec(c);
 
 	  cout << "goal position: ";
+
 	  print_vec(g);
       
 	  cout << "goal direction: ";

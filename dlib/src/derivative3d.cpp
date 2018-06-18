@@ -2322,26 +2322,27 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation )
   cout << "Jacobian:\n";
   cout << J_3;
   cout << "End Jacobian\n";  
-  
-  // for(int i = 0; i < thlx.var_edges; i++) {
-  //   column_vector edge_length(3);
-  //   edge_length = 0.0,0.0,0.0;
-  //   edge_length(i) = 1.0;
-  //   matrix<double> deriv_i = normalize(J_3*edge_length);
-  //   cout << "i, deriv:\n";
-  //   cout << deriv_i;
-  //   cout << "\n";
+
+ for(int i = 0; i < thlx.var_edges; i++) {
+    column_vector edge_length(6);
+    edge_length = 0.0,0.0,0.0, 0.0,0.0,0.0 ;
+    edge_length(i) = 1.0;
+    matrix<double> deriv_i = normalize(J_3*edge_length);
+    cout << "i, deriv:\n";
+    cout << deriv_i;
+    cout << "\n";
     
-  //   int n = thlx.edge_number_of_nth_variable_edge(i);
-  //   column_vector diff = normalize(thlx.compute_goal_differential_c(coords,n,3));
-  //   cout << "differential:\n";
-  //   print_vec(diff);
-  //   column_vector deriv_col(3);
-  //   deriv_col = deriv_i(0),deriv_i(1),deriv_i(2);
-  //   double expect_vs_actual = l2_norm(diff-deriv_col);
-  //   cout << "error:" << " " << expect_vs_actual << "\n";
-  //   BOOST_CHECK(expect_vs_actual  < 5e-2);
-  // }
+    int n = thlx.edge_number_of_nth_variable_edge(i);
+    column_vector diff = normalize(thlx.compute_goal_differential_c(coords,n,3));
+    cout << "differential:\n";
+    print_vec(diff);
+    column_vector deriv_col(3);
+    deriv_col = deriv_i(0),deriv_i(1),deriv_i(2);
+    double expect_vs_actual = l2_norm(diff-deriv_col);
+    cout << "error:" << " " << expect_vs_actual << "\n";
+    BOOST_CHECK(expect_vs_actual  < 5e-2);
+    edge_length(i) = 0.0;    
+  }
 }
 
 BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation_second )
@@ -2350,7 +2351,7 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation_second )
   // This is an attempt to make sure that the "distance_to_goal" after
   // solving our "standard start" tetrahelix goes down
   // if variable edges get bigger
-  Tetrahelix *thlx_ptr = init_Tetrahelix(5,20.0,10.0,10.0);
+  Tetrahelix *thlx_ptr = init_Tetrahelix(7,20.0,10.0,10.0);
   Tetrahelix thlx = *thlx_ptr;
   
   // Now we want to set up the coordinates of the first three nodes
@@ -2363,26 +2364,37 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation_second )
   column_vector B(3);
   column_vector C(3);
   column_vector D(3);
-  column_vector E(3);  
+  column_vector E(3);
+  column_vector F(3);
+  column_vector G(3);    
 
-  A = -2.0,0.0,0.0;
-  B = 13.0,-1.0,0.0;
+  A = 0.0,0.0,0.0;
+  B = 10.0,0.0,0.0;
   C = 0.0,10.0,0.0;
   // This is the "standard" solution.
   D = 0.0, 0.0, 10.0;
   E = 10.0,10.0,10.0;
+  F = 10.0,10.0,20.0;
+  G = 10.0,20.0,20.0;    
 
   // Note: This is done in this order so that we -Z will be 
   coords[0] = A;
   coords[1] = B;
   coords[2] = C;
   coords[3] = D;
-  coords[4] = E;  
+  coords[4] = E;
+  coords[5] = F;
+  coords[6] = G;      
 
 // This is really 4 points, but it will just read the first three..
   thlx.init_fixed_coords(coords);
 
-  thlx.set_distances(coords);  
+
+  for (int i = 3; i < thlx.num_edges; ++i) {
+    thlx.distance(i) = 15.0;
+  }
+  
+  //  thlx.set_distances(coords);  
   
   int debug = 1;
   
@@ -2397,62 +2409,206 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation_second )
   // My goal here is to compute the Jacobian as per Lee-Sanderson and
   // compare ti to the differential.
   // Here I shall attempt to compute it---not even sure what shape it is!
-  matrix<double> J_4 = thlx.Jacobian(coords,4);
+  matrix<double> Ju = thlx.Jacobian(coords,thlx.num_nodes-1);
 
   cout << "Jacobian:\n";
-  cout << J_4;
+  cout << Ju;
   cout << "End Jacobian\n";
 
-  column_vector edge_length_deriv(9);
-  edge_length_deriv = 0.0,0.0,0.0, 0.0,0.0,0.0, 0.0,0.0,0.0;
+  thlx.Jacobian_temp = Ju;
 
-  // an inititial test is that modifying the edget from node 3 to 4
-  // should be a rotation about BC, and therefore Increase X and Y and decrease Z
-
-  {
-  int n_DE = thlx.edge_between(3,4);
-  cout << "n_DE = " << n_DE << "\n";
-  edge_length_deriv(n_DE) = 1.0;
-  matrix<double> deriv_i = normalize(J_4*edge_length_deriv);
-  cout << "i, deriv:\n";
-  cout << deriv_i;
-  cout << "\n";
-  
-  column_vector diff = normalize(thlx.compute_goal_differential_c(coords,n_DE,4));
-  cout << "differential:\n";
-  print_vec(diff);
-  column_vector deriv_col(3);
-  deriv_col = deriv_i(0),deriv_i(1),deriv_i(2);
-
-  double expect_vs_actual = l2_norm(diff-deriv_col);
-  cout << "error:" << " " << expect_vs_actual << "\n";
-  BOOST_CHECK(expect_vs_actual  < 5e-2);
-
-  // RESET TO ZERO!
-  edge_length_deriv(n_DE) = 0.0;  
-  }
-
-
-  {
-  int n_CE = thlx.edge_between(2,4);
-  cout << "n_CE = " << n_CE << "\n";
-  edge_length_deriv(n_CE) = 1.0;
-  matrix<double> deriv_i = normalize(J_4*edge_length_deriv);
-
-  // This one should decrease Y, Increase X, and Increase Z?
-  cout << "i, deriv:\n";
-  cout << deriv_i;
-  cout << "\n";
-  
-  column_vector diff = normalize(thlx.compute_goal_differential_c(coords,n_CE,4));
-  cout << "differential:\n";
-  print_vec(diff);
-  column_vector deriv_col(3);
-  deriv_col = deriv_i(0),deriv_i(1),deriv_i(2);
-
-  double expect_vs_actual = l2_norm(diff-deriv_col);
-  cout << "error:" << " " << expect_vs_actual << "\n";
-  BOOST_CHECK(expect_vs_actual  < 5e-2);
+  column_vector edge_length_deriv(thlx.var_edges);
+  for(int i = 0; i < thlx.var_edges; i++) {
+    edge_length_deriv(i) = 0.0;    
   }
   
+  for(int i = 0; i < thlx.var_edges; i++) {
+      edge_length_deriv(i) = 1.0;
+      matrix<double> deriv_i = normalize(Ju*edge_length_deriv);
+      cout << "i, deriv:\n";
+      cout << i << " " << deriv_i;
+      cout << "\n";
+
+      int n = thlx.edge_number_of_nth_variable_edge(i);
+      column_vector diff = normalize(thlx.compute_goal_differential_c(coords,n,thlx.num_nodes-1));
+
+      cout << "differential:\n";
+      print_vec(diff);
+      
+      column_vector deriv_col(3);
+      deriv_col = deriv_i(0),deriv_i(1),deriv_i(2);
+      double expect_vs_actual = l2_norm(diff-deriv_col);
+      cout << "error:" << " " << expect_vs_actual << "\n";
+      BOOST_CHECK(expect_vs_actual  < 5e-2);
+      edge_length_deriv(i) = 0.0;      
+  }
+}
+
+
+// This needs to be changed to test the Jacobian.
+BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron_with_playground_coords_Jacobian )
+{
+  //  cout << "TEST ABILITY TO SOLVE A SINGLE TETRAHEDRONXSD\n";
+  // This is an attempt to make sure that the "distance_to_goal" after
+  // solving our "standard start" tetrahelix goes down
+  // if variable edges get bigger
+  Tetrahelix *thlx_ptr = init_Tetrahelix(5,2.0,1.2,1.5);
+  Tetrahelix thlx = *thlx_ptr;
+  
+  // Now we want to set up the coordinates of the first three nodes
+  // very carefully so that we follow the X-axis specifically.
+  // The easiest way to to this is to take it from the javascript
+  // code already written to preform these calculations....
+  column_vector* coords = new column_vector[thlx.num_nodes];
+  
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  column_vector D(3);
+  column_vector E(3);
+  column_vector Egoal(3);    
+
+  // Note we use right-handed coordinates.
+  // This diagram matches (approximately) the diagram in the paper.
+
+  A = thlx.fixed[0];
+  B = thlx.fixed[1];
+  C = thlx.fixed[2];
+  // This is the "standard" solution.
+  D = 0.6350852961085883,2.790116647275517,-1.57697505292423;
+
+  double Ex = -0.7601778544330073;
+  double Ey = 2.5104011833827586;
+  double Ez = -1.102633403898972;
+  
+  E = Ex,Ey,Ez;
+
+  // Let's extend the E node just a little at first...
+  Egoal = Ex,Ey+0.1,Ez;
+
+  // Note: This is done in this order so that we -Z will be 
+  coords[0] = A;
+  coords[1] = B;
+  coords[2] = C;
+  coords[3] = D;
+  coords[4] = E;  
+// This is really 5 points, but it will just read the first three..
+  thlx.init_fixed_coords(coords);
+
+  thlx.set_distances(coords);  
+  
+  int debug = 1;
+  
+  if (debug) {
+    for (int i = 0; i < thlx.num_edges; ++i) {
+      cout << " i, distances(i) " << i << " , " << thlx.distance(i) << "\n";
+    }
+  }
+  
+  solve_forward_find_coords(&thlx,coords);
+  cout << " BCDE chirality :" << tet_chirality(B,C,D,E) << "\n";
+
+  if (debug) {
+    cout << "DONE SOLVING_FORWARD_FIND_COORDS \n";
+    for(int i = 0; i < thlx.num_nodes; i++) {
+      print_vec(coords[i]);
+    }
+  }
+  
+  matrix<double> Ju = thlx.Jacobian(coords,thlx.num_nodes-1);
+
+  cout << "Jacobian:\n";
+  cout << Ju;
+  cout << "End Jacobian\n";
+
+  thlx.Jacobian_temp = Ju;
+  
+  const int goal_node = 4;
+  
+  // THE point E should be close to the cube corner
+  double d = l2_norm(coords[goal_node] - E);
+  cout << "CHECK DISTANCE (SMALL)" << d << "\n";
+  BOOST_CHECK(l2_norm(coords[goal_node] - E) < 1e-2);
+  
+  //  column_vector goal = Egoal;
+  Invert3d inv;
+  inv.an = &thlx;
+  inv.set_global_truss();
+
+  // Note: using init creates a goal node already!
+  thlx.goals[thlx.goals.size() - 1] = Egoal;  
+
+  // Now we will create an iteration of points in space, checking many of them.
+  int numi = 4;
+  int numj = 4;
+  int numk = 4;
+  double frac = 0.15;
+  for(int i = 0; i < numi; i++) {
+    Egoal(0) = Ex +  (numi/2 - i) * frac;
+    for(int j = 0; j < numj; j++ ) {
+      Egoal(1) = Ey + (numj/2 -j) * frac;
+    for(int k = 0; k < numk; k++ ) {
+      Egoal(2) = Ez + (numk/2 - k) * frac;
+      thlx.goals[thlx.goals.size() - 1] = Egoal;
+      
+      if (debug) cout << "Experiment (i,j) :" << i << " " << j <<  "\n";
+      if (debug) print_vec(Egoal);
+      if (debug) cout << "BBB\n";
+      if (debug) print_vec(thlx.goals[thlx.goals.size() - 1]); 
+	
+      //      int e = errant_max_distance(thlx.lower_bound,thlx.upper_bound,coords,4,Egoal);
+      // if (e > -1) {
+      // 	cout << "errant edge: " << e << "\n";
+      // 	print_vec(Egoal);
+      // } else {
+      double obj;
+      if (debug) cout << "pre-computation\n";
+      
+      if (debug) print_vec(coords[goal_node]);
+      
+      column_vector deriv = compute_derivative_for_single_tet_testing(&inv, inv.an, coords, Egoal, &obj);
+      // Here I compute the derivative from the stuff.
+      if (debug) {
+	cout << "deriv \n";
+	print_vec(deriv);
+	cout << "post-computation\n";
+	print_vec(coords[goal_node]);
+      }
+      if (isnan(deriv(0))) { // This means that the current coords is actually equal to the goal node
+	cout << "deriv is undefined!\n";
+      } else {
+	if (debug) cout << "YYY " << thlx.goals.size() - 1 << "\n";
+	if (debug) print_vec(inv.an->goals[thlx.goals.size() - 1]); 
+	solve_inverse_problem(inv.an);
+	
+	if (debug) {
+	  for (int i = 0; i < thlx.num_edges; ++i) {
+	    cout << " i, distances(i) " << i << " , " << thlx.distance(i) << "\n";
+	  }
+	}
+
+	// cout << "solving forward!\n";
+	bool solved = solve_forward_find_coords(&thlx,coords);
+	if (!solved) {
+	  cout << "INTERNAL ERROR: Could solved these coords forward!\n";
+	}
+      }
+      if (debug) {
+	cout << "coords!!!\n";
+	print_vec(coords[goal_node]);
+	print_vec(Egoal);
+	cout << "NORM: " << l2_norm(coords[goal_node] - Egoal) << "\n";	  
+      };
+
+      BOOST_CHECK(l2_norm(coords[goal_node] - Egoal) < 1e-2);
+    }
+    }    
+    //        }
+  }
+
+  // // Just check this is what I expect...
+  // for(int i = 0; i < thlx.num_nodes; i++) {
+  //   print_vec(coords[i]);
+  // }
+  delete[] coords;
 }

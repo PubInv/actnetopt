@@ -46,6 +46,8 @@ public:
   column_vector*  lcoords;
   column_vector fixed[3];
 
+  matrix<double> Jacobian_temp;  
+
   void init_fixed_coords(column_vector fcoords[]);
   void init_fixed_coords_to_z_axis_alignment(column_vector coords[]);
   void restore_fixed_coords(column_vector coords[]);  
@@ -121,10 +123,14 @@ column_vector compute_goal_differential_c(column_vector cur_coords[],
 column_vector compute_goal_derivative_c(column_vector cur_coords[],
 								int edge_number,
 						   int goal_node_number);
+  
+column_vector compute_goal_derivative_j(column_vector cur_coords[],
+						    int edge_number,
+						    int goal_node_number);  
 
 column_vector compute_goal_derivative_after_edge_internal(column_vector cur_coords[],
-								int edge_number,
-							   int goal_node_number);
+							  int edge_number,
+							  int goal_node_number);
   
  
 column_vector compute_external_effector_derivative_c(column_vector cur_coords[],

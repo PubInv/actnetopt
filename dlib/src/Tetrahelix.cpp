@@ -1051,6 +1051,17 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   return deriv;
 }
 
+column_vector Tetrahelix::compute_goal_derivative_j(column_vector cur_coords[],
+								int edge_number,
+								int goal_node_number) {
+  column_vector edge_length_deriv(var_edges);
+  for(int i = 0; i < var_edges; i++) {
+    edge_length_deriv(i) = 0.0;
+  }
+  edge_length_deriv(edge_number) = 1.0;
+  matrix<double> deriv_i = normalize(Jacobian_temp * edge_length_deriv);  
+  return deriv_i;
+}
 
 // This is the deriviative of the cosine wrt the first argument
 double Tetrahelix::dcos_adj(double adj1, double adj2, double opp) {
@@ -1290,8 +1301,9 @@ void stack_9x3_matrix(matrix<double> *JK,matrix<double> J1,matrix<double> J2,mat
 
 // This is my attempt to follow the Lee-Sanderson approach to computing the
 // Jacobian, which I find rather daunting. For the purpose of testing,
-// I am considering only a 5-node tet. This fixes the number of struts at 9,
+// I am considering only a 5-node tet. This fixes the number of variable struts at 6,
 // an important aspect of the dimensionality of Jacobians.
+// The Jacobian is there for a 3 x 6 matrix.
 matrix<double> Tetrahelix::JacobianBase(column_vector coords[]) {
   // First I will attempt to construct Btet.
 
@@ -1304,16 +1316,26 @@ matrix<double> Tetrahelix::JacobianBase(column_vector coords[]) {
   set_row_from_vector(&Btet,DA,0,0,3);
   set_row_from_vector(&Btet,DB,1,0,3);
   set_row_from_vector(&Btet,DC,2,0,3);
+
+  cout << "Btet \n";
+  cout << Btet;
+  cout << "End Btet\n";
   
-  matrix<double> Btet_inv = pinv(Btet);
+  
+  matrix<double> Btet_inv = inv(Btet);
+
+  cout << "Btet_inv \n";
+  cout << Btet_inv;
+  cout << "End Btet_inv\n";
+  
   // now somehow I have to construct a 3 x 9 matrix with zero columns...
   // Since the base is the node numbered 3, stuts 0,1,2, 6,7,8, and 9
   // should be zero...this is very error prone.
-  matrix<double> J3 = zeros_matrix<double>(3,9);
+  matrix<double> J3 = zeros_matrix<double>(3,var_edges);
   // Now, hopefully we can lay Btet_inv right in as 3,4,5....
   for(int i = 0; i < 3; i++) {
     for(int j = 0; j < 3; j++) {    
-      J3(i,j+3) = Btet_inv(i,j);
+      J3(i,j) = Btet_inv(i,j);
     }
   }
   return J3;
@@ -1334,7 +1356,7 @@ matrix<double> Tetrahelix::JacobianBase(column_vector coords[]) {
 matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
   // First I will attempt to construct Btet.
   if (node < 3) {
-    return zeros_matrix<double>(3,9);
+    return zeros_matrix<double>(3,var_edges);
   } else if (node == 3) {
     return JacobianBase(coords);
   } else {
@@ -1343,8 +1365,6 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
     matrix<double> J1 = Jacobian(coords,node-1);
     matrix<double> J2 = Jacobian(coords,node-2);
     matrix<double> J3 = Jacobian(coords,node-3);
-
-
 
     matrix<double> Btet(3,3);
   
@@ -1375,7 +1395,7 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
     cout << "End Atet\n";
 
     //    matrix<double> JK = zeros_matrix<double>(9,3);
-    matrix<double> JK = join_cols(join_cols(J1,J2),J3);
+    matrix<double> JK = join_cols(join_cols(J3,J2),J1);
     
     cout << "JK \n";
     cout << JK;
@@ -1396,11 +1416,11 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
 
     // according to the paper, Ctet is Btet_inv with zero columns added...
     // not entirely sure how that will work.
-    matrix<double> Ctet = zeros_matrix<double>(3,9);
+    matrix<double> Ctet = zeros_matrix<double>(3,var_edges);
 
     for(int i = 0; i < 3; i++) {
       for(int j = 0; j < 3; j++) {
-	Ctet(i,j+6) = Btet_inv(i,j);
+	Ctet(i,j+3*(node - 3)) = Btet_inv(i,j);
       }
     }
     matrix<double> Ju = Ctet - (Btet_inv*(Atet*JK));
