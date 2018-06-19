@@ -1323,16 +1323,22 @@ matrix<double> Tetrahelix::JacobianBase(column_vector coords[]) {
   set_row_from_vector(&Btet,DB,1,0,3);
   set_row_from_vector(&Btet,DC,2,0,3);
 
-  cout << "Btet \n";
-  cout << Btet;
-  cout << "End Btet\n";
+  int debug = 0;
+
+  if (debug) {
+    cout << "Btet \n";
+    cout << Btet;
+    cout << "End Btet\n";
+  }
   
   
   matrix<double> Btet_inv = inv(Btet);
 
-  cout << "Btet_inv \n";
-  cout << Btet_inv;
-  cout << "End Btet_inv\n";
+  if (debug) {  
+    cout << "Btet_inv \n";
+    cout << Btet_inv;
+    cout << "End Btet_inv\n";
+  }
   
   // now somehow I have to construct a 3 x 9 matrix with zero columns...
   // Since the base is the node numbered 3, stuts 0,1,2, 6,7,8, and 9
@@ -1385,9 +1391,13 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
     set_row_from_vector(&Btet,DC,2,0,3);
   
     matrix<double> Atet = zeros_matrix<double>(3,9);
-    cout << "Atet \n";
-    cout << Atet;
-    cout << "End Atet\n";
+
+    int debug = 0;
+    if (debug) {
+      cout << "Atet \n";
+      cout << Atet;
+      cout << "End Atet\n";
+    }
   
     set_row_from_vector(&Atet,-DA,0,0,3);
     set_row_from_vector(&Atet,-DB,1,3,3);
@@ -1396,29 +1406,33 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
     matrix<double> Btet_inv = pinv(Btet);
 
 
-    cout << "Atet \n";
-    cout << Atet;
-    cout << "End Atet\n";
+    if (debug) {
+      cout << "Atet \n";
+      cout << Atet;
+      cout << "End Atet\n";
+    }
 
     //    matrix<double> JK = zeros_matrix<double>(9,3);
     matrix<double> JK = join_cols(join_cols(J3,J2),J1);
-    
-    cout << "JK \n";
-    cout << JK;
-    cout << "JK\n";
+
+    if (debug) {    
+      cout << "JK \n";
+      cout << JK;
+      cout << "JK\n";
   
-    cout << "part1 \n";
-    cout << Atet * JK;
-    cout << "part1\n";
+      cout << "part1 \n";
+      cout << Atet * JK;
+      cout << "part1\n";
 
-    cout << "part2 \n";
-    cout << (Btet_inv*(Atet*JK));
-    cout << "part2\n";
+      cout << "part2 \n";
+      cout << (Btet_inv*(Atet*JK));
+      cout << "part2\n";
 
     
-    cout << "Btet_inv \n";
-    cout << Btet_inv;
-    cout << "End Btet_inv\n";
+      cout << "Btet_inv \n";
+      cout << Btet_inv;
+      cout << "End Btet_inv\n";
+    }
 
     // according to the paper, Ctet is Btet_inv with zero columns added...
     // not entirely sure how that will work.
@@ -1431,9 +1445,11 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
     }
     matrix<double> Ju = Ctet - (Btet_inv*(Atet*JK));
 
-    cout << "Ju \n";
-    cout << Ju;
-    cout << "Ju\n";
+    if (debug) {        
+      cout << "Ju \n";
+      cout << Ju;
+      cout << "Ju\n";
+    }
   
     return Ju;
   }

@@ -159,10 +159,12 @@ column_vector Invert3d::derivative(const column_vector& ds) {
   solve_forward_find_coords(global_truss,coords);
   
   matrix<double> Ju = global_truss->Jacobian(coords,global_truss->num_nodes-1);
-  cout << "Jacobian:\n";
-  cout << Ju;
-  cout << "End Jacobian\n";
-  cout << "trying Ju\n";
+  if (debug) {
+    cout << "Jacobian:\n";
+    cout << Ju;
+    cout << "End Jacobian\n";
+    cout << "trying Ju\n";
+  }
   global_truss->Jacobian_temp = Ju;
 
   debug = 0;
