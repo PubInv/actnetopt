@@ -2324,7 +2324,7 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation )
   cout << "End Jacobian\n";  
 
  for(int i = 0; i < thlx.var_edges; i++) {
-    column_vector edge_length(6);
+    column_vector edge_length(thlx.var_edges);
     edge_length = 0.0,0.0,0.0, 0.0,0.0,0.0 ;
     edge_length(i) = 1.0;
     matrix<double> deriv_i = normalize(J_3*edge_length);

@@ -111,7 +111,6 @@ Invert3d::Invert3d() {
        if (debug_inv) std::cout << i << " : " << ds(i) << std::endl;       
      }
      best_score = v;
-     
    }
    delete[] coords;
    return v;    
@@ -130,8 +129,8 @@ column_vector normalize3(column_vector v) {
   return r;
 }
 
-const bool USE_DIFFERENTIAL = true;
-const bool USE_JACOBIAN = false;
+const bool USE_DIFFERENTIAL = false;
+const bool USE_JACOBIAN = true;
 
   // compute the derivatives of the objective as the configuration ds.
 column_vector Invert3d::derivative(const column_vector& ds) {
@@ -163,6 +162,7 @@ column_vector Invert3d::derivative(const column_vector& ds) {
   cout << "Jacobian:\n";
   cout << Ju;
   cout << "End Jacobian\n";
+  cout << "trying Ju\n";
   global_truss->Jacobian_temp = Ju;
 
   debug = 0;
@@ -194,10 +194,15 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       }
 
       column_vector d;
+      
+      //      global_truss->compute_goal_derivative_j(coords,i,idx);
+      
       if (USE_DIFFERENTIAL) {
 	d = global_truss->compute_goal_differential_c(coords,e,idx);
       } else if (USE_JACOBIAN) {
-	d = global_truss->compute_goal_derivative_j(coords,e,idx);
+	// There are a compute of problems here---I don't seem to really be using the goal_number here!!!
+	// Note that this uses the variable number, NOT the true edge number.
+	d = global_truss->compute_goal_derivative_j(coords,i,idx);
       } else {
 	d = global_truss->compute_goal_derivative_c(coords,e,idx);	
       }

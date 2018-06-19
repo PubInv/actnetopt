@@ -1051,14 +1051,20 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   return deriv;
 }
 
+
+// WAR?NING: There is an assumption here which will mess us up when
+// it comes to computing multiple goals.  The Jacobian is only for the goal_node.
+// At present I am keeping one such Jacobian, which is probably not right!
+// To be able to compute for any node, I really need an array of Jacobians.
 column_vector Tetrahelix::compute_goal_derivative_j(column_vector cur_coords[],
-								int edge_number,
-								int goal_node_number) {
+								int var_edge_number,
+								int goal_number) {
   column_vector edge_length_deriv(var_edges);
   for(int i = 0; i < var_edges; i++) {
     edge_length_deriv(i) = 0.0;
   }
-  edge_length_deriv(edge_number) = 1.0;
+  assert(var_edge_number < var_edges);
+  edge_length_deriv(var_edge_number) = 1.0;
   matrix<double> deriv_i = normalize(Jacobian_temp * edge_length_deriv);  
   return deriv_i;
 }
