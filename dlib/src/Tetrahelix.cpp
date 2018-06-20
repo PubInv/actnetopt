@@ -1454,3 +1454,10 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
     return Ju;
   }
 }
+
+void TetrahelixConfiguration::attach_to_Tetrahelix(Tetrahelix *t) {
+}
+
+bool TetrahelixConfiguration::solve_forward_find_coords() {
+  return false;
+}

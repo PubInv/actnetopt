@@ -2154,7 +2154,7 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron_with_playground
 
   thlx.set_distances(coords);  
   
-  int debug = 1;
+  int debug = 0;
   
   if (debug) {
     for (int i = 0; i < thlx.num_edges; ++i) {
@@ -2306,7 +2306,7 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation )
 
   thlx.set_distances(coords);  
   
-  int debug = 1;
+  int debug = 0;
   
   if (debug) {
     for (int i = 0; i < thlx.num_edges; ++i) {
@@ -2321,13 +2321,9 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation )
   // Here I shall attempt to compute it---not even sure what shape it is!
   matrix<double> J_3 = thlx.JacobianBase(coords);
 
-  cout << "Jacobian:\n";
-  cout << J_3;
-  cout << "End Jacobian\n";  
-
  for(int i = 0; i < thlx.var_edges; i++) {
     column_vector edge_length(thlx.var_edges);
-    edge_length = 0.0,0.0,0.0, 0.0,0.0,0.0 ;
+    edge_length = 0.0,0.0,0.0 ;
     edge_length(i) = 1.0;
     matrix<double> deriv_i = normalize(J_3*edge_length);
     cout << "i, deriv:\n";
@@ -2398,7 +2394,7 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation_second )
   
   //  thlx.set_distances(coords);  
   
-  int debug = 1;
+  int debug = 0;
   
   if (debug) {
     for (int i = 0; i < thlx.num_edges; ++i) {
@@ -2499,7 +2495,7 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron_with_playground
 
   thlx.set_distances(coords);  
   
-  int debug = 1;
+  int debug = 0;
   
   if (debug) {
     for (int i = 0; i < thlx.num_edges; ++i) {

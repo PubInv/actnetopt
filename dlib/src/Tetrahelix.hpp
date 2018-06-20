@@ -75,12 +75,9 @@ public:
   column_vector fixed_nodes;
 
   // We actually need to be able to store a Jacobian for at least each goal node....
+  // In fact the goals, and eventually the fixed_nodes, should be moved into the configuration,
+  // but let me first get the coords handled properly.
   std::vector<column_vector> goals;
-  // This is actually a function of the coords. Maybe we need to reorganize the code...
-  // The reality is the jacobians change whenever the coords change, but the coords
-  // are not part of the Tetrahelix as currently defined. I suppose I should make a
-  // new type to deal with this.
-  std::vector<matrix<double>> jacobians;
 
 
   column_vector distance;
@@ -168,6 +165,25 @@ column_vector compute_internal_effector_derivative_c(column_vector cur_coords[],
 
   matrix<double> JacobianBase(column_vector coords[]);
   
+};
+
+class TetrahelixConfiguration {
+
+public:
+
+  Tetrahelix *thlx;
+  
+  column_vector *coords;
+
+  // This is actually a function of the coords. Maybe we need to reorganize the code...
+  // The reality is the jacobians change whenever the coords change, but the coords
+  // are not part of the Tetrahelix as currently defined. I suppose I should make a
+  // new type to deal with this.
+  std::vector<matrix<double>> jacobians;
+
+  void attach_to_Tetrahelix(Tetrahelix *t);
+
+  bool solve_forward_find_coords();
 };
 
 class FindCoords3d {
