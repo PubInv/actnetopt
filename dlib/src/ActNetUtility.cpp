@@ -80,3 +80,6 @@ column_vector normalized(column_vector a) {
   column_vector b = a / l2_norm(a);
   return b;
 }
+
+clock_t time_in_differential = 0;
+clock_t time_in_jacobian = 0;

@@ -27,8 +27,6 @@ using namespace dlib;
 // Therefore these are necessary.
 double* best_distances = 0;
 double best_score;
-clock_t time_in_differential = 0;
-clock_t time_in_jacobian = 0;
 
 
 int debug_inv = 0;

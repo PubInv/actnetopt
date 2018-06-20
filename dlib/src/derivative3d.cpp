@@ -451,6 +451,8 @@ BOOST_AUTO_TEST_CASE( find_coords_matches_distances )
   //  cout << "START\n";
   //  cout << "thlx.num_nodes: " << thlx.num_nodes << "\n";
   column_vector* coords = new column_vector[thlx.num_nodes];
+  
+  TetrahelixConfiguration thc(&thlx,coords);
 
   //  const double SHORT = LOWER_BOUND;
   //  const double LONG = UPPER_BOUND;
@@ -458,7 +460,7 @@ BOOST_AUTO_TEST_CASE( find_coords_matches_distances )
     thlx.distance(i) = INITIAL;
   }
 
-  solve_forward_find_coords(&thlx,coords);
+  thc.forward_find_coords();
   
   for(int i = 0; i < thlx.num_nodes; i++) {
     thlx.distance(i) = INITIAL;

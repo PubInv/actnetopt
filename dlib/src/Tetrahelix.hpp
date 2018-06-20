@@ -171,6 +171,8 @@ class TetrahelixConfiguration {
 
 public:
 
+  TetrahelixConfiguration(Tetrahelix* thlx,column_vector *coords);
+
   Tetrahelix *thlx;
   
   column_vector *coords;
@@ -183,7 +185,10 @@ public:
 
   void attach_to_Tetrahelix(Tetrahelix *t);
 
-  bool solve_forward_find_coords();
+  // Changing the nth coord may force the recomputation of all alter Jacobians...
+  void declare_coord_changed(int n);
+
+  bool forward_find_coords();
 };
 
 class FindCoords3d {

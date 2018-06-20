@@ -1455,9 +1455,31 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
   }
 }
 
-void TetrahelixConfiguration::attach_to_Tetrahelix(Tetrahelix *t) {
+TetrahelixConfiguration::TetrahelixConfiguration(Tetrahelix* thlx,column_vector *coords)
+{
+  this->thlx = thlx;
+  this->coords = coords;
 }
 
-bool TetrahelixConfiguration::solve_forward_find_coords() {
-  return false;
+bool TetrahelixConfiguration::forward_find_coords() {
+  return solve_forward_find_coords(thlx,coords);
+}
+
+// WARNING: For now we are only supporting the end-goal effector with our Jacobian,
+// but later this will have to be more sophisticated.
+void TetrahelixConfiguration::declare_coord_changed(int n) {
+  forward_find_coords();
+  clock_t t;
+  t = clock();	  
+  matrix<double> Ju = thlx->Jacobian(coords,thlx->num_nodes-1);
+  t = clock() - t;	
+  time_in_jacobian += t;
+  int debug = 0;
+  if (debug) {
+    cout << "Jacobian:\n";
+    cout << Ju;
+    cout << "End Jacobian\n";
+    cout << "trying Ju\n";
+  }
+  thlx->Jacobian_temp = Ju;
 }
