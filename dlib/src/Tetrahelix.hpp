@@ -73,7 +73,14 @@ public:
   const char* name = "ABCDE";
 
   column_vector fixed_nodes;
+
+  // We actually need to be able to store a Jacobian for at least each goal node....
   std::vector<column_vector> goals;
+  // This is actually a function of the coords. Maybe we need to reorganize the code...
+  // The reality is the jacobians change whenever the coords change, but the coords
+  // are not part of the Tetrahelix as currently defined. I suppose I should make a
+  // new type to deal with this.
+  std::vector<matrix<double>> jacobians;
 
 
   column_vector distance;

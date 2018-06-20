@@ -16,6 +16,7 @@
 
 #include "Invert3d.hpp"
 #include "Obstacle.hpp"
+#include <time.h>  
 
 using namespace std;
 using namespace dlib;
@@ -26,6 +27,9 @@ using namespace dlib;
 // Therefore these are necessary.
 double* best_distances = 0;
 double best_score;
+clock_t time_in_differential = 0;
+clock_t time_in_jacobian = 0;
+
 
 int debug_inv = 0;
 
@@ -132,6 +136,7 @@ column_vector normalize3(column_vector v) {
 const bool USE_DIFFERENTIAL = false;
 const bool USE_JACOBIAN = true;
 
+
   // compute the derivatives of the objective as the configuration ds.
 column_vector Invert3d::derivative(const column_vector& ds) {
   int debug = 0;
@@ -158,7 +163,12 @@ column_vector Invert3d::derivative(const column_vector& ds) {
   // require a major rework to make this obvious.
   solve_forward_find_coords(global_truss,coords);
   
+  clock_t t;
+  t = clock();	  
   matrix<double> Ju = global_truss->Jacobian(coords,global_truss->num_nodes-1);
+  t = clock() - t;	
+  time_in_jacobian += t;
+  
   if (debug) {
     cout << "Jacobian:\n";
     cout << Ju;
@@ -198,13 +208,23 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       column_vector d;
       
       //      global_truss->compute_goal_derivative_j(coords,i,idx);
-      
+
+
+
+
+ 
       if (USE_DIFFERENTIAL) {
+	t = clock();		
 	d = global_truss->compute_goal_differential_c(coords,e,idx);
+	t = clock() - t;
+	time_in_differential += t;;	
       } else if (USE_JACOBIAN) {
 	// There are a compute of problems here---I don't seem to really be using the goal_number here!!!
 	// Note that this uses the variable number, NOT the true edge number.
+	t = clock();	
 	d = global_truss->compute_goal_derivative_j(coords,i,idx);
+	t = clock() - t;	
+	time_in_jacobian += t;;
       } else {
 	d = global_truss->compute_goal_derivative_c(coords,e,idx);	
       }

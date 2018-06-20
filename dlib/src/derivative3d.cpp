@@ -2530,7 +2530,7 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron_with_playground
   // THE point E should be close to the cube corner
   double d = l2_norm(coords[goal_node] - E);
   cout << "CHECK DISTANCE (SMALL)" << d << "\n";
-  BOOST_CHECK(l2_norm(coords[goal_node] - E) < 1e-2);
+  BOOST_CHECK(l2_norm(coords[goal_node] - E) < 1e-1);
   
   //  column_vector goal = Egoal;
   Invert3d inv;
@@ -2602,7 +2602,7 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron_with_playground
 	cout << "NORM: " << l2_norm(coords[goal_node] - Egoal) << "\n";	  
       };
 
-      BOOST_CHECK(l2_norm(coords[goal_node] - Egoal) < 1e-2);
+      BOOST_CHECK(l2_norm(coords[goal_node] - Egoal) < 1e-1);
     }
     }    
     //        }
@@ -2613,4 +2613,10 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron_with_playground
   //   print_vec(coords[i]);
   // }
   delete[] coords;
+}
+BOOST_AUTO_TEST_CASE( final_stats_report )
+{
+    printf ("Time in Jacobian %lu clicks (%f seconds).\n",time_in_jacobian,((float)time_in_jacobian)/CLOCKS_PER_SEC);
+    printf ("Time in Differential %lu clicks (%f seconds).\n",time_in_differential,((float)time_in_differential)/CLOCKS_PER_SEC);    
+
 }

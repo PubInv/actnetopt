@@ -27,6 +27,7 @@
 // #include "Obstacle.hpp"
 
 #include <math.h>
+#include <time.h>  
 
 using namespace std;
 using namespace dlib;
@@ -37,6 +38,8 @@ using namespace dlib;
 extern double* best_distances;
 extern double best_score;
 
+extern clock_t time_in_differential;
+extern clock_t time_in_jacobian;
 
 
 class Invert3d {
