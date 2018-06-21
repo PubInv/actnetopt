@@ -41,7 +41,7 @@ Invert::Invert() {
     global_truss = an;
     global_truss->obstacle = o;
     if (best_distances == 0) {
-     best_distances = new double[(global_truss->num_nodes-3)*2 +3];
+   best_distances = new double[(global_truss->num_nodes-3)*2 +3];
     }
   }
 

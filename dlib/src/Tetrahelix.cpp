@@ -595,44 +595,44 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
 
 
 
-bool solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
+bool TetrahelixConfiguration::forward_find_coords() {
     FindCoords3d f;
 
     int debug = 0;
     //    Chirality sense = CCW;
     Chirality sense = CCW;
     // Is this even required?
-    an->restore_fixed_coords(coordsx);
+    thlx->restore_fixed_coords(coords);
 
     if (debug) {
        cout << "in solve distances:\n";
-       for(int i = 0; i < an->num_edges; i++) {
-         cout << "i, d " << i << " , " << an->distance(i) << "\n";
+       for(int i = 0; i < thlx->num_edges; i++) {
+         cout << "i, d " << i << " , " << thlx->distance(i) << "\n";
        }
 
        cout << "SOLVE_FORWARD_FIND_COORDS \n";
-       for(int i = 0; i < an->num_nodes; i++) {
-         print_vec(coordsx[i]);
+       for(int i = 0; i < thlx->num_nodes; i++) {
+         print_vec(coords[i]);
        }
     }
     
     // Basic structure: Iteratively find coordinates based on simple triangulations.
     // This only works for actuator networks in which we can
-    int fs = an->fixed_nodes.size();
+    int fs = thlx->fixed_nodes.size();
     //    cout << "fixed nodes " << fs << "\n";
     bool valid = true;
-    for(int i = fs; i < an->num_nodes; i++) {
+    for(int i = fs; i < thlx->num_nodes; i++) {
       // Let's set up initial values
       // choose a starting point
 
       f.a.set_size(3);
-      f.a = coordsx[i-fs];
+      f.a = coords[i-fs];
 
       f.b.set_size(3);
-      f.b = coordsx[i-(fs-1)];
+      f.b = coords[i-(fs-1)];
 
       f.c.set_size(3);
-      f.c = coordsx[i-(fs-2)];
+      f.c = coords[i-(fs-2)];
 
       // cout << "f.a f.b f.c\n";
       // print_vec(f.a);
@@ -646,17 +646,17 @@ bool solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
       if (debug_find) std::cout << "f.b " << f.b << std::endl;
       if (debug_find) std::cout << "f.c " << f.c << std::endl;      
 
-      int ecd = an->edge_between(i,i-1);
-      int ebd = an->edge_between(i,i-2);
-      int ead = an->edge_between(i,i-3);
+      int ecd = thlx->edge_between(i,i-1);
+      int ebd = thlx->edge_between(i,i-2);
+      int ead = thlx->edge_between(i,i-3);
       if (debug) {
 	cout << "ecd ebd ead \n";
 	cout << ecd << " " << ebd << " " << ead << "\n";
       }
 
-      f.dad = an->distance(ead);
-      f.dbd = an->distance(ebd);
-      f.dcd = an->distance(ecd);
+      f.dad = thlx->distance(ead);
+      f.dbd = thlx->distance(ebd);
+      f.dcd = thlx->distance(ecd);
 
       column_vector  y(3);
 
@@ -679,17 +679,17 @@ bool solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
       valid &= lvalid;
 
       
-      coordsx[i].set_size(3);
-      coordsx[i] = y;
+      coords[i].set_size(3);
+      coords[i] = y;
       if (debug) {
 	cout << "SETTING " << i << "\n";
 	print_vec(y);
 	cout << "valid?: " << valid << "\n";
 	cout << " distances \n";
-	for (int i = 0; i < an->num_nodes-1; ++i) {
-	  for (int j = i+1; j <  an->num_nodes; ++j) {    
+	for (int i = 0; i < thlx->num_nodes-1; ++i) {
+	  for (int j = i+1; j <  thlx->num_nodes; ++j) {    
 	    cout << " i,j : " << i << "," << j << " ";
-	    cout << distance_3d(coordsx[i],coordsx[j]) << "\n";
+	    cout << distance_3d(coords[i],coords[j]) << "\n";
 	  }
 	}
 	
@@ -700,8 +700,8 @@ bool solve_forward_find_coords(Tetrahelix *an,column_vector coordsx[]) {
 
     if (debug) {
        cout << "FINAL COORDS \n";
-       for(int i = 0; i < an->num_nodes; i++) {
-         print_vec(coordsx[i]);
+       for(int i = 0; i < thlx->num_nodes; i++) {
+         print_vec(coords[i]);
        }
     }
     
@@ -856,15 +856,23 @@ column_vector Tetrahelix::compute_goal_differential_c(column_vector cur_coords[]
 								int edge_number,
 						      int goal_node_number,
 						      double delta_fraction) {
+  TetrahelixConfiguration thc(this,cur_coords);
   set_distances(cur_coords);
-  solve_forward_find_coords(this,cur_coords);
+  thc.forward_find_coords();
+  
+  //  solve_forward_find_coords(this,cur_coords);
   column_vector g_orig = cur_coords[goal_node_number];
   double orig_length = distance(edge_number);
   distance(edge_number) += delta_fraction * distance(edge_number);
-  solve_forward_find_coords(this,cur_coords);
+
+  thc.forward_find_coords();
+  
+  //  solve_forward_find_coords(this,cur_coords);
   column_vector differential = (cur_coords[goal_node_number] - g_orig)/delta_fraction;
   distance(edge_number) = orig_length;
-  solve_forward_find_coords(this,cur_coords);  
+  
+  thc.forward_find_coords();  
+  //  solve_forward_find_coords(this,cur_coords);  
   return differential;
 }
 
@@ -1461,9 +1469,9 @@ TetrahelixConfiguration::TetrahelixConfiguration(Tetrahelix* thlx,column_vector 
   this->coords = coords;
 }
 
-bool TetrahelixConfiguration::forward_find_coords() {
-  return solve_forward_find_coords(thlx,coords);
-}
+// bool TetrahelixConfiguration::forward_find_coords() {
+//   return solve_forward_find_coords(thlx,coords);
+// }
 
 // WARNING: For now we are only supporting the end-goal effector with our Jacobian,
 // but later this will have to be more sophisticated.

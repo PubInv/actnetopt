@@ -76,7 +76,13 @@ Invert3d::Invert3d() {
   column_vector *coords = new column_vector[global_truss->num_nodes];
 
     // If I don't change an here, I'm not changing the coords!!
-    solve_forward_find_coords(global_truss,coords);	  
+
+  // This is one place we don't really need to change the configuration, so we can create and delete
+  // here on the stack....
+    TetrahelixConfiguration thc(global_truss,coords);
+    thc.forward_find_coords();
+  
+    //    solve_forward_find_coords(global_truss,coords);	  
 
     if (debug) {
     for(int i = 0; i < global_truss->num_nodes; i++) {
@@ -139,7 +145,7 @@ const bool USE_JACOBIAN = true;
 column_vector Invert3d::derivative(const column_vector& ds) {
   int debug = 0;
   if (debug) {
-  cout << "DERIVATIVE CALLED\n";
+    cout << "DERIVATIVE CALLED\n";
   }
   
   for (int i = 0; i < global_truss->var_edges; ++i) {
@@ -159,7 +165,9 @@ column_vector Invert3d::derivative(const column_vector& ds) {
   // The derivatives are dependent on the coords; until we change the
   // coords we don't need to recompute these things. However, that will
   // require a major rework to make this obvious.
-  solve_forward_find_coords(global_truss,coords);
+  TetrahelixConfiguration thc(global_truss,coords);
+  thc.forward_find_coords();
+  //  solve_forward_find_coords(global_truss,coords);
   
   clock_t t;
   t = clock();	  

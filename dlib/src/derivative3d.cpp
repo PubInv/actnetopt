@@ -502,8 +502,11 @@ BOOST_AUTO_TEST_CASE( make_sure_axis_is_followed )
   for(int i = 0; i < thlx.num_nodes; i++) {
     thlx.distance(i) = INITIAL;
   }
+  
+  TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
 
-  solve_forward_find_coords(&thlx,coords);
+  //  solve_forward_find_coords(&thlx,coords);
   
   for(int i = 0; i < thlx.num_nodes; i++) {
     thlx.distance(i) = INITIAL;
@@ -852,7 +855,10 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
     thlx.distance(i) = INITIAL;
   }
 
-  solve_forward_find_coords(&thlx,coords);
+  //  solve_forward_find_coords(&thlx,coords);
+  
+  TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
 
 
   int debug = 0;
@@ -906,7 +912,9 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
   for(int i = 0; i < thlx.var_edges; i++) {
     thlx.distance(i+3) = ds(i);
   }
-  solve_forward_find_coords(&thlx,coords);
+
+  thc.forward_find_coords();
+
 
   column_vector deriv0 = inv.derivative(*dsa);
 
@@ -918,7 +926,7 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
     }
   }
   
-  solve_forward_find_coords(&thlx,coords);
+    thc.forward_find_coords();
   
   
   double v0 = inv.objective(*dsa);
@@ -930,7 +938,8 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
     thlx.distance(i+3) = ds(i);
   }
   
-  solve_forward_find_coords(&thlx,coords);
+  thc.forward_find_coords();
+
   
   // cout << "Coords at MIN\n";
   // for (int i = 0; i < thlx.num_nodes; ++i) {
@@ -1034,7 +1043,9 @@ BOOST_AUTO_TEST_CASE( test_directional_derivatives )
   // This is really 4 points, but it will just read the first three..
   thlx.init_fixed_coords(coords);
   
-  solve_forward_find_coords(&thlx,coords);
+    TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
+
 
   column_vector goal = Dgoal;
   thlx.add_goal_node(3,Dgoal(0),Dgoal(1),Dgoal(2),1.0);
@@ -1124,7 +1135,9 @@ BOOST_AUTO_TEST_CASE( test_derivatives_by_making_sure_length_increases )
   //   print_vec(coords[i]);
   // }
   
-  solve_forward_find_coords(&thlx,coords);
+    TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
+
 
   column_vector goal = Dgoal;
 
@@ -1140,7 +1153,7 @@ BOOST_AUTO_TEST_CASE( test_derivatives_by_making_sure_length_increases )
   // should be positive for edge 2 but zero for others.
   thlx.add_goal_node(3,Dgoal(0),Dgoal(1),Dgoal(2),1.0);
   
-  solve_forward_find_coords(&thlx,coords);
+  thc.forward_find_coords();
   
   double obj;
   column_vector deriv = compute_derivative_for_single_tet_testing(&inv,inv.an,
@@ -1148,7 +1161,8 @@ BOOST_AUTO_TEST_CASE( test_derivatives_by_making_sure_length_increases )
   
   thlx.distance(2) = 15.0;
   
-  solve_forward_find_coords(&thlx,coords);
+  thc.forward_find_coords();
+
   deriv = compute_derivative_for_single_tet_testing(&inv,inv.an,
 						    coords,goal,&obj);
   
@@ -1213,7 +1227,9 @@ BOOST_AUTO_TEST_CASE( test_derivatives )
   //   print_vec(coords[i]);
   // }
   
-  solve_forward_find_coords(&thlx,coords);
+    TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
+
 
   column_vector goal = Dgoal;
 
@@ -1386,7 +1402,9 @@ BOOST_AUTO_TEST_CASE( test_solving_when_goal_is_current_position)
     }
   }
   
-  solve_forward_find_coords(&thlx,coords);
+    TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
+
 
   //   cout << "DONE SOLVING_FORWARD_FIND_COORDS \n";
   if (debug) {
@@ -1500,7 +1518,9 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_single_tetrahedron )
     }
   }
   
-  solve_forward_find_coords(&thlx,coords);
+    TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
+
 
   if (debug) {
     cout << "DONE SOLVING_FORWARD_FIND_COORDS \n";
@@ -1555,7 +1575,7 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_single_tetrahedron )
 	  //	  }
 	  solve_inverse_problem(inv.an);
 	  // cout << "solving forward!\n";
-	  bool solved = solve_forward_find_coords(&thlx,coords);
+	  bool solved =   thc.forward_find_coords();
 	  if (!solved) {
 	    cout << "INTERNAL ERROR: Could solved these coords forward!\n";
 	  }
@@ -1642,7 +1662,9 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron )
     }
   }
   
-  solve_forward_find_coords(&thlx,coords);
+    TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
+
   cout << " BCDE chirality :" << tet_chirality(B,C,D,E) << "\n";
 
   if (debug) {
@@ -1705,7 +1727,7 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron )
   	  //	  }
   	  solve_inverse_problem(inv.an);
   	  // cout << "solving forward!\n";
-  	  bool solved = solve_forward_find_coords(&thlx,coords);
+  	  bool solved =   thc.forward_find_coords();
   	  if (!solved) {
   	    cout << "INTERNAL ERROR: Could solved these coords forward!\n";
   	  }
@@ -1802,7 +1824,9 @@ BOOST_AUTO_TEST_CASE( test_internal_edge_d_dihedral_computation_double_tetrahedr
 
   //  thlx.goals[thlx.goals.size() - 1] = Egoal;
       
-  solve_forward_find_coords(&thlx,coords);
+    TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
+
   
   if (debug) {
     cout << "DONE SOLVING_FORWARD_FIND_COORDS \n";
@@ -1978,7 +2002,9 @@ BOOST_AUTO_TEST_CASE( test_internal_edge_derivative_double_tetrahedron_with_play
   }
 
   //  thlx.goals[thlx.goals.size() - 1] = Egoal;
-  solve_forward_find_coords(&thlx,coords);
+    TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
+
   
   if (debug) {
     cout << "DONE SOLVING_FORWARD_FIND_COORDS \n";
@@ -2063,7 +2089,9 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_unique_double_tetrahedron_with_playg
     }
   }
   
-  solve_forward_find_coords(&thlx,coords);
+    TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
+
   cout << " BCDE chirality :" << tet_chirality(B,C,D,E) << "\n";
 
   if (debug) {
@@ -2089,7 +2117,7 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_unique_double_tetrahedron_with_playg
   thlx.goals[thlx.goals.size() - 1] = Egoal;  
   solve_inverse_problem(inv.an);
 
-  bool solved = solve_forward_find_coords(&thlx,coords);
+  bool solved =   thc.forward_find_coords();
   if (!solved) {
     cout << "INTERNAL ERROR: Could solved these coords forward!\n";
   }
@@ -2164,7 +2192,9 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron_with_playground
     }
   }
   
-  solve_forward_find_coords(&thlx,coords);
+    TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
+
   cout << " BCDE chirality :" << tet_chirality(B,C,D,E) << "\n";
 
   if (debug) {
@@ -2238,7 +2268,7 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron_with_playground
 	}
 
 	// cout << "solving forward!\n";
-	bool solved = solve_forward_find_coords(&thlx,coords);
+	bool solved =   thc.forward_find_coords();
 	if (!solved) {
 	  cout << "INTERNAL ERROR: Could solved these coords forward!\n";
 	}
@@ -2316,7 +2346,9 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation )
     }
   }
   
-  solve_forward_find_coords(&thlx,coords);
+    TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
+
 
   // My goal here is to compute the Jacobian as per Lee-Sanderson and
   // compare ti to the differential.
@@ -2404,7 +2436,9 @@ BOOST_AUTO_TEST_CASE( test_WooHoLee_Jacobian_Computation_second )
     }
   }
   
-  solve_forward_find_coords(&thlx,coords);
+    TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
+
 
   // My goal here is to compute the Jacobian as per Lee-Sanderson and
   // compare ti to the differential.
@@ -2505,7 +2539,9 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron_with_playground
     }
   }
   
-  solve_forward_find_coords(&thlx,coords);
+    TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
+
   cout << " BCDE chirality :" << tet_chirality(B,C,D,E) << "\n";
 
   if (debug) {
@@ -2588,7 +2624,7 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_double_tetrahedron_with_playground
 	}
 
 	// cout << "solving forward!\n";
-	bool solved = solve_forward_find_coords(&thlx,coords);
+	bool solved =   thc.forward_find_coords();
 	if (!solved) {
 	  cout << "INTERNAL ERROR: Could solved these coords forward!\n";
 	}

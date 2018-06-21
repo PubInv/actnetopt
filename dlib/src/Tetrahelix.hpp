@@ -216,6 +216,7 @@ public:
   double operator() ( const column_vector& x) const;
 };
 
+// Our goal is in a sense to make this private and eventually move into configuration...
 bool solve_forward_find_coords(Tetrahelix *an,column_vector coords[]);
 
 

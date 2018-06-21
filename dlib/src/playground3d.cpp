@@ -141,10 +141,12 @@ int mainx(Tetrahelix *an,column_vector* coords)
 	  //	  column_vector* coordsx = new column_vector[an->num_nodes];
 	  cout << "goal node [mainx] " << an->goals[0] << "\n";
 	  
-	  solve_forward_find_coords(an,coords);
+	  TetrahelixConfiguration thc(an,coords);
+	  thc.forward_find_coords();
+	  //	  solve_forward_find_coords(an,coords);
 	  cout << "SOLVE_INVERSE\n";
 	  solve_inverse_problem(an);
-	  solve_forward_find_coords(an,coords);
+	  //	  solve_forward_find_coords(an,coords);
 	  
 	}
     }
