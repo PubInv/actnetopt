@@ -226,7 +226,7 @@ Tetrahelix::Tetrahelix(int nodes,
       distance(i) = median_d;
     }
     
-    for (int i = 0; i < var_edges; ++i) {
+    for (int i = 0; i <var_edges; ++i) {
       lower_bound(i) = lower_bound_d;
       upper_bound(i) = upper_bound_d;            
     }
@@ -234,7 +234,16 @@ Tetrahelix::Tetrahelix(int nodes,
     column_vector coords[3];
     init_fixed_coords_to_z_axis_alignment(coords);
     init_fixed_coords(coords);
+    
+    Jacobian_memo = new matrix<double>[num_nodes];
+    Jacobian_memo_v = new bool[num_nodes];    
+}
+
+void Tetrahelix::initialize_Jacobian_memo() {
+  for(int i = 0; i < num_nodes; i++) {
+    Jacobian_memo_v[i] = false;
   }
+}
 
 column_vector fixed[3];
 void Tetrahelix::init_fixed_coords(column_vector fcoords[]) {
@@ -320,10 +329,13 @@ column_vector find_point_from_transformed(Chirality sense,double AB, double AC, 
   double sy = (BD_m2 - (sx - qx) * (sx - qx) - CD_m2 + (sx - rx) * (sx - rx) + ry * ry) / (2 * ry);
   double factor = AD_m2 - sx * sx - sy * sy;
   double sz = 0;
+  int debug = 0;
   if (factor < 0) {
-    cout << "INTERNAL ERROR: this is not a legal tetrahedron\n";
-    cout << "AB AC AD BC BD CD\n";
-    cout << AB << " " << AC << " " << AD << " " << BC << " " << BD << " " << CD << "\n";
+    if (debug) {
+      cout << "INTERNAL ERROR: this is not a legal tetrahedron\n";
+      cout << "AB AC AD BC BD CD\n";
+      cout << AB << " " << AC << " " << AD << " " << BC << " " << BD << " " << CD << "\n";
+    }
     // I have no idea what to return here -- I'll return half the average distance.
     sz = (AB + AC + AD + BC + BD + CD) / (6*2);
     *valid = false;
@@ -340,7 +352,7 @@ column_vector find_point_from_transformed(Chirality sense,double AB, double AC, 
     D = sx,sy,(sense == CCW) ? sz : -sz;
     // We compute this only for debugging purposesn
     C = rx,ry,0.0;
-    int debug = 0;
+
     if (debug) {
       Chirality senseABC = tet_chirality(A,B,C,D);
       cout << "chirality (demanded, computed) " << sense << ", " << senseABC << "\n";
@@ -579,9 +591,17 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   if (debug) cout << "INPUT YYY\n";
   if (debug) cout << ab << " " << ac << " " << ad << " " << bc << " " << bd << " " << cd << "\n";
   column_vector D = find_point_from_transformed(sense,ab,ac,ad,bc,bd,cd,valid);
-  assert(!isnan(D(0)));
-  assert(!isnan(D(1)));
-  assert(!isnan(D(2)));
+  
+  if (isnan(D(0)) || isnan(D(1)) || isnan(D(2))) {
+    cout << "INPUT YYY\n";
+    cout << D(0) << "\n";
+    cout << D(1) << "\n";
+    cout << D(2) << "\n";        
+    cout << ab << " " << ac << " " << ad << " " << bc << " " << bd << " " << cd << "\n";
+  }
+  // assert(!isnan(D(0)));
+  // assert(!isnan(D(1)));
+  // assert(!isnan(D(2)));
 
   Chirality untransformed = tet_chirality(pa,pb,pc,tform_inv(D));
   Chirality transformed = tet_chirality(Ap,Bp,Cp,D);
@@ -595,6 +615,9 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
 
 
 
+// This routine is one of the main ways the coords change;
+// it therefore has the effect of invalidating existing Jacobians by virtue
+// of changing the computation.
 bool TetrahelixConfiguration::forward_find_coords() {
     FindCoords3d f;
 
@@ -860,19 +883,17 @@ column_vector Tetrahelix::compute_goal_differential_c(column_vector cur_coords[]
   set_distances(cur_coords);
   thc.forward_find_coords();
   
-  //  solve_forward_find_coords(this,cur_coords);
   column_vector g_orig = cur_coords[goal_node_number];
   double orig_length = distance(edge_number);
   distance(edge_number) += delta_fraction * distance(edge_number);
 
   thc.forward_find_coords();
   
-  //  solve_forward_find_coords(this,cur_coords);
   column_vector differential = (cur_coords[goal_node_number] - g_orig)/delta_fraction;
   distance(edge_number) = orig_length;
   
   thc.forward_find_coords();  
-  //  solve_forward_find_coords(this,cur_coords);  
+
   return differential;
 }
 
@@ -1373,6 +1394,23 @@ matrix<double> Tetrahelix::JacobianBase(column_vector coords[]) {
 // 4, you could stop at J4.
 // Note that this is dangerously mixing my numbering scheme with
 // the Lee-Anderson numbering scheme.
+
+void Tetrahelix::fill_Jacobian(column_vector coords[]) {
+  for(int i = 0; i < num_nodes; i++) {
+    Jacobian_memo[i] = Jacobian(coords,i);
+    Jacobian_memo_v[i] = true;
+  }
+}
+
+matrix<double> Tetrahelix::get_Jacobian(column_vector coords[],int node) {
+  if (!Jacobian_memo_v[node]) {
+    cout << "INTERNAL ERROR: Jacobians not set up properly!\n";
+    abort();
+  } else {
+    return Jacobian_memo[node];
+  }
+}
+
 matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
   // First I will attempt to construct Btet.
   if (node < 3) {
@@ -1382,11 +1420,11 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
   } else {
     // Now here we are supposed to "stack" (multiply the Jacobians).
     // Each of these will have the shape 3 x 9 (for a 5-tet).
-    matrix<double> J1 = Jacobian(coords,node-1);
-    matrix<double> J2 = Jacobian(coords,node-2);
-    matrix<double> J3 = Jacobian(coords,node-3);
-
-    matrix<double> Btet(3,3);
+    // Note that this should be memoized, which is actually very important.
+    matrix<double> J1 = get_Jacobian(coords,node-1);
+    matrix<double> J2 = get_Jacobian(coords,node-2);
+    matrix<double> J3 = get_Jacobian(coords,node-3);
+    //    cout << "Got all memos!";
   
     int n = node;
   
@@ -1394,6 +1432,8 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
     column_vector DB = normalize(coords[n] - coords[n-2]);
     column_vector DC = normalize(coords[n] - coords[n-1]);
 
+    matrix<double> Btet(3,3);
+    
     set_row_from_vector(&Btet,DA,0,0,3);
     set_row_from_vector(&Btet,DB,1,0,3);
     set_row_from_vector(&Btet,DC,2,0,3);
@@ -1411,7 +1451,7 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
     set_row_from_vector(&Atet,-DB,1,3,3);
     set_row_from_vector(&Atet,-DC,2,6,3);
   
-    matrix<double> Btet_inv = pinv(Btet);
+    matrix<double> Btet_inv = inv(Btet);
 
 
     if (debug) {
@@ -1469,12 +1509,11 @@ TetrahelixConfiguration::TetrahelixConfiguration(Tetrahelix* thlx,column_vector 
   this->coords = coords;
 }
 
-// bool TetrahelixConfiguration::forward_find_coords() {
-//   return solve_forward_find_coords(thlx,coords);
-// }
 
 // WARNING: For now we are only supporting the end-goal effector with our Jacobian,
 // but later this will have to be more sophisticated.
+// What we really need to do now is to store one Jacobian for each goal node.
+// These will have to be updated here.
 void TetrahelixConfiguration::declare_coord_changed(int n) {
   forward_find_coords();
   clock_t t;

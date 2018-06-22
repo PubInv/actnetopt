@@ -46,7 +46,19 @@ public:
   column_vector*  lcoords;
   column_vector fixed[3];
 
-  matrix<double> Jacobian_temp;  
+  matrix<double> Jacobian_temp;
+
+  // This is a memo to be used within one computation.
+  // It maps nodes to the Jacobian.
+  // It is allocated at beginning, but it is important to
+  // nullify it at the beginning of each computation.
+  // This should be moved to TetrahelixConfiguration as soon as possible.
+  matrix<double>* Jacobian_memo;
+  bool* Jacobian_memo_v;  
+  void initialize_Jacobian_memo();
+  void fill_Jacobian(column_vector coords[]);
+  
+  matrix<double> get_Jacobian(column_vector coords[],int node);
 
   void init_fixed_coords(column_vector fcoords[]);
   void init_fixed_coords_to_z_axis_alignment(column_vector coords[]);
@@ -77,6 +89,7 @@ public:
   // We actually need to be able to store a Jacobian for at least each goal node....
   // In fact the goals, and eventually the fixed_nodes, should be moved into the configuration,
   // but let me first get the coords handled properly.
+  // I think the goals should be moved to Configuration....
   std::vector<column_vector> goals;
 
 

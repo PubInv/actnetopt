@@ -170,8 +170,10 @@ column_vector Invert3d::derivative(const column_vector& ds) {
   //  solve_forward_find_coords(global_truss,coords);
   
   clock_t t;
-  t = clock();	  
-  matrix<double> Ju = global_truss->Jacobian(coords,global_truss->num_nodes-1);
+  t = clock();
+  global_truss->initialize_Jacobian_memo();
+  global_truss->fill_Jacobian(coords);  
+  matrix<double> Ju = global_truss->get_Jacobian(coords,global_truss->num_nodes-1);
   t = clock() - t;	
   time_in_jacobian += t;
   
