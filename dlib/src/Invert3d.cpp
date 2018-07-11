@@ -51,7 +51,7 @@ Invert3d::Invert3d() {
   }
 
   double Invert3d::objective(const column_vector& ds) {
-    int debug = 0;
+    int debug = 1;
     if (debug) {
       cout << "OBJECTIVE:  \n"; 
     }

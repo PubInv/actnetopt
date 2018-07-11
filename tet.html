@@ -94,201 +94,11 @@
 <script src="https://d3js.org/d3-scale.v1.min.js"></script>
   </head>    
      
-<div id="content-wrapper">
-    <div class="inner clearfix">
-
-        <section id="main-content">
     <section id="visualsection" style="{border: red;}">
     </section>
 
     <input type="button" id="fetch" value="Go!">
-
-    <table id="trialrecord">
-    <tr>
-    <th>trial </th>
-    <th>optimal </th>        
-    <th>rho </th>
-    <th>r</th>
-    <th>len</th>
-    <th>d</th>    
-    <th>one-hop</th>
-    <th>two-hop</th>
-    <th>pitch</th>
-    <th>inradius</th>
-    <th>minmax ratio (%)</th>
-    </tr>
-    </table>
-
-<p>
-    <label for="rail_angle_rho">Rail Angle Rho (degrees)</label>
-  <input type="text" id="rail_angle_rho" readonly style="border:0; color:#f6931f; font-weight:bold;">
-    <div id="rail_angle_slider"></div>
-</p>
-
-    <p>
-    <div id ="validpitch">
-    <label for="pitch_input_min">Min. Pitch (meters/rev)</label>
-    <input type="text" size="6" id="pitch_input_min" readonly style="border:0; color:#f6931f; font-weight:bold;">
-    <label for="pitch_input">Pitch Above Min. (meters/rev)</label>
-  <input type="text" size="6" id="pitch_input" readonly style="border:0; color:#f6931f; font-weight:bold;">
-    <label for="actual_pitch">Actual Pitch (meters/rev)</label>
-  <input type="text" size="6"  id="actual_pitch" readonly style="border:0; color:#f6931f; font-weight:bold;">
-    <label for="actual_pitch">Pitch (tets/rev)</label>
-  <input type="text" size="6"  id="tet_pitch" readonly style="border:0; color:#f6931f; font-weight:bold;">
-    <div id="pitch_input_slider"></div>
-    </div>
-    <div id="pitchundefined" display="hidden">
-    PITCH IS UNDEFINED WHEN RHO = 0
-    </div>
-</p>
-
-
-    <p>
-    <label for="helix_radius_val">Helix Radius (meters)</label>
-  <input type="text" id="helix_radius_val" readonly style="border:0; color:#f6931f; font-weight:bold;">
-    <div id="helix_radius"></div>
-</p>    
-
-
-<p>
-    <label for="tet_distance_val">Rail Edge (meters)</label>
-  <input type="text" id="tet_distance_val" readonly style="border:0; color:#f6931f; font-weight:bold;">
-    <div id="tet_distance"></div>
-</p>    
-
-<table style="width:100%">
-  <tr>
-    <td>
-      <fieldset id="chiralityfs">
-    <legend>Chirality: </legend>
-    <label for="chi-1">Counter-Clockwise</label>
-    <input type="radio" name="chi" id="chi-1" >
-    <label for="chi-2">Clockwise</label>
-    <input type="radio" name="chi" id="chi-2" checked="true">
-    </fieldset>
-    </td>
-    <td>
-<fieldset>
-  <legend>Optimality: </legend>
-  <label for="optimal-1">Optimal</label>
-  <input type="radio" name="optimal" id="optimal-1" checked="true">
-  <label for="optimal-2">Free</label>
-  <input type="radio" name="optimal" id="optimal-2">
-</fieldset>
-    </td>
-  </tr>
-</table>
  
-
-        <section id="textsection" style="{border: red;}">    
-      <h1 id="message_banner">
-    Untwisting the Tetrahelix </h1>
-<p>
-    A mathematical investigation of the Tetrahelix and <a href="https://en.wikipedia.org/wiki/Boerdijk%E2%80%93Coxeter_helix">Boerdijk-Coxeter helix</a>, which provides a new
-formulaic way of producing a continuum of untwisted tetrahelices.
-    </p>
-<p>
-    All of the code on this site is released under the GNU General Public License, and I hope you will reuse it.
-    </p>
-    <h2> Motivation </h2>
-<p>
-    Tetrahelixes are cool. R.W. Gray has a great
-    <a href="http://www.rwgrayprojects.com/rbfnotes/helix/helix01.html">site</a> about them.
-    Further motivation is described in an academic paper we are preparing that will
-be linked in draft form here.
-</p>
-<p>
-The math on this site creates three novel things:
-    <ol>
-    <li> The ability to untwist adn retwist the Boerdijk-Coxeter tetrahelix (BC helix) in an way that is smooth
-and optimal in terms the difference between the longest member and the shortest member.
-    </li>
-    <li> A new structure, the equitetrabeam, which is a fully untwisted BC helix.</li>
-    <li> Both the mathematics and an interactive GUI for designing tetrahelices to match a
-desired pitch.</li>    
-    </ol>
-    This is valuable because architects, engineers, and roboticists can now use the beautiful and
-regular structure of the BC helix. In fact, this application was driven by the Tetrobot project.
-    The BC helix happens to have an irrational pitch, which means that an architect of game
-designer who wanted to use this beautiful structure in a periodic and symmetric way could not do so.
-    However, using the software here they can use a slightly irregular but still in a sense optimal
-tetrahelix with a pitch of exactly 12 tetrahedral to a singel revolution, for example. Robotocists
-such as myself can dynmaicall make a tetrobot untwist, in order to lay flat on a plane, but still
-build the robot out of actuators of exactly the same size.
-    <h2> How to Use </h2>
-    <p>
-    The site uses the so-called THREE.js "orbit" control.  Click on the scene and drag and you will find your self
-rotating, always looking at approximately the center point. Moving the middle mouse wheel or the Mac scrolling
-pattern will zoom you in or out.
-</p>
-
-    <h2> Accessing the Math  </h2>
-
-<p>
-    This site is coded in the file <a href="https://pubinv.github.io/tetrahelix/index.md">index.md</a>,
-which has the THREE.js rendering code and
-code to to use the fundamental math.  The math from our paper, however, is in
-    <a href="https://pubinv.github.io/tetrahelix/js/tetrahelix_math.js">tetrahelix_math.js</a>.
-    You are welcome to use tetrahelix_math.js in for your own purposes, such as in a computer game or to
-design your own physical structures.
-    </p>
-<p>
-    <h2> Running the Test </h2>
-<p>
-    Although it is currently a work in progress, my goal is to make tetrahelix_math.js testable via
-Mocha. You will need to install npm, node, and <a href="https://mochajs.org/">mocha</a> for this to work.
-    </p>
-
-    <p>
-    I am not a node expert, but basically I did:
-
-<blockquote><pre><code>
-npm install -g browserify
-npm install -g mocha
-</code></pre></blockquote>
-
-    In order to use the tetrahelix_math module in the browser.
-    I build the browser ready file with:
-<blockquote><pre><code>
-browserify tm_shim.js  -o bundle.js    
-</code></pre></blockquote>
-
-    In order to run the tests, in the main repo, type:
-
-<blockquote><pre><code>
-mocha
-</code></pre></blockquote>
-
-
-    </p>
-
-    <h2> Thanks and Open-Source software used </h2>
-    
-    <p> This page is using a lot of open source software, in particular Three.js. However,
-special thanks to Ricky Reusser for a simple little
-    <a href="https://github.com/scijs/newton-raphson-method">Newton-Raphson solver</a>.
-</p>     
-
-
-<div id="table-wrapper">
-  <div id="table-scroll">
-    <table id="trialrecords">
-    <tr>
-    <th>trial </th>
-    <th>optimal </th>
-    <th>rho </th>
-    <th>r</th>
-    <th>len</th>
-    <th>d</th>    
-    <th>one-hop</th>
-    <th>two-hop</th>
-    <th>pitch</th>
-    <th>inradius</th>    
-    <th>minmax ratio (%)</th>            
-    </tr>
-    </table>
-  </div>
-</div>    
 
 	<script type="x-shader/x-vertex" id="vertexShader">
 
@@ -324,7 +134,7 @@ special thanks to Ricky Reusser for a simple little
 
 		</script>	
     <script>
-   var tm = UGLY_GLOBAL_SINCE_I_CANT_GET_MY_MODULE_INTO_THE_BROWSER;
+    var tm = UGLY_GLOBAL_SINCE_I_CANT_GET_MY_MODULE_INTO_THE_BROWSER;
 
 
 var OPERATION = "normal"; // "normal" or "helices"
@@ -688,7 +498,7 @@ var smats = [ new THREE.Color(0x8B0000),
 // 	mesh.castShadow = false;
 // 	mesh.receiveShadow = false;
 // 	am.scene.add(mesh);
-	
+
 // 	var body = {};
 // 	body.rail =  rail;
 // 	body.number = i / 3;
@@ -696,7 +506,7 @@ var smats = [ new THREE.Color(0x8B0000),
 // 	body.mesh = mesh;
 // 	helix.helix_joints.push(body);
 // 	am.push_body_mesh_pair(body,mesh);
-	
+
 // 	for(var k = 0; k < Math.min(3,i) && k < i; k++) {
 // 	    var h = i-(k+1);
 
@@ -711,15 +521,15 @@ var smats = [ new THREE.Color(0x8B0000),
 // 	    var b_a = helix.helix_joints[h];
 // 	    var o_a = b_a.mesh.position;
 // 	    var o_z = b_z.mesh.position;
-	    
+
 // 	    var v_z = new THREE.Vector3(o_a.x,o_a.y,o_a.z);
 // 	    var v_a = new THREE.Vector3(o_z.x,o_z.y,o_z.z);
 // 	    var dist = v_a.distanceTo(v_z);
-	    
+
 // 	    var v_avg = new THREE.Vector3(v_z.x,v_z.y,v_z.z);
 // 	    v_avg.add(v_a);
 // 	    v_avg.multiplyScalar(0.5);
-	    
+
 // 	    pos.set( v_avg.x, v_avg.y, v_avg.z);
 //             quat.set( 0, 0, 0, 1 );
 
@@ -795,10 +605,10 @@ var AM = function() {
     this.quat = new THREE.Quaternion();
 
 
-//    this.BT_CONSTRAINT_STOP_CFM = 3;
-//    this.BT_CONSTRAINT_STOP_ERP = 1
-//    this.myCFMvalue = 0.0;
-//    this.myERPvalue = 0.8;
+    //    this.BT_CONSTRAINT_STOP_CFM = 3;
+    //    this.BT_CONSTRAINT_STOP_ERP = 1
+    //    this.myCFMvalue = 0.0;
+    //    this.myERPvalue = 0.8;
 
     this.jointBody = null;
 
@@ -815,7 +625,8 @@ var AM = function() {
     this.armMovement = 0;
 
     //    this.window_height_factor = 1/4.0;
-    this.window_height_factor = 0.5;
+    //    this.window_height_factor = 0.5;
+    this.window_height_factor = 0.8;
     // Sadly, this seems to do nothing!
     this.CAMERA_RADIUS_FACTOR = 1;
 
@@ -865,10 +676,10 @@ var AM = function() {
 
     this.GROUND_PLANE_MESH;
     this.GROUND_BODY;
-//    this.meshes.push(this.GROUND_PLANE_MESH);
-//    this.bodies.push(this.GROUND_BODY);
+    //    this.meshes.push(this.GROUND_PLANE_MESH);
+    //    this.bodies.push(this.GROUND_BODY);
 
-        // This is whatever body we are operating on with the locator.
+    // This is whatever body we are operating on with the locator.
     this.selectedBody;
 
     this.lockedGroups = { handlocked: [],
@@ -896,8 +707,8 @@ AM.prototype.remove_body_mesh_pair = function(body,mesh) {
 AM.prototype.clear_non_floor_body_mesh_pairs = function() {
     this.meshes = [];
     this.bodies = [];
-//    this.meshes.push(am.GROUND_PLANE_MESH);
-//    this.bodies.push(am.GROUND_BODY);
+    //    this.meshes.push(am.GROUND_PLANE_MESH);
+    //    this.bodies.push(am.GROUND_BODY);
     console.log("pushing" + this.meshes);
 }
 
@@ -954,7 +765,7 @@ function initGraphics() {
         am.camera = new THREE.PerspectiveCamera( 60, window.innerWidth / (window.innerHeight * am.window_height_factor), PERSPECTIVE_NEAR, 2000 );
     }
     
- //   am.camera.aspect = window.innerWidth / (window.innerHeight * am.window_height_factor);
+    //   am.camera.aspect = window.innerWidth / (window.innerHeight * am.window_height_factor);
 
     var origin = new THREE.Vector3(0,0,0);
     am.camera.lookAt(origin);
@@ -1010,13 +821,13 @@ function initGraphics() {
     ground.name = "GROUND";
     ground.rotation.x = -Math.PI/2;
     ground.position.y = 0;
-  //  am.scene.add( ground );
+    am.scene.add( ground );
 
     ground.receiveShadow = true;
 
     
     // HACK:  These diemensions are probably not right here!
-//    gridInit(am.grid_scene,am.playgroundDimensions);
+    gridInit(am.grid_scene,am.playgroundDimensions);
     
     am.container.innerHTML = "";
 
@@ -1039,7 +850,7 @@ AM.prototype.remove_body_mesh_pair = function(body,mesh) {
 	    this.bodies.splice(i, 1);
 	}
     }
-    delete mesh["ammo_obj"];
+    //    delete mesh["ammo_obj"];
     for(var i = this.rigidBodies.length - 1; i >= 0; i--) {
 	if(this.rigidBodies[i].name === body.name) {
 	    this.rigidBodies.splice(i, 1);
@@ -1174,8 +985,8 @@ function add_equitetrabeam_helix(am,chi,lambda,rho,radius,pvec,len) {
     load_NTetHelix(am,am.helices.slice(-1)[0],
 		   am.NUMBER_OF_TETRAHEDRA,
 		   pvec,hp);
-//    build_central();    
-        return hp;
+    //    build_central();    
+    return hp;
 }
 
 initiation_stuff();
@@ -1195,22 +1006,22 @@ function compute_helix_minimax(helix) {
 	var b = member.b.mesh.position;
 	var d = a.distanceTo(b);
 	if (i < 100) {
-//	    console.log("member:",i);
-//	    console.log("a:",member.a.mesh.position);
-//	    console.log("b:",member.b.mesh.position);
+	    //	    console.log("member:",i);
+	    //	    console.log("a:",member.a.mesh.position);
+	    //	    console.log("b:",member.b.mesh.position);
 	    var q0 = 180*Math.atan2(member.a.mesh.position.x,
 	    			    member.a.mesh.position.y)/Math.PI;
 	    var q1 = 180*Math.atan2(member.b.mesh.position.x,
 	    			    member.b.mesh.position.y)/Math.PI;
 	    
-//	    console.log("distance:",d,q1-q0);
+	    //	    console.log("distance:",d,q1-q0);
 	}
 	
 	if (min > d) min = d;
 	if (max < d) max = d;
     }
-//    console.log("min, max", min, max);
-//    console.log("score: ", (100*max/min -100) + "%");
+    //    console.log("min, max", min, max);
+    //    console.log("score: ", (100*max/min -100) + "%");
 
     return [min,max,(100*max/min -100)];
 }
@@ -1258,8 +1069,8 @@ function draw_and_register() {
 
 function draw_new(pvec) {
     return add_equitetrabeam_helix(am,CHIRALITY_CCW,null,
-			    RAIL_ANGLE_RHO_d*Math.PI/180,
-			    HELIX_RADIUS,pvec,TET_DISTANCE);
+				   RAIL_ANGLE_RHO_d*Math.PI/180,
+				   HELIX_RADIUS,pvec,TET_DISTANCE);
 }
 
 function draw_many() {
@@ -1271,7 +1082,7 @@ function draw_many() {
 }
 
 function build_central() {
-//    var pvec0 = new THREE.Vector3(0,0,0);
+    //    var pvec0 = new THREE.Vector3(0,0,0);
     var pvec0 = new THREE.Vector3(0,HELIX_RADIUS*3,-3);    
 
     // I can't figure out if HELIX_RADIUS is wrong, if
@@ -1329,7 +1140,7 @@ function draw_helix(pvec,rail,hparams,factor,color,fudge,lw) {
     // } );
     
     
-  //  am.scene.add(path);
+    //  am.scene.add(path);
     var currentPosition = new THREE.Vector3(0, 0, 0); 
     var lastPosition = null;
 
@@ -1367,8 +1178,8 @@ function draw_helix(pvec,rail,hparams,factor,color,fudge,lw) {
 	color: new THREE.Color(color),
 	lineWidth: lw
     }
-    );
-//    material.color = new THREE.Color("red");
+				       );
+    //    material.color = new THREE.Color("red");
     
     var mesh = new THREE.Mesh( line.geometry, material ); 
     am.scene.add( mesh );
@@ -1377,7 +1188,7 @@ function draw_helix(pvec,rail,hparams,factor,color,fudge,lw) {
 
 
 if (OPERATION == "normal") {
-//    draw_and_register();
+    //    draw_and_register();
     // draw_many();
 
 
@@ -1390,7 +1201,7 @@ if (OPERATION == "normal") {
     am.NUMBER_OF_TETRAHEDRA  = 7;
     am.INITIAL_EDGE_WIDTH /= 0.5;
     am.JOINT_RADIUS /= 1;
-//    this.jointGeo = new THREE.SphereGeometry( this.JOINT_RADIUS,32,32);
+    //    this.jointGeo = new THREE.SphereGeometry( this.JOINT_RADIUS,32,32);
     draw_helices();
 }
 
@@ -1410,8 +1221,8 @@ function draw_custom_tetrahelix(results,pvec,helix
     var n = results.length;
     for(var i = 0; i < n; i++) {
 	var rail = i % 3;
-//	var num = Math.floor(i/3);
-//	var q = tm.H_general(chi,num,rail,myRho,d,radius);
+	//	var num = Math.floor(i/3);
+	//	var q = tm.H_general(chi,num,rail,myRho,d,radius);
 	var v = new THREE.Vector3(results[i].x, results[i].y, results[i].z);
 	v = v.add(pvec);
 
@@ -1425,8 +1236,8 @@ function draw_custom_tetrahelix(results,pvec,helix
 	body.rail =  rail;
 	body.number = i / 3;
 	body.name = alphabetic_name(i);
-	console.log("name ="+body.name);
-	console.log("mesh ="+mesh.structureKind);	
+//	console.log("name ="+body.name);
+//	console.log("mesh ="+mesh.structureKind);	
 	body.mesh = mesh;
 	mesh.name = body.name;
 
@@ -1473,14 +1284,14 @@ function draw_custom_tetrahelix(results,pvec,helix
 		    tcolor = new THREE.Color(0x008800);
 		    cmat  = memo_color_mat(tcolor);	
 		} else {
-		if (diff == 2) {
-		    tcolor = new THREE.Color(0x9400D3);
-		    cmat  = memo_color_mat(tcolor);
-		}
-		if (diff== 1) {
-		    tcolor = new THREE.Color(0x008000);
-		    cmat  = memo_color_mat(tcolor);	
-		}
+		    if (diff == 2) {
+			tcolor = new THREE.Color(0x9400D3);
+			cmat  = memo_color_mat(tcolor);
+		    }
+		    if (diff== 1) {
+			tcolor = new THREE.Color(0x008000);
+			cmat  = memo_color_mat(tcolor);	
+		    }
 		}
 	    } else {
 		var cm = smats[b_a.rail]
@@ -1515,43 +1326,6 @@ function draw_custom_tetrahelix(results,pvec,helix
     }
 }
 
-var gpos = { x: 0, y: 0, z: 0};
-function fetch_coords() {
-    $.ajax({url: "http://127.0.0.1/goal",
-	    data: { 
-		"X": gpos.x, 
-		"Y": gpos.y, 
-		"Z": gpos.z,
-	    },
-	    success: function(result) {
-	       //	       alert(result);
-	       am.clear_non_floor_body_mesh_pairs();
-	am.clear_non_floor_body_mesh_pairs();
-
-		for( var i = am.scene.children.length - 1; i >= 0; i--) {
-		    var obj = am.scene.children[i];
-		    if (obj.type == "Mesh" && obj.name != "GROUND") {
-			am.scene.remove(obj);
-		    }
-		}
-		am.helices = [];
-		am.helix_params = [];
-		
-	       am.helices.push(
-		   {
-		       helix_joints: [],
-		       helix_members: []
-		   });
-	       
-	       // now basically we want to build the helix from these results...
-	       //	       var pvec = new THREE.Vector3(0,HELIX_RADIUS*2.1,-1.0);
-	       var pvec = new THREE.Vector3(0,0.0,0.0);	       
-	       var nodes = JSON.parse(result);
-		console.log(nodes);
-	       draw_custom_tetrahelix(nodes,pvec,am.helices[0]);
-	   }
-	   });
-}
 
 
 
@@ -1573,7 +1347,7 @@ function onMouseMove(e){
 					 0.5 );                                            //z
 	mouse3D.unproject( am.camera );
 
-        var pos = projectOntoPlane(e,am,e.clientX,e.clientY,am.gplane,am.camera);
+        var pos = projectOntoPlane(am,e.clientX,e.clientY,am.gplane,am.camera);
 	
         if(pos){
             setClickMarker(am,pos.x,pos.y,pos.z,am.scene);
@@ -1581,6 +1355,58 @@ function onMouseMove(e){
         }
     }
 }
+
+function addMouseConstraint(gui,x,y,z,body) {
+    // The cannon body constrained by the mouse joint
+    var constrainedBody = body;
+    
+    //    gui.physicsWorld.removeRigidBody(gui.jointBody);
+
+    // var startTransform = new Ammo.btTransform();
+    // startTransform.setIdentity();
+    // startTransform.setOrigin(new Ammo.btVector3(x, y, z));
+    // gui.jointBody.setCenterOfMassTransform(startTransform);
+    // //	gui.jointBody.clearForces();
+    // gui.jointBody.setLinearVelocity(new Ammo.btVector3(0,0,0));
+    // gui.jointBody.setAngularVelocity(new Ammo.btVector3(0,0,0));
+    // gui.physicsWorld.addRigidBody(gui.jointBody);
+
+    // updateMouseConstraints(gui,body);
+
+    gui.selectedBody = body;	
+    //    if (gui.FORCE_REGIME == "ALLOW") {
+    //    var markerBody = gui.jointBody;
+
+    // var constrainedBody = body;
+    // var startTransform = constrainedBody.getWorldTransform();
+
+
+    // // MAJOR BUG: This is not taking the rotation of the constainedObject into account
+    // // We need to use the Transform to transform the point into its position in the
+    // // local space, I think.
+
+    // var pivotInA = new Ammo.btVector3( 0, 0, 0 );;
+    // // x,y,z are in global space.
+    
+    // var globalVector = new Ammo.btVector3(x,y,z);
+    // var pivotInB = applyBulletTransformInverse(startTransform,globalVector);
+
+    // var con = new Ammo.btPoint2PointConstraint(markerBody,
+    // 					       constrainedBody,
+    // 					       pivotInA,
+    // 					       pivotInB);
+    // markerBody.setGravity(am.NO_GRAVITY);
+    // constrainedBody.setGravity(am.NO_GRAVITY);
+    
+    //    gui.mouseConstraint = con;
+    gui.selectedBody = body;
+    
+    //    gui.physicsWorld.addConstraint(con, true);
+    //    } else if (gui.FORCE_REGIME == "DISABLE") {
+    //    }
+
+}
+
 // BUG: It is easy to get to constrainedBodies someone both constrained,
 // But that is not the intention of the interaction tool, and is very annoying.
 function onMouseDown(e){
@@ -1610,7 +1436,7 @@ function onMouseDown(e){
        ){
         var idx = am.meshes.indexOf(entity.object);
 
-	alert("found" + idx);
+	//	alert("found" + idx);
 
 	if (e.ctrlKey) {
 	    am.latestLookAt.x = pos.x;
@@ -1622,7 +1448,7 @@ function onMouseDown(e){
 	    // If the shiftKey is down, we are going to toggle whether or not this one is fixed...
 	    // and we will visually represent that by turning the joint red, I guess.
 	    if(idx !== -1) {
-		var obj = am.meshes[idx].ammo_obj;
+		var obj = am.meshes[idx];
 		am.manipulatedObject = obj;
 		am.manipulatedObject.mesh = am.meshes[idx];
 		
@@ -1631,8 +1457,8 @@ function onMouseDown(e){
 		    am.lockedGroups.handlocked.push(obj);
 		    // ATTACH ORIGINAL COLOR TO THE OBJECT, NOT THE MESH --- I"M LOSING IT HERE.
 		    am.manipulatedObject.original_color = am.meshes[idx].material.color.getHex();
-		    var zero = new Ammo.btVector3(0, 0, 0 );
-		    am.manipulatedObject.setMassProps(0.0,zero);
+		    //		    var zero = new Ammo.btVector3(0, 0, 0 );
+		    //		    am.manipulatedObject.setMassProps(0.0,zero);
 		    addMouseConstraint(am,pos.x,pos.y,pos.z,obj);
 		    // Now we want to change color to show locked...
 		    // TODO: This is a global...
@@ -1655,40 +1481,61 @@ function onMouseDown(e){
             setScreenPerpCenter(pos,am);
 
             if(idx !== -1){
-		var obj = am.meshes[idx].ammo_obj;
-		am.manipulatedObject = obj;
-		am.manipulatedObject.mesh = am.meshes[idx];
+		var obj = am.meshes[idx];
+		//		am.manipulatedObject = obj;
+		am.manipulatedObject = am.meshes[idx];
 		// This is roughly the same as being handlocked
 		if (original_color != 0) {
 		    am.manipulatedObject.original_color = original_color;
 		}
-		// We may have to restore the mass...would be better if we knew...
-		var mass = ((obj.structureKind == "joint") ? am.JOINT_MASS :
-			    ((obj.structureKind == "member") ? am.MEMBER_MASS : am.OBSTACLE_MASS));
-		var zero = new Ammo.btVector3(0, 0, 0 );
-		am.manipulatedObject.setMassProps(mass,zero);
-		obj.setGravity(am.NO_GRAVITY);			
 		addMouseConstraint(am,pos.x,pos.y,pos.z,obj);
-		// Now we want to set all others to be empty mass until mouseUp!
-		if (am.FORCE_REGIME != "ALLOW") {
-		    for(var i = 0; i < am.robot.robot_joints.length; i++) {
-			var joint = am.robot.robot_joints[i];
-			if (joint != obj) {
-			    if (am.lockedGroups.handlocked.indexOf(joint) >= -1) {
-				var zero = new Ammo.btVector3(0, 0, 0 );
-				joint.setMassProps(0.0,zero);
-				console.log("joint:");
-				console.log(joint);
-				am.lockedGroups.temporary.push(joint);
-			    }
-			}
-		    }
-		}
+		// // Now we want to set all others to be empty mass until mouseUp!
+		// if (am.FORCE_REGIME != "ALLOW") {
+		//     for(var i = 0; i < am.robot.robot_joints.length; i++) {
+		// 	var joint = am.robot.robot_joints[i];
+		// 	if (joint != obj) {
+		// 	    if (am.lockedGroups.handlocked.indexOf(joint) >= -1) {
+		// 		var zero = new Ammo.btVector3(0, 0, 0 );
+		// 		console.log("joint:");
+		// 		console.log(joint);
+		// 		am.lockedGroups.temporary.push(joint);
+		// 	    }
+		// 	}
+		//     }
+		// }
 	    }
 	}
 
     }
 }
+
+
+// TODO: This is specific to CANNON
+function removeJointConstraint(gui) {
+    // Remove constriant from world
+    if (!gui.selectedBody) {
+	return;
+    }
+//    gui.physicsWorld.removeConstraint(gui.mouseConstraint);
+    gui.mouseConstraint = false;
+    gui.selectedBody = null;
+}
+
+function establish_controls(gui) {
+    gui.controls = new THREE.OrbitControls( gui.camera, gui.container );
+    gui.controls.enableDamping = true;
+    gui.controls.dampingFactor = 0.25;
+    gui.controls.enableZoom = true;
+    gui.controls.enabled = true;
+
+    // We may be able to make this the last object clicked to change the controls.
+    gui.controls.target.set(0,0,0);
+    gui.controls.target.set(gui.latestLookAt.x,gui.latestLookAt.y,gui.latestLookAt.z);
+}
+
+
+var gpos = { x: 0, y: 0, z: 0};
+
 
 function onMouseUp(e) {
     // DEBUG Hack
@@ -1697,13 +1544,16 @@ function onMouseUp(e) {
 				     -( event.clientY / (am.renderer.getSize().height) ) * 2 + 1,  //y
 				     0.5 );                                            //z
     
-  //  mouse3D.unproject( am.camera );
-     mouse3D.unproject( am.camera );
+    //  mouse3D.unproject( am.camera );
+    mouse3D.unproject( am.camera );
     mouse3D.sub(am.camera.position);
     mouse3D.project( am.camera );
 
 
     var pos = projectOntoPlane(am,e.clientX,e.clientY,am.gplane,am.camera);
+
+    console.log("UP POSITION");
+    console.log(pos);
     
     if(pos){
         setClickMarker(am,pos.x,pos.y,pos.z,am.scene);
@@ -1712,35 +1562,33 @@ function onMouseUp(e) {
     // remove the marker
     removeClickMarker(am);
 
-    var entity = findNearestIntersectingObject(am,e.clientX,e.clientY,am.camera,am.meshes);
-    var pos = entity.point;
-    // This is fragile, we need to be able to change this geometry....
+ //    var entity = findNearestIntersectingObject(am,e.clientX,e.clientY,am.camera,am.meshes);
+//     var pos = entity.point;
+//     // This is fragile, we need to be able to change this geometry....
     
-    if (!(pos &&
-	(
-	    (entity.object.structureKind == "obstacle")
-		|| 
-		(entity.object.structureKind == "joint")
-		|| 
-		(entity.object.structureKind == "member")
-	)
-	 )) {
-	return;
-    }
+//     if (!(pos &&
+// 	  (
+// 	      (entity.object.structureKind == "obstacle")
+// 		  || 
+// 		  (entity.object.structureKind == "joint")
+// 		  || 
+// 		  (entity.object.structureKind == "member")
+// 	  )
+// 	 )) {
+// 	return;
+//     }
 
-    if (!e.shiftKey) {
-	if (am.manipulatedObject) {
-	    am.manipulatedObject.setGravity(am.FULL_GRAVITY);
-	    var index = am.lockedGroups.handlocked.indexOf(am.manipulatedObject);
-//	    if (index > -1) {
-		am.manipulatedObject.mesh.material.color.setHex(am.manipulatedObject.original_color);
-	    // } else {
-	    // 	am.manipulatedObject.mesh.material.color.setHex(am.manipulatedObject.original_color);
-	    // }
-	}
-    }
-
-  
+//     if (!e.shiftKey) {
+// 	if (am.manipulatedObject) {
+// //	    am.manipulatedObject.setGravity(am.FULL_GRAVITY);
+// 	    var index = am.lockedGroups.handlocked.indexOf(am.manipulatedObject);
+// 	    //	    if (index > -1) {
+// 	    am.manipulatedObject.material.color.setHex(am.manipulatedObject.original_color);
+// 	    // } else {
+// 	    // 	am.manipulatedObject.mesh.material.color.setHex(am.manipulatedObject.original_color);
+// 	    // }
+// 	}
+//     }
 
     // Send the remove mouse joint to server
     removeJointConstraint(am);
@@ -1749,13 +1597,11 @@ function onMouseUp(e) {
     // Actually, this is really wrong, we need to keep track of the nodes that are truly locked
     // in place as compared to those that we have locked for convenience.
 
-
-
     for(var i = 0; i < am.lockedGroups.temporary.length; i++) {
     	var joint = am.lockedGroups.temporary[i];
-    	var zero = new Ammo.btVector3(0, 0, 0 );
-	if (am.lockedGroups.handlocked.indexOf(joint) < 0)
-    	    joint.setMassProps(am.JOINT_MASS,zero);
+	//    	var zero = new Ammo.btVector3(0, 0, 0 );
+	//	if (am.lockedGroups.handlocked.indexOf(joint) < 0)
+	//    	    joint.setMassProps(am.JOINT_MASS,zero);
     }
     am.lockedGroups.temporary = [];
 
@@ -1764,8 +1610,8 @@ function onMouseUp(e) {
 	if (index > -1) {
 	    am.lockedGroups.handlocked.splice(index, 1);
 	    if (am.manipulatedObject.structureKind == "joint") {
-		var zero = new Ammo.btVector3(0, 0, 0 );
-		am.manipulatedObject.setMassProps(am.JOINT_MASS,zero);	
+		//		var zero = new Ammo.btVector3(0, 0, 0 );
+		//		am.manipulatedObject.setMassProps(am.JOINT_MASS,zero);	
 	    }
 	}
 
@@ -1783,23 +1629,33 @@ function onMouseUp(e) {
     // 	}
     // }
 
-    	if (am.gplane.visible == true) {
-	    am.gplane.visible = false;
-	    // We need to re-establish the controls because I don't have
-	    // any good way of exiting the active state...
-	    am.controls.dispose();
-	    establish_controls(am);
-	}
+    if (am.gplane.visible == true) {
+	am.gplane.visible = false;
+	// We need to re-establish the controls because I don't have
+	// any good way of exiting the active state...
+	am.controls.dispose();
+	establish_controls(am);
+    }
     
     if (am.movedButNotSent) {
-	send_to_robot_url();
+	console.log("final");
+	console.log(pos);
+	gpos = pos;
+	fetch_coords();
+//	send_to_robot_url();
 	am.movedButNotSent = false;
     }
-    am.manipulateObject = null;
+    // Now we want to change color to show locked...
+    // TODO: This is a global...
+
+    if (am.manipulatedObject != null) {
+	am.manipulatedObject.material.color.setHex( am.manipulatedObject.original_color );
+	am.manipulatedObject = null;
+    }
     console.log("handlocked",am.lockedGroups.handlocked.length);
 }
 
-function projectOntoPlane(event,gui,screenX,screenY,thePlane,camera) {
+function projectOntoPlane(gui,screenX,screenY,thePlane,camera) {
     var x = screenX;
     var y = screenY;
     var now = new Date().getTime();
@@ -1821,7 +1677,7 @@ function findNearestIntersectingObject(gui,clientX,clientY,camera,objects) {
     mouse.x = (event.clientX / gui.renderer.getSize().width) * 2 - 1;
     mouse.y = -(event.clientY / (gui.renderer.getSize().height)) * 2 + 1;
 
-    console.log(mouse);
+//    console.log(mouse);
 
     var raycaster = new THREE.Raycaster();
     try {
@@ -1830,7 +1686,7 @@ function findNearestIntersectingObject(gui,clientX,clientY,camera,objects) {
 	var closest = false;
 	if (intersects.length > 0) {
             closest = intersects[0];
-	    console.log("found!");
+//	    console.log("found!");
 	}
 	return closest;
     } catch (err) {
@@ -1863,6 +1719,43 @@ function removeClickMarker(gui){
 	gui.clickMarker.visible = false;
     }
 }
+// This function creates a virtual movement plane for the mouseJoint to move in
+function setScreenPerpCenter(point, gui) {
+    // If it does not exist, create a new one
+    if(!gui.gplane) {
+	// We need to be precese about what these coordinates are!
+        var planeGeo = new THREE.PlaneGeometry(4000,4000);
+	// Something has change in three.js, apparently ray casting only
+	// works with visible objects.  Since we are creating a plan to
+	// move the joint in, I am going to try to create an object here that makes since.
+	var plane_material = new THREE.MeshLambertMaterial( { color: 0x110000 } );
+	plane_material.transparent = true;
+	plane_material.opacity = 0.0;
+	
+	gui.gplane = new THREE.Mesh(planeGeo,plane_material);
+	
+        gui.scene.add(gui.gplane);
+    }
+    gui.gplane.visible = true;
+    gui.gplane.name = "movementplane";
+    gui.controls.enabled = false;
+
+    // Center at mouse position
+    gui.gplane.position.copy(point);
+
+    // Make it face toward the camera
+    gui.gplane.quaternion.copy(gui.camera.quaternion);
+}
+
+function addOriginSphere() {
+    var mesh = createSphere(0.2,pos, new THREE.Color(0xff0000));
+
+    var body = {};
+    body.name = "spud";
+    mesh.name = "spud";
+    am.push_body_mesh_pair(body,mesh);
+    am.scene.add(mesh);
+}
 
 
 function createGround(am) {
@@ -1881,35 +1774,142 @@ function createGround(am) {
     floorMaterial.opacity = 0.7;
 
     var ground = createParalellepiped( am.playgroundDimensions.w, am.GROUND_WIDTH, 
-					  am.playgroundDimensions.d,
+				       am.playgroundDimensions.d,
 				       0, am.pos, am.quat, floorMaterial );
 
     am.GROUND_PLANE_MESH = ground;
     
-//    ground["ammo_obj"].setFriction( 0.99 );
+    //    ground["ammo_obj"].setFriction( 0.99 );
     
     ground.castShadow = true;
     ground.receiveShadow = true;
 }
 
 
-$( "#fetch").click( fetch_coords );
+// This functions moves the transparent joint body to a new postion in space
+// We need to remove globals from this.
+function moveJointToPoint(gui,x,y,z) {
+    var is_obstacle = (gui.selectedBody.structureKind == "obstacle");
+    var act_natural = ((gui.FORCE_REGIME == "ALLOW") ||
+		       is_obstacle);
+    
+    if (act_natural) {
+	
+	//     } else {
+	// 	gui.physicsWorld.removeRigidBody(gui.jointBody);
+	//     }
+	//     var startTransform = new Ammo.btTransform();
+	//     startTransform.setIdentity();
 
-initHandlers();
+	//     var n_o = new Ammo.btVector3(x,y,z);
+	//     startTransform.setOrigin(n_o);
 
-	var pos = new THREE.Vector3();
-	pos.set( 0.0, 0.0, 0.0);
+	//     // This is wrong...we ned to move x,y,z plus the inverse ...
+	//     // or let the constraint handle!
+	//     gui.jointBody.setWorldTransform(startTransform);
 
-var mesh = createSphere(4.0,pos, new THREE.Color(0xff0000));
+	//     gui.jointBody.setLinearVelocity(new Ammo.btVector3(0,0,0));
+	//     gui.jointBody.setAngularVelocity(new Ammo.btVector3(0,0,0));
 
-var body = {};
-body.name = "spud";
-mesh.name = "spud";
-am.push_body_mesh_pair(body,mesh);
-am.scene.add(mesh);
-animate();
+	//     var cbody = gui.selectedBody;
+	//     cbody.setLinearVelocity(new Ammo.btVector3(0,0,0));
+	//     cbody.setAngularVelocity(new Ammo.btVector3(0,0,0));
 
-// fetch_coords();
+	// //    gui.jointBody.setGravity(am.NO_GRAVITY);
+	// //    gui.selectedBody.setGravity(am.NO_GRAVITY);
+	
+	if (act_natural) {
+	    
+	} else  {
+	    //	gui.physicsWorld.addRigidBody(gui.jointBody);
+
+
+	    // Now we want to tell the robot to assume (instantly)?
+	    // The pose indicated by placing the selectedBody at x,y,z
+	    // Todo this we basically compute the current pose using
+	    // the marker body position in place of the current.
+
+	    // Now take the am.most_recent pose and compute a modifcation
+	    // of it based on the physical distance of (x,y,z) to the
+	    // attached nodes.  Construct a new model and move to that.
+
+	    //	var act_settings = model_to_actuator_space(pose,am.robot);
+	    
+	    // TODO: change most_recent_constraints -> most recent model
+	    //	console.log("constraints:");
+	    //	console.log(gui.most_recent_constraints);
+	    var act_settings =
+		actuator_space_model_func(gui.robot,
+					  gui.selectedBody,
+					  gui.jointBody,
+					  gui.most_recent_constraints);
+	    //	console.log("settings:");
+	    //	console.log(act_settings);
+	    // now move to the new pose.
+	    set_interp_constraints(act_settings,act_settings,1.0);
+	}
+    }
+
+}
+
+
+
+function fetch_coords() {
+    $.ajax({url: "http://127.0.0.1/goal",
+	    data: { 
+		"X": gpos.x, 
+		"Y": gpos.y, 
+		"Z": gpos.z,
+	    },
+	    success: function(result) {
+		//	       alert(result);
+		am.clear_non_floor_body_mesh_pairs();
+		//		am.clear_non_floor_body_mesh_pairs();
+
+		for( var i = am.scene.children.length - 1; i >= 0; i--) {
+		    var obj = am.scene.children[i];
+		    if (obj.type == "Mesh" && obj.name != "GROUND") {
+			am.scene.remove(obj);
+		    }
+		}
+		
+//		addOriginSphere();		
+		
+		am.helices = [];
+		am.helix_params = [];
+		
+		am.helices.push(
+		    {
+			helix_joints: [],
+			helix_members: []
+		    });
+		
+		// now basically we want to build the helix from these results...
+		//	       var pvec = new THREE.Vector3(0,HELIX_RADIUS*2.1,-1.0);
+		var pvec = new THREE.Vector3(0,0.0,0.0);	       
+		var nodes = JSON.parse(result);
+		console.log(nodes);
+		draw_custom_tetrahelix(nodes,pvec,am.helices[0]);
+	    }
+	   });
+}
+
+
+    $( "#fetch").click( fetch_coords );
+
+    initHandlers();
+
+    var pos = new THREE.Vector3();
+    pos.set( 0.0, 0.0, 0.0);
+
+
+    animate();
+
+    // addOriginSphere();
+    fetch_coords();
+
+
+
 
     </script>
 

@@ -50,7 +50,7 @@ Tetrahelix *Invert3d::global_truss = 0;
 // Obstacle obstacle;
 
 void solve_inverse_problem(Tetrahelix *an) {
-  int debug = 0;
+  int debug = 1;
   if (debug) {
     cout << "goal node [solve_inverse] " << an->goals[0] << "\n";
     cout << "QQQ goal node [solve_inverse] \n";
@@ -146,6 +146,8 @@ int mainx(Tetrahelix *an,column_vector* coords)
 	  //	  solve_forward_find_coords(an,coords);
 	  cout << "SOLVE_INVERSE\n";
 	  solve_inverse_problem(an);
+	  
+	  thc.forward_find_coords();
 	  //	  solve_forward_find_coords(an,coords);
 	  
 	}
