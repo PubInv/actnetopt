@@ -139,234 +139,9 @@
 
 var OPERATION = "normal"; // "normal" or "helices"
 
-$( "input[type='radio']" ).checkboxradio();
-
-var OPTIMALITY = true;
-function handleOptimalityChange(e) {
-    var target = $( e.target );
-    OPTIMALITY = (target[0].id == "optimal-1") ;
-    if (OPTIMALITY) {
-	HELIX_RADIUS = tm.optimal_radius(RAIL_ANGLE_RHO*Math.PI/180,TET_DISTANCE);
-	$("#helix_radius").slider('value',HELIX_RADIUS.toFixed(4));
-	$("#helix_radius_val" ).val( HELIX_RADIUS.toFixed(4) );
-    }
-    draw_central();
-    console.log(OPTIMALITY);
-    return true;
-}
-
-$( "[name='optimal']").on( "change", handleOptimalityChange );
-
-var CHIRALITY_CCW = 1;
-function handleChiralityChange(e) {
-    var target = $( e.target );
-    CHIRALITY_CCW = (target[0].id == "chi-1") ? -1 : 1;
-    draw_central();
-    console.log(CHIRALITY_CCW);
-    return true;
-}
-
-$( "[name='chi']").on( "change", handleChiralityChange );
-
-
-
-function insert_trail_row(table,trial,optimal,angle,radius,d,len,one_hop,two_hop,pitch,inradius,score) {
-    var row = table.insertRow(1);
-    var cells = [];
-    for (var i = 0; i < 11; i++) {
-	cells[i] = row.insertCell(i);	
-    }
-    cells[0].innerHTML = ""+trial;
-    cells[1].innerHTML = ""+optimal;    
-    cells[2].innerHTML = ""+angle.toFixed(4);    
-    cells[3].innerHTML = ""+radius.toFixed(4) ;
-    cells[4].innerHTML = ""+len.toFixed(4) ;
-    cells[5].innerHTML = ""+d.toFixed(4) ;    
-    cells[6].innerHTML = ""+one_hop.toFixed(4) ;
-    cells[7].innerHTML = ""+two_hop.toFixed(4) ;    
-    cells[8].innerHTML = ""+pitch.toFixed(4);
-    cells[9].innerHTML = ""+inradius.toFixed(4);
-    cells[10].innerHTML = ""+score.toFixed(4);
-}
-
-function register_recent_trial(trial,optimal,angle,radius,d,len,one_hop,two_hop,pitch,inradius,score) {
-    var table = document.getElementById("trialrecord");
-    if (table.rows.length > 1) 
-	table.deleteRow(1);
-    insert_trail_row(table,trial,optimal,angle,radius,d,len,one_hop,two_hop,pitch,inradius,score);
-}
-function register_trials(trial,optimal,angle,radius,d,len,one_hop,two_hop,pitch,inradius,score) {
-    var table = document.getElementById("trialrecords");
-    insert_trail_row(table,trial,optimal,angle,radius,d,len,one_hop,two_hop,pitch,inradius,score);
-    register_recent_trial(trial,optimal,angle,radius,d,len,one_hop,two_hop,pitch,inradius,score);
-}
-
-
-var RAIL_ANGLE_RHO_d = tm.BCrho*180/Math.PI;
-var LAMBDA = 0;
 var TET_DISTANCE = 0.5;
-var HELIX_RADIUS = tm.optimal_radius(RAIL_ANGLE_RHO_d*Math.PI/180,TET_DISTANCE);
-var MIN_PITCH = tm.pitch_min(TET_DISTANCE);
-var MAX_PITCH = 30;
-var ADD_PITCH = tm.pitchForOptimal(RAIL_ANGLE_RHO_d*Math.PI/180,TET_DISTANCE) - MIN_PITCH;
-var PITCH = MIN_PITCH + ADD_PITCH;
-
-
-
-$( "#pitch_input" ).val( ADD_PITCH.toFixed(4));
-$("#pitch_input_min").val(MIN_PITCH.toFixed(4));
-$("#actual_pitch").val(PITCH.toFixed(4));
-
-
-$("#tet_pitch").val(( PITCH / (tm.find_drho_from_r_el(RAIL_ANGLE_RHO_d*Math.PI/180,HELIX_RADIUS,TET_DISTANCE))).toFixed(4));	    
 
 var origin = [0,0];
-
-function show_pitch() {
-    if (RAIL_ANGLE_RHO_d < 0.3) {
-	$("#pitchundefined").show();
-	$("#validpitch").hide();
-    } else {
-	$("#pitchundefined").hide();
-	$("#validpitch").show();
-    }
-}
-
-show_pitch();
-$(function() {
-    $( "#rail_angle_slider" ).slider({
-	range: "max",
-	min: 0,
-	max: tm.BCrho*180/Math.PI,
-	value: RAIL_ANGLE_RHO_d,
-	step: 0.001,	
-	slide: function( event, ui ) {
-	    $( "#rail_angle_rho" ).val( ui.value );
-	    RAIL_ANGLE_RHO_d = ui.value;
-	    show_pitch();
-	    if (OPTIMALITY) {
-		HELIX_RADIUS = tm.optimal_radius(RAIL_ANGLE_RHO_d*Math.PI/180,TET_DISTANCE);
-		$( "#helix_radius" ).slider('value',HELIX_RADIUS.toFixed(4));
-		$( "#helix_radius_val" ).val( HELIX_RADIUS.toFixed(4) );
-		if (RAIL_ANGLE_RHO_d != 0); {
-		    PITCH = tm.pitchForOptimal(RAIL_ANGLE_RHO_d*Math.PI/180,TET_DISTANCE);
-		    ADD_PITCH = PITCH-MIN_PITCH;
-		}
-		$( "#pitch_input" ).val(ADD_PITCH.toFixed(4) );
-		$( "#pitch_input_min" ).val( MIN_PITCH.toFixed(4) );
-		$("#actual_pitch").val(PITCH.toFixed(4));
-		$("#tet_pitch").val(( PITCH / (tm.find_drho_from_r_el(RAIL_ANGLE_RHO_d*Math.PI/180,HELIX_RADIUS,TET_DISTANCE))).toFixed(4));	    
-		$( "#pitch_input_slider" ).slider('value',ADD_PITCH.toFixed(4));		
-	    }
-	    draw_central();
-	}
-    });
-    $( "#rail_angle_rho" ).val( $( "#rail_angle_slider" ).slider( "value" ) );
-});
-
-
-// A pitch too big produces and Equitetrabeam....there is no provision in here
-// for that.  Also, very small pitches are deeply weird.
-// In the case of optimality we should limit the Rail angle to the BC Continuum.
-$(function() {
-    $( "#pitch_input_slider" ).slider({
-	range: "max",
-	min: 0,
-	max: 30,
-	value: ADD_PITCH,
-	step: 0.01,	
-	slide: function( event, ui ) {
-	    $( "#pitch_input" ).val( ui.value );
-	    ADD_PITCH = ui.value;
-	    PITCH = MIN_PITCH + ADD_PITCH;
-	    $("#actual_pitch").val(PITCH.toFixed(4));
-	    $("#tet_pitch").val(( PITCH / (tm.find_drho_from_r_el(RAIL_ANGLE_RHO_d*Math.PI/180,HELIX_RADIUS,TET_DISTANCE))).toFixed(4));	    
-	    
-	    $("#pitch_input").val(ADD_PITCH.toFixed(4));	    	    
-	    if (OPTIMALITY) {
-		var rho_for_pitch_radians =
-		    newtonRaphson((x) => (tm.pitchForOptimal(x,TET_DISTANCE) - PITCH),RAIL_ANGLE_RHO_d*Math.PI/180);
-		RAIL_ANGLE_RHO_d = rho_for_pitch_radians*180/Math.PI;
-		$( "#rail_angle_slider" ).slider('value',RAIL_ANGLE_RHO_d.toFixed(4));
-		$( "#rail_angle_rho" ).val( RAIL_ANGLE_RHO_d.toFixed(4) );
-		
-		HELIX_RADIUS = tm.optimal_radius(RAIL_ANGLE_RHO_d*Math.PI/180,TET_DISTANCE);
-		$( "#helix_radius" ).slider('value',HELIX_RADIUS.toFixed(4));
-		$( "#helix_radius_val" ).val( HELIX_RADIUS.toFixed(4) );
-	    } else {
-		// here we want to make sure the pitch matches PITCH by changing the TET_DISTANCE.
-		var dopt = tm.optimal_distance(RAIL_ANGLE_RHO_d*Math.PI/180,TET_DISTANCE);
-		var desired_d = (RAIL_ANGLE_RHO_d*Math.PI/180) * PITCH / (2 * Math.PI);
-		var len = Math.sqrt(desired_d*desired_d +
-				    4 * HELIX_RADIUS * HELIX_RADIUS *
-				    Math.sin(RAIL_ANGLE_RHO_d*Math.PI/(2*180)) * Math.sin(RAIL_ANGLE_RHO_d*Math.PI/(2*180)));
-		console.log("NEW LEN", desired_d,len, TET_DISTANCE);		
-		TET_DISTANCE = len;
-		$( "#tet_distance_val" ).val( TET_DISTANCE.toFixed(4) );
-		$( "#tet_distance" ).slider('value',TET_DISTANCE.toFixed(4));
-	    }
-	    draw_central();
-	}
-    });
-    $( "#pitch_input" ).val( $( "#pitch_input_slider" ).slider( "value" ) );
-});
-
-$(function() {
-    $( "#tet_distance" ).slider({
-	range: "max",
-	min: 0,
-	max: 3,
-	value: TET_DISTANCE,
-	step: 0.01,
-	slide: function( event, ui ) {
-	    $( "#tet_distance_val" ).val( ui.value );
-	    TET_DISTANCE = ui.value;
-	    MIN_PITCH = tm.pitch_min(TET_DISTANCE);
-	    PITCH = MIN_PITCH + ADD_PITCH;	    
-	    $("#pitch_input_slider").slider('option',{min: 0, max: MAX_PITCH});
-	    $("#pitch_input_min").val(MIN_PITCH.toFixed(4));
-	    $("#actual_pitch").val(PITCH.toFixed(4));
-	    $("#tet_pitch").val(( PITCH / (tm.find_drho_from_r_el(RAIL_ANGLE_RHO_d*Math.PI/180,HELIX_RADIUS,TET_DISTANCE))).toFixed(4));	    
-	    if (OPTIMALITY) {
-		HELIX_RADIUS = tm.optimal_radius(RAIL_ANGLE_RHO_d*Math.PI/180,TET_DISTANCE);
-		$("#helix_radius").slider('value',HELIX_RADIUS.toFixed(4));
-		$("#helix_radius_val" ).val( HELIX_RADIUS.toFixed(4) );
-
-		$("#pitch_input_slider").slider('value',tm.pitchForOptimal(RAIL_ANGLE_RHO_d*Math.PI/180,TET_DISTANCE).toFixed(4));
-	    }
-	    draw_central();
-	}
-    });
-    $( "#tet_distance_val" ).val( $( "#tet_distance" ).slider( "value" ) );
-});
-
-$(function() {
-    $( "#helix_radius" ).slider({
-	range: "max",
-	min: 0.0,
-	max: 3,
-	value: HELIX_RADIUS,
-	step: 0.01,	
-	slide: function( event, ui ) {
-	    $( "#helix_radius_val" ).val( ui.value );
-	    HELIX_RADIUS = ui.value ;
-	    if (OPTIMALITY) {
-		// here we must compute the optimal The Rail Angle...
-		var rho = RAIL_ANGLE_RHO_d*Math.PI/180;
-		var opt_el_for_this_radius =
-		    newtonRaphson((x) => (tm.optimal_radius(rho,x) - HELIX_RADIUS),rho);
-		console.log("optimum edge:",opt_el_for_this_radius);
-		TET_DISTANCE = opt_el_for_this_radius;
-		$( "#tet_distance_val" ).val( TET_DISTANCE.toFixed(4) );
-		$( "#tet_distance" ).slider('value',TET_DISTANCE.toFixed(4));
-
-	    }
-	    draw_central();	    
-	}
-    });
-    $( "#helix_radius_val" ).val( $( "#helix_radius" ).slider( "value" ) );
-});
-
 
 // Detects webgl
 if ( ! Detector.webgl ) {
@@ -471,120 +246,6 @@ var scolors = [ d3.color("DarkRed"), d3.color("DarkOrange"), d3.color("Indigo") 
 var smats = [ new THREE.Color(0x8B0000),
 	      new THREE.Color(0xFF8C00),
 	      new THREE.Color(0x000082)];
-// function load_NTetHelix(am,helix,tets,pvec,hparams) {
-//     var len = hparams.len;
-//     var rho = hparams.rho;
-//     var d = hparams.d;
-//     var radius = hparams.radius;
-//     var lambda = hparams.lambda;
-//     var chi = hparams.chirality;
-//     var n = tets+3;    
-
-//     var colors = [ d3.color("DarkRed"), d3.color("DarkOrange"), d3.color("Blue") ];
-//     var darkgreen = d3.color("#008000");
-//     var dcolor = [null,darkgreen,d3.color("purple")];
-//     for(var i = 0; i < n; i++) {
-
-// 	var myRho = rho;
-// 	var rail = i % 3;
-// 	var num = Math.floor(i/3);
-// 	var q = tm.H_general(chi,num,rail,myRho,d,radius);
-// 	var v = new THREE.Vector3(q[0], q[1], q[2]);
-// 	v = v.add(pvec);
-
-// 	var pos = new THREE.Vector3();
-// 	pos.set( v.x, v.y, v.z);
-// 	var mesh = createSphere(am.JOINT_RADIUS,pos,smats[rail]);
-// 	mesh.structureKind = "joint";
-// 	mesh.castShadow = false;
-// 	mesh.receiveShadow = false;
-// 	am.scene.add(mesh);
-
-// 	var body = {};
-// 	body.rail =  rail;
-// 	body.number = i / 3;
-// 	body.name = alphabetic_name(i);
-// 	body.mesh = mesh;
-// 	helix.helix_joints.push(body);
-// 	am.push_body_mesh_pair(body,mesh);
-
-// 	for(var k = 0; k < Math.min(3,i) && k < i; k++) {
-// 	    var h = i-(k+1);
-
-// 	    // Sadly, increasing the mass of the members seems to be
-// 	    // necessary to keep the edges from passing through the obstacles.
-// 	    // This is a very unfortunate tuning...I suspect it is a weakness
-// 	    // in the solver of physics engine.
-// 	    var pos = new THREE.Vector3();
-// 	    var quat = new THREE.Quaternion();
-
-// 	    var b_z = helix.helix_joints[i];
-// 	    var b_a = helix.helix_joints[h];
-// 	    var o_a = b_a.mesh.position;
-// 	    var o_z = b_z.mesh.position;
-
-// 	    var v_z = new THREE.Vector3(o_a.x,o_a.y,o_a.z);
-// 	    var v_a = new THREE.Vector3(o_z.x,o_z.y,o_z.z);
-// 	    var dist = v_a.distanceTo(v_z);
-
-// 	    var v_avg = new THREE.Vector3(v_z.x,v_z.y,v_z.z);
-// 	    v_avg.add(v_a);
-// 	    v_avg.multiplyScalar(0.5);
-
-// 	    pos.set( v_avg.x, v_avg.y, v_avg.z);
-//             quat.set( 0, 0, 0, 1 );
-
-// 	    var diff = ((b_a.rail - b_z.rail)+3) % 3;
-// 	    var cmat;
-// 	    var tcolor;
-// 	    if (diff != 0) {
-// 		if (OPERATION == "helices") {
-// 		    // What we really want to do here is to interpolate the
-// 		    // color of the end nodes!
-// 		    tcolor = new THREE.Color(0x008800);
-// 		    cmat  = memo_color_mat(tcolor);	
-// 		} else {
-// 		if (diff == 2) {
-// 		    tcolor = new THREE.Color(0x9400D3);
-// 		    cmat  = memo_color_mat(tcolor);
-// 		}
-// 		if (diff== 1) {
-// 		    tcolor = new THREE.Color(0x008000);
-// 		    cmat  = memo_color_mat(tcolor);	
-// 		}
-// 		}
-// 	    } else {
-// 		var cm = smats[b_a.rail]
-// 		cmat = new THREE.MeshPhongMaterial( {color : cm } );
-// 	    }
-// 	    var member_color = (diff != 0) ? dcolor[diff] : colors[b_a.rail];
-
-// 	    var mesh = create_actuator(dist,v_a,v_z,pos,cmat);
-// 	    if (b_a.name > b_z.name) {
-// 		var t = b_a;
-// 		b_a = b_z;
-// 		b_z = t;
-// 	    }
-// 	    var memBody = {};
-// 	    memBody.name = b_a.name + " " + b_z.name;
-// 	    memBody.link_a = b_a;
-// 	    memBody.link_z = b_z;
-// 	    memBody.endpoints = [];
-// 	    memBody.endpoints[0] = b_a;
-// 	    memBody.endpoints[1] = b_z;
-
-// 	    for(var x = helix.helix_members.length -1; x >= 0; x--) {
-// 		if (helix.helix_members[x].body.name == memBody) {
-// 		    helix.helix_member.splice(x,1);
-// 		}
-// 	    }
-// 	    var link = { a: b_a, b: b_z, body: memBody};	    
-// 	    helix.helix_members.push(link);
-// 	    mesh.structureKind = "member";	    
-// 	    am.push_body_mesh_pair(memBody,mesh);
-// 	}
-//     }
-// }
 
 
 
@@ -998,34 +659,34 @@ init();
 // var len = am.INITIAL_EDGE_LENGTH;
 
 
-function compute_helix_minimax(helix) {
-    var min = 100000000;
-    var max = 0.0;
-    for(var i = 0; i < Math.min(helix.helix_members.length,100); i++) {
-	var member = helix.helix_members[i];
-	var a = member.a.mesh.position;
-	var b = member.b.mesh.position;
-	var d = a.distanceTo(b);
-	if (i < 100) {
-	    //	    console.log("member:",i);
-	    //	    console.log("a:",member.a.mesh.position);
-	    //	    console.log("b:",member.b.mesh.position);
-	    var q0 = 180*Math.atan2(member.a.mesh.position.x,
-	    			    member.a.mesh.position.y)/Math.PI;
-	    var q1 = 180*Math.atan2(member.b.mesh.position.x,
-	    			    member.b.mesh.position.y)/Math.PI;
+// function compute_helix_minimax(helix) {
+//     var min = 100000000;
+//     var max = 0.0;
+//     for(var i = 0; i < Math.min(helix.helix_members.length,100); i++) {
+// 	var member = helix.helix_members[i];
+// 	var a = member.a.mesh.position;
+// 	var b = member.b.mesh.position;
+// 	var d = a.distanceTo(b);
+// 	if (i < 100) {
+// 	    //	    console.log("member:",i);
+// 	    //	    console.log("a:",member.a.mesh.position);
+// 	    //	    console.log("b:",member.b.mesh.position);
+// 	    var q0 = 180*Math.atan2(member.a.mesh.position.x,
+// 	    			    member.a.mesh.position.y)/Math.PI;
+// 	    var q1 = 180*Math.atan2(member.b.mesh.position.x,
+// 	    			    member.b.mesh.position.y)/Math.PI;
 	    
-	    //	    console.log("distance:",d,q1-q0);
-	}
+// 	    //	    console.log("distance:",d,q1-q0);
+// 	}
 	
-	if (min > d) min = d;
-	if (max < d) max = d;
-    }
-    //    console.log("min, max", min, max);
-    //    console.log("score: ", (100*max/min -100) + "%");
+// 	if (min > d) min = d;
+// 	if (max < d) max = d;
+//     }
+//     //    console.log("min, max", min, max);
+//     //    console.log("score: ", (100*max/min -100) + "%");
 
-    return [min,max,(100*max/min -100)];
-}
+//     return [min,max,(100*max/min -100)];
+// }
 
 
 //  var r0 = (2/3)*Math.sqrt(2/3);
@@ -1057,15 +718,15 @@ function draw_and_register() {
     var pvec0 = new THREE.Vector3(0,HELIX_RADIUS*3,-3);
     var hp = draw_new(pvec0);
     var h = am.helices.slice(-1)[0];
-    var score = compute_helix_minimax(h)[2];
-    hp.score = score;
-    hp.inradius = tm.inradius_assumption1(hp.rho,hp.radius);
-    register_trials(trial++,OPTIMALITY,RAIL_ANGLE_RHO_d,HELIX_RADIUS,hp.d,TET_DISTANCE,
-		    hp.onehop,
-		    hp.twohop,
-		    hp.pitch,
-		    hp.inradius,
-		    hp.score);
+    // var score = compute_helix_minimax(h)[2];
+    // hp.score = score;
+    // hp.inradius = tm.inradius_assumption1(hp.rho,hp.radius);
+    // register_trials(trial++,OPTIMALITY,RAIL_ANGLE_RHO_d,HELIX_RADIUS,hp.d,TET_DISTANCE,
+    // 		    hp.onehop,
+    // 		    hp.twohop,
+    // 		    hp.pitch,
+    // 		    hp.inradius,
+    // 		    hp.score);
 }
 
 function draw_new(pvec) {
@@ -1352,7 +1013,7 @@ function onMouseMove(e){
 	
         if(pos){
             setClickMarker(am,pos.x,pos.y,pos.z,am.scene);
-            moveJointToPoint(am,pos.x,pos.y,pos.z);
+//            moveJointToPoint(am,pos.x,pos.y,pos.z);
         }
     }
 }
@@ -1558,7 +1219,7 @@ function onMouseUp(e) {
     
     if(pos){
         setClickMarker(am,pos.x,pos.y,pos.z,am.scene);
-        moveJointToPoint(am,pos.x,pos.y,pos.z);
+//        moveJointToPoint(am,pos.x,pos.y,pos.z);
     }
     // remove the marker
     removeClickMarker(am);
@@ -1785,74 +1446,6 @@ function createGround(am) {
     ground.castShadow = true;
     ground.receiveShadow = true;
 }
-
-
-// This functions moves the transparent joint body to a new postion in space
-// We need to remove globals from this.
-function moveJointToPoint(gui,x,y,z) {
-    var is_obstacle = (gui.selectedBody.structureKind == "obstacle");
-    var act_natural = ((gui.FORCE_REGIME == "ALLOW") ||
-		       is_obstacle);
-    
-    if (act_natural) {
-	
-	//     } else {
-	// 	gui.physicsWorld.removeRigidBody(gui.jointBody);
-	//     }
-	//     var startTransform = new Ammo.btTransform();
-	//     startTransform.setIdentity();
-
-	//     var n_o = new Ammo.btVector3(x,y,z);
-	//     startTransform.setOrigin(n_o);
-
-	//     // This is wrong...we ned to move x,y,z plus the inverse ...
-	//     // or let the constraint handle!
-	//     gui.jointBody.setWorldTransform(startTransform);
-
-	//     gui.jointBody.setLinearVelocity(new Ammo.btVector3(0,0,0));
-	//     gui.jointBody.setAngularVelocity(new Ammo.btVector3(0,0,0));
-
-	//     var cbody = gui.selectedBody;
-	//     cbody.setLinearVelocity(new Ammo.btVector3(0,0,0));
-	//     cbody.setAngularVelocity(new Ammo.btVector3(0,0,0));
-
-	// //    gui.jointBody.setGravity(am.NO_GRAVITY);
-	// //    gui.selectedBody.setGravity(am.NO_GRAVITY);
-	
-	if (act_natural) {
-	    
-	} else  {
-	    //	gui.physicsWorld.addRigidBody(gui.jointBody);
-
-
-	    // Now we want to tell the robot to assume (instantly)?
-	    // The pose indicated by placing the selectedBody at x,y,z
-	    // Todo this we basically compute the current pose using
-	    // the marker body position in place of the current.
-
-	    // Now take the am.most_recent pose and compute a modifcation
-	    // of it based on the physical distance of (x,y,z) to the
-	    // attached nodes.  Construct a new model and move to that.
-
-	    //	var act_settings = model_to_actuator_space(pose,am.robot);
-	    
-	    // TODO: change most_recent_constraints -> most recent model
-	    //	console.log("constraints:");
-	    //	console.log(gui.most_recent_constraints);
-	    var act_settings =
-		actuator_space_model_func(gui.robot,
-					  gui.selectedBody,
-					  gui.jointBody,
-					  gui.most_recent_constraints);
-	    //	console.log("settings:");
-	    //	console.log(act_settings);
-	    // now move to the new pose.
-	    set_interp_constraints(act_settings,act_settings,1.0);
-	}
-    }
-
-}
-
 
 
 function fetch_coords() {
