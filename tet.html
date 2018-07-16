@@ -419,13 +419,13 @@ function initGraphics() {
     var PERSPECTIVE_NEAR = 0.3;
 
 
-    if (OPERATION == "helices") { 
-	var width = 10;
-	var height = width * (window.innerHeight *am.window_height_factor) / window.innerWidth;
-	am.camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, 1, 1000 );
-    } else {
+    // if (OPERATION == "helices") { 
+    // 	var width = 10;
+    // 	var height = width * (window.innerHeight *am.window_height_factor) / window.innerWidth;
+    // 	am.camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, 1, 1000 );
+    // } else {
         am.camera = new THREE.PerspectiveCamera( 60, window.innerWidth / (window.innerHeight * am.window_height_factor), PERSPECTIVE_NEAR, 2000 );
-    }
+//    }
     
     //   am.camera.aspect = window.innerWidth / (window.innerHeight * am.window_height_factor);
 
@@ -474,9 +474,10 @@ function initGraphics() {
     var groundMat;
     if (OPERATION == "normal") {
 	groundMat = new THREE.MeshPhongMaterial( { color: 0x777777, specular: 0x050505 } );
-    } else {
-	groundMat = new THREE.MeshPhongMaterial( { color: 0xfffffff, specular: 0x050505 } );
     }
+    // else {
+    // 	groundMat = new THREE.MeshPhongMaterial( { color: 0xfffffff, specular: 0x050505 } );
+    // }
     //    groundMat.color.setHSL( 0.095, 1, 0.75 );
 
     var ground = new THREE.Mesh( groundGeo, groundMat );
@@ -700,34 +701,25 @@ var num = 4;
 
 
 
-function draw_central() {
-    am.clear_non_floor_body_mesh_pairs();
-    for( var i = am.scene.children.length - 1; i >= 0; i--) {
-	var obj = am.scene.children[i];
-	if (obj.type == "Mesh" && obj.name != "GROUND") {
-	    am.scene.remove(obj);
-	}
-    }
-    am.helices = [];
-    am.helix_params = [];
-    draw_and_register();
-}
+// function draw_central() {
+//     am.clear_non_floor_body_mesh_pairs();
+//     for( var i = am.scene.children.length - 1; i >= 0; i--) {
+// 	var obj = am.scene.children[i];
+// 	if (obj.type == "Mesh" && obj.name != "GROUND") {
+// 	    am.scene.remove(obj);
+// 	}
+//     }
+//     am.helices = [];
+//     am.helix_params = [];
+//     draw_and_register();
+// }
 
 
-function draw_and_register() {
-    var pvec0 = new THREE.Vector3(0,HELIX_RADIUS*3,-3);
-    var hp = draw_new(pvec0);
-    var h = am.helices.slice(-1)[0];
-    // var score = compute_helix_minimax(h)[2];
-    // hp.score = score;
-    // hp.inradius = tm.inradius_assumption1(hp.rho,hp.radius);
-    // register_trials(trial++,OPTIMALITY,RAIL_ANGLE_RHO_d,HELIX_RADIUS,hp.d,TET_DISTANCE,
-    // 		    hp.onehop,
-    // 		    hp.twohop,
-    // 		    hp.pitch,
-    // 		    hp.inradius,
-    // 		    hp.score);
-}
+// function draw_and_register() {
+//     var pvec0 = new THREE.Vector3(0,HELIX_RADIUS*3,-3);
+//     var hp = draw_new(pvec0);
+//     var h = am.helices.slice(-1)[0];
+// }
 
 function draw_new(pvec) {
     return add_equitetrabeam_helix(am,CHIRALITY_CCW,null,
@@ -849,23 +841,23 @@ function draw_helix(pvec,rail,hparams,factor,color,fudge,lw) {
 
 
 
-if (OPERATION == "normal") {
-    //    draw_and_register();
-    // draw_many();
+// if (OPERATION == "normal") {
+//     //    draw_and_register();
+//     // draw_many();
 
 
-    // for(var i = 0; i < am.helices.length; i++) {
-    // 	console.log(am.helix_params[i]);
-    // 	compute_helix_minimax(am.helices[i]);
-    // 	console.log(am.helix_params[i]);    
-    // }
-} else if (OPERATION == "helices") {
-    am.NUMBER_OF_TETRAHEDRA  = 7;
-    am.INITIAL_EDGE_WIDTH /= 0.5;
-    am.JOINT_RADIUS /= 1;
-    //    this.jointGeo = new THREE.SphereGeometry( this.JOINT_RADIUS,32,32);
-    draw_helices();
-}
+//     // for(var i = 0; i < am.helices.length; i++) {
+//     // 	console.log(am.helix_params[i]);
+//     // 	compute_helix_minimax(am.helices[i]);
+//     // 	console.log(am.helix_params[i]);    
+//     // }
+// } else if (OPERATION == "helices") {
+//     am.NUMBER_OF_TETRAHEDRA  = 7;
+//     am.INITIAL_EDGE_WIDTH /= 0.5;
+//     am.JOINT_RADIUS /= 1;
+//     //    this.jointGeo = new THREE.SphereGeometry( this.JOINT_RADIUS,32,32);
+//     draw_helices();
+// }
 
 function draw_custom_tetrahelix(results,pvec,helix
 			       ) {
