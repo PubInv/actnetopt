@@ -97,9 +97,9 @@ void solve_inverse_problem(Tetrahelix *an) {
     }
 
     double score = find_min_box_constrained(
-					    //bfgs_search_strategy(),
-					    lbfgs_search_strategy(100),
-					    //    cg_search_strategy(),
+					    // bfgs_search_strategy(),
+					    lbfgs_search_strategy(500),
+					    //   cg_search_strategy(),
     			     //			     newton_search_strategy,
 			    //    			     objective_delta_stop_strategy(1e-5),
     			     objective_delta_stop_strategy(1e-5),			    

@@ -51,9 +51,14 @@ Invert3d::Invert3d() {
   }
 
   double Invert3d::objective(const column_vector& ds) {
-    int debug = 1;
+    int debug = 0;
     if (debug) {
       cout << "OBJECTIVE:  \n"; 
+    }
+    if (debug) {
+      cout << "GOALS AAA\n";
+      cout << global_truss->goals[0] << "\n";
+      cout << global_truss->goals[1] << "\n";
     }
 
     //    if (debug_inv) std::cout << "OBJECTIVE INPUTS" << std::endl;
@@ -89,13 +94,25 @@ Invert3d::Invert3d() {
           std::cout << " coords["<< i << "]" << coords[i](0) << "," << coords[i](1) << "," << coords[i](2) << std::endl;
     }
     }
+
+
+    if (debug) {
+      cout << "GOALS BBB\n";
+      cout << global_truss->goals[0] << "\n";
+      cout << global_truss->goals[1] << "\n";
+    }
     
     double v = 0.0;
     for(int i = 0; i < global_truss->goal_nodes.size(); i++) {
       int idx = global_truss->goal_nodes[i];
       column_vector g = global_truss->goals[i];
       column_vector c = coords[idx];
-      //      cout << "distance to goal : " << distance_3d(g,c) << "\n";
+      if (debug) {
+	cout << "goal node[i] " << i << " " << idx << "\n";
+	cout << "goal " << g << "\n";
+	cout << "Goals[i] " << global_truss->goals[i] << "\n";	
+	cout << "distance to goal : " << distance_3d(g,c) << "\n";
+      }
       v += (global_truss->goal_weights[i]*distance_3d(g,c));
     }
 
@@ -217,10 +234,6 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       
       //      global_truss->compute_goal_derivative_j(coords,i,idx);
 
-
-
-
- 
       if (USE_DIFFERENTIAL) {
 	t = clock();		
 	d = global_truss->compute_goal_differential_c(coords,e,idx);

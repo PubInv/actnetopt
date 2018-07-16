@@ -961,6 +961,7 @@ BOOST_AUTO_TEST_CASE( test_distance_to_goal0 )
 
 
 // compute the derivative of the tetrahelix against the goal for testing
+// WARNING: This sets the last goal into the tetrahelix, which is a destructive change...
 column_vector compute_derivative_for_single_tet_testing(Invert3d *inv,Tetrahelix *an,
 							column_vector* coords,
 							column_vector goal,double *obj) {
@@ -2561,7 +2562,8 @@ BOOST_AUTO_TEST_CASE( test_ability_to_solve_a_large_tetrobot )
   // This is an attempt to make sure that the "distance_to_goal" after
   // solving our "standard start" tetrahelix goes down
   // if variable edges get bigger
-  Tetrahelix *thlx_ptr = init_Tetrahelix(15,2.0,1.2,1.5);
+  // This did not work with 30 or 40 nodes---I don't know why.
+  Tetrahelix *thlx_ptr = init_Tetrahelix(20,2.0,1.2,1.5);
   Tetrahelix thlx = *thlx_ptr;
   
   // Now we want to set up the coordinates of the first three nodes
@@ -2742,4 +2744,173 @@ BOOST_AUTO_TEST_CASE( final_stats_report )
     printf ("Time in Jacobian %lu clicks (%f seconds).\n",time_in_jacobian,((float)time_in_jacobian)/CLOCKS_PER_SEC);
     printf ("Time in Differential %lu clicks (%f seconds).\n",time_in_differential,((float)time_in_differential)/CLOCKS_PER_SEC);    
 
+}
+
+
+// This needs to be changed to test the Jacobian.
+BOOST_AUTO_TEST_CASE( test_solve_multiples_goals )
+{
+  //  cout << "TEST ABILITY TO SOLVE A SINGLE TETRAHEDRONXSD\n";
+  // This is an attempt to make sure that the "distance_to_goal" after
+  // solving our "standard start" tetrahelix goes down
+  // if variable edges get bigger
+
+  // WARNING: This seems to fail when the number of goals nodes is 30, but works for 20.
+  // I need to investigate that separatately. There is really no reason it should fail so.
+  // It may have to do with the parameters to the test, or some other value
+  Tetrahelix *thlx_ptr = init_Tetrahelix(20,2.0,1.2,1.5);
+  Tetrahelix thlx = *thlx_ptr;
+  
+  // Now we want to set up the coordinates of the first three nodes
+  // very carefully so that we follow the X-axis specifically.
+  // The easiest way to to this is to take it from the javascript
+  // code already written to preform these calculations....
+  column_vector* coords = new column_vector[thlx.num_nodes];
+  
+  column_vector A(3);
+  column_vector B(3);
+  column_vector C(3);
+  column_vector D(3);
+  column_vector E(3);
+  column_vector G(3);
+  column_vector H(3);
+
+  int NUM_GOALS = 2;
+  //  int NUM_GOALS = 1;  
+  column_vector* GS = new column_vector[NUM_GOALS];
+  int test_goal_nodes[NUM_GOALS];
+  test_goal_nodes[0] = (thlx.num_nodes-1)/2;
+  test_goal_nodes[1] = thlx.num_nodes-1;
+  
+
+  // Note we use right-handed coordinates.
+  // This diagram matches (approximately) the diagram in the paper.
+
+  A = thlx.fixed[0];
+  B = thlx.fixed[1];
+  C = thlx.fixed[2];
+  // This is the "standard" solution.
+  D = 0.6350852961085883,2.790116647275517,-1.57697505292423;
+
+
+  // G represents a "distant" goal node... H will represent "half of this!
+
+  double ZDISTANCE = 0.4;
+  double Gx = 0;
+  double Gy = 0;
+  double Gz = -3.0 + thlx.num_nodes*ZDISTANCE;
+
+  Gx = 3.0;
+  G = Gx,Gy,Gz;
+  
+  double Hx = 0;
+  double Hy = 0;
+  double Hz = -3.0 + (thlx.num_nodes*ZDISTANCE / 2.0);
+
+  Hy = 2.6;
+  Hx = 0.6;
+  
+  H = Hx,Hy,Hz;
+  
+  GS[0] = H;
+  GS[1] = G;
+  
+  // Note: This is done in this order so that we -Z will be 
+  coords[0] = A;
+  coords[1] = B;
+  coords[2] = C;
+  //  coords[3] = D;
+  //  coords[4] = E;  
+  // This is really 5 points, but it will just read the first three..
+  thlx.init_fixed_coords(coords);
+
+  thlx.set_distances(coords);  
+  
+  int debug = 0;
+  
+  for (int i = 0; i < thlx.num_edges; ++i) {
+    thlx.distance(i) = 1.5;
+    //    cout << " i, distances(i) " << i << " , " << thlx.distance(i) << "\n";
+  }
+  
+  if (debug) {
+    for (int i = 0; i < thlx.num_edges; ++i) {
+      cout << " i, distances(i) " << i << " , " << thlx.distance(i) << "\n";
+    }
+  }
+  
+  TetrahelixConfiguration thc(&thlx,coords);
+  thc.forward_find_coords();
+
+  debug = 0;
+  if (debug) {
+    cout << "DONE SOLVING_FORWARD_FIND_COORDS \n";
+    for(int i = 0; i < thlx.num_nodes; i++) {
+      print_vec(coords[i]);
+    }
+  }
+  
+  thlx.initialize_Jacobian_memo();
+  thlx.fill_Jacobian(coords);
+  
+  matrix<double> Ju = thlx.get_Jacobian(coords,thlx.num_nodes-1);
+
+  thlx.Jacobian_temp = Ju;
+  
+  //  const int goal_node = thlx.num_nodes-1;
+  
+  
+  Invert3d inv;
+  inv.an = &thlx;
+  inv.set_global_truss();
+
+
+  // Now add_goals beyond the first....
+  for(int i = 1; i < NUM_GOALS; i++) {
+    thlx.add_goal_node(test_goal_nodes[i],GS[i](0),GS[i](1),GS[i](2),1.0);        
+  }
+
+  // Note: using init creates a goal node already!
+  thlx.goal_nodes[0] = test_goal_nodes[0];
+
+  double frac = 0.15;
+  
+  G(0) = Gx + frac;
+  H(0) = Hx + frac;
+  
+  G(1) = Gy + frac;
+  H(1) = Hx + frac;
+  
+  G(2) = Gz + frac;
+  H(2) = Hz + frac;
+  
+  thlx.goals[0] = H;
+  // thlx.goals[1] = ;
+
+  solve_inverse_problem(inv.an);
+
+  // cout << "solving forward!\n";
+  bool solved =   thc.forward_find_coords();
+  if (!solved) {
+    cout << "INTERNAL ERROR: Could solved these coords forward!\n";
+  }
+
+  for(int i = 0; i < NUM_GOALS; i++) {
+    if (l2_norm(coords[thlx.goal_nodes[i]] - GS[i]) >= 1e-1) {
+      cout << "DISTANCE: " << l2_norm(coords[thlx.goal_nodes[i]] - GS[i]) << "\n";
+      cout << " GS[i] = \n" << GS[i] << "\n";
+      cout << " goal_node = " << coords[thlx.goal_nodes[i]] << "\n";	
+    }
+    BOOST_CHECK(l2_norm(coords[thlx.goal_nodes[i]] - GS[i]) < 1e-1);    
+  }
+
+  // // Just check this is what I expect...
+  // for(int i = 0; i < thlx.num_nodes; i++) {
+  //   print_vec(coords[i]);
+  // }
+  delete[] coords;
+
+  printf ("Time in Jacobian %lu clicks (%f seconds).\n",time_in_jacobian,((float)time_in_jacobian)/CLOCKS_PER_SEC);
+  printf ("Time in Differential %lu clicks (%f seconds).\n",time_in_differential,((float)time_in_differential)/CLOCKS_PER_SEC);    
+  
 }
