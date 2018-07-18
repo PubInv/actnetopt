@@ -18,7 +18,7 @@ extern double* best_distances;
 extern double best_score;
 
 
-#define TRUSS_NODES 15
+#define TRUSS_NODES 8
 #define UPPER_BOUND 2.0
 #define LOWER_BOUND 1.2
 #define MEDIAN 1.5
@@ -68,5 +68,8 @@ void close_renderer();
 void render_all(Tetrahelix *an,column_vector* coordsx,Obstacle obstacle);
 
 void solve_inverse_problem(Tetrahelix *an);
+
+void handle_goal_target(Tetrahelix *an,column_vector* coordsx);
+void handle_goal_target_physical(Tetrahelix *an,column_vector* coordsx);
 
 #endif

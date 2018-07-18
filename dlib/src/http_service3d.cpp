@@ -46,18 +46,69 @@ void get_method_handler_goal( const shared_ptr< Session > session )
     session->fetch( content_length, [ request ]( const shared_ptr< Session > session, const Bytes & body )
     {
 
-      cout << "XXX" << request->get_query_parameter( "x" ) << "\n";
-      cout << "YYY" << request->get_query_parameter( "y" ) << "\n";
-      cout << "ZZZ" << request->get_query_parameter( "z" ) << "\n";      
+      auto locked_nodes = request->get_query_parameter( "locked" );
+
+      cout << "LOCKED" << locked_nodes << "\n";
       
-      double x = request->get_query_parameter( "x",10.0 );
-      double y = request->get_query_parameter( "y",10.0 );
-      double z = request->get_query_parameter( "z",10.0 );
+      auto j3 = json::parse(locked_nodes);
+
+      // special iterator member functions for objects
+      int i = 0; 
+      for (json::iterator it = j3.begin(); it != j3.end(); ++it) {
+	std::cout << i++ << "\n";
+	std::cout << it.key() << " : " << it.value() << "\n";
+	auto v = it.value();
+	// find an entry
+	if (v.find("node_number") != v.end()) {
+	  // there is an entry with key "node_number
+	  auto n = v.find("node_number");
+	  int num = *n;
+	  cout << "Node Number found to be: " << num << "\n";
+	  auto pos = v.find("pos");
+	  auto p = *pos;
+	  double x = *p.find("x");
+	  double y = *p.find("y");
+	  double z = *p.find("z");
+	  cout << " x y z " << x << " " << y << " " << z << "\n";
+	    column_vector gl(3);
+	    gl(0) = x;
+	    gl(1) = y;
+	    gl(2) = z;
+	    if (i < an->goals.size()) {
+	      an->goals[i] = gl;
+	      an->goal_nodes[i] = num;
+	    } else {
+	      an->add_goal_node(num,gl(0),gl(1),gl(2),1.0);        	      
+	    }
+
+	}
+      }
+
+      
+      // cout << "XXX" << request->get_query_parameter( "x" ) << "\n";
+      // cout << "YYY" << request->get_query_parameter( "y" ) << "\n";
+      // cout << "ZZZ" << request->get_query_parameter( "z" ) << "\n";      
+      
+      // double x = request->get_query_parameter( "x",10.0 );
+      // double y = request->get_query_parameter( "y",10.0 );
+      // double z = request->get_query_parameter( "z",10.0 );
+
+      // int num = 1;
       
       if (true) {
 	  // there is an entry with key "foo"
-	  cout << "FOUND X AND Y and Z!\n";
-	  handle_goal_target_physical(an,coordsx,x,y,z);
+	  // cout << "FOUND X AND Y and Z!\n";
+	  // for(int i = 0; i < num; i++ ) {
+	  //   column_vector gl(3);
+	  //   gl(0) = x;
+	  //   gl(1) = y;
+	  //   gl(2) = z;
+	  //   an->goals[an->goals.size() - 1] = gl;
+	  // }
+
+	    
+    	  //	  handle_goal_target_physical(an,coordsx,x,y,z);
+	  handle_goal_target_physical(an,coordsx);	
 	  json solution;
 	  for(int i = 0; i < an->num_nodes; i++) {
 	    std::cout << " d["<< i << "]" << coordsx[i](0) << "," << coordsx[i](1) << "," << coordsx[i](2) << std::endl;

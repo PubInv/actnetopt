@@ -238,3 +238,22 @@ void handle_goal_target(Tetrahelix *an,  column_vector* coordsx,column_vector gl
   cout << "optimization tim: ms = " << milliseconds << "\n";
 }
 
+void handle_goal_target_physical(Tetrahelix *an,  column_vector* coordsx) {
+  cout << "Interpreted as double!\n";
+  handle_goal_target(an,coordsx);  
+}
+
+void handle_goal_target(Tetrahelix *an,  column_vector* coordsx) {
+  //  an->goals[an->goals.size() - 1] = gl;
+  best_score = std::numeric_limits<float>::max();	
+  auto start = std::chrono::high_resolution_clock::now();
+	
+  mainx(an,coordsx);
+	
+  auto elapsed = std::chrono::high_resolution_clock::now() - start;
+  long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+  long long milliseconds = microseconds/ 1000.0;
+
+  cout << "optimization tim: ms = " << milliseconds << "\n";
+}
+

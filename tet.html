@@ -98,6 +98,9 @@
     </section>
 
     <input type="button" id="fetch" value="Go!">
+    <section id="textreport">
+    
+    </section>
  
 
 	<script type="x-shader/x-vertex" id="vertexShader">
@@ -355,7 +358,6 @@ var AM = function() {
 AM.prototype.push_body_mesh_pair = function(body,mesh) {
     this.meshes.push(mesh);
     this.bodies.push(body);
-    console.log("pushing: "+mesh);
 }
 AM.prototype.remove_body_mesh_pair = function(body,mesh) {
     for(var i = this.meshes.length - 1; i >= 0; i--) {
@@ -371,7 +373,6 @@ AM.prototype.clear_non_floor_body_mesh_pairs = function() {
     this.bodies = [];
     //    this.meshes.push(am.GROUND_PLANE_MESH);
     //    this.bodies.push(am.GROUND_BODY);
-    console.log("pushing" + this.meshes);
 }
 
 var am = new AM();
@@ -839,36 +840,8 @@ function draw_helix(pvec,rail,hparams,factor,color,fudge,lw) {
     am.scene.add( mesh );
 }
 
-
-
-// if (OPERATION == "normal") {
-//     //    draw_and_register();
-//     // draw_many();
-
-
-//     // for(var i = 0; i < am.helices.length; i++) {
-//     // 	console.log(am.helix_params[i]);
-//     // 	compute_helix_minimax(am.helices[i]);
-//     // 	console.log(am.helix_params[i]);    
-//     // }
-// } else if (OPERATION == "helices") {
-//     am.NUMBER_OF_TETRAHEDRA  = 7;
-//     am.INITIAL_EDGE_WIDTH /= 0.5;
-//     am.JOINT_RADIUS /= 1;
-//     //    this.jointGeo = new THREE.SphereGeometry( this.JOINT_RADIUS,32,32);
-//     draw_helices();
-// }
-
 function draw_custom_tetrahelix(results,pvec,helix
 			       ) {
-    // var len = hparams.len;
-    // var rho = hparams.rho;
-    // var d = hparams.d;
-    // var radius = hparams.radius;
-    // var lambda = hparams.lambda;
-    // var chi = hparams.chirality;
-    // var n = tets+3;    
-
     var colors = [ d3.color("DarkRed"), d3.color("DarkOrange"), d3.color("Blue") ];
     var darkgreen = d3.color("#008000");
     var dcolor = [null,darkgreen,d3.color("purple")];
@@ -900,8 +873,6 @@ function draw_custom_tetrahelix(results,pvec,helix
 	helix.helix_joints.push(body);
 	am.push_body_mesh_pair(body,mesh);
 
-	console.log("pos = ",i,pos);
-	
 	for(var k = 0; k < Math.min(3,i) && k < i; k++) {
 	    var h = i-(k+1);
 
@@ -1013,52 +984,7 @@ function onMouseMove(e){
 function addMouseConstraint(gui,x,y,z,body) {
     // The cannon body constrained by the mouse joint
     var constrainedBody = body;
-    
-    //    gui.physicsWorld.removeRigidBody(gui.jointBody);
-
-    // var startTransform = new Ammo.btTransform();
-    // startTransform.setIdentity();
-    // startTransform.setOrigin(new Ammo.btVector3(x, y, z));
-    // gui.jointBody.setCenterOfMassTransform(startTransform);
-    // //	gui.jointBody.clearForces();
-    // gui.jointBody.setLinearVelocity(new Ammo.btVector3(0,0,0));
-    // gui.jointBody.setAngularVelocity(new Ammo.btVector3(0,0,0));
-    // gui.physicsWorld.addRigidBody(gui.jointBody);
-
-    // updateMouseConstraints(gui,body);
-
     gui.selectedBody = body;	
-    //    if (gui.FORCE_REGIME == "ALLOW") {
-    //    var markerBody = gui.jointBody;
-
-    // var constrainedBody = body;
-    // var startTransform = constrainedBody.getWorldTransform();
-
-
-    // // MAJOR BUG: This is not taking the rotation of the constainedObject into account
-    // // We need to use the Transform to transform the point into its position in the
-    // // local space, I think.
-
-    // var pivotInA = new Ammo.btVector3( 0, 0, 0 );;
-    // // x,y,z are in global space.
-    
-    // var globalVector = new Ammo.btVector3(x,y,z);
-    // var pivotInB = applyBulletTransformInverse(startTransform,globalVector);
-
-    // var con = new Ammo.btPoint2PointConstraint(markerBody,
-    // 					       constrainedBody,
-    // 					       pivotInA,
-    // 					       pivotInB);
-    // markerBody.setGravity(am.NO_GRAVITY);
-    // constrainedBody.setGravity(am.NO_GRAVITY);
-    
-    //    gui.mouseConstraint = con;
-    gui.selectedBody = body;
-    
-    //    gui.physicsWorld.addConstraint(con, true);
-    //    } else if (gui.FORCE_REGIME == "DISABLE") {
-    //    }
-
 }
 
 // BUG: It is easy to get to constrainedBodies someone both constrained,
@@ -1129,7 +1055,8 @@ function onMouseDown(e){
 	    // what we really want to do here is to change the color, but stash the old color first to restore...
 	    var original_color = am.meshes[idx].material.color.getHex();
 	    am.meshes[idx].material.original_color = original_color;
-	    am.meshes[idx].material.color.setHex( 0xFF00FF );
+	    am.meshes[idx].material.color.setHex( 0x00FF00 );
+	    console.log("SPUD!");
 
             // Set the movement plane
             setScreenPerpCenter(pos,am);
@@ -1188,9 +1115,99 @@ function establish_controls(gui) {
 }
 
 
-var gpos = { x: 0, y: 0, z: 0};
+/*
+Okay, this is my attempt to quickly model the idea of multiple goal nodes. The basic GUI
+idea is that there are a set of nodes, we will render them in a non RYB color --- say Green.
+A Green node has a target position. By clicking and dragging a non-green node, you turn it 
+Green and lock its position. By clicking on a node that is green without moving it (much) you unlock it.
 
+We will provide addtional information in text.  We will render the actual position of each node 
+as returned to use by the optimizer, in addition to the target nodes, and the distances.
 
+The best say to implement all of this is start by just making it work properly with one node!
+
+*/
+
+// var gpos = { x: 0, y: 0, z: 0};
+
+var locked_nodes = {};
+
+var EXAMPLE_NODE = { node_number: 0, pos: null};
+
+// return html rendering of the locked nodes.
+function render_locked_nodes(locked_nodes,nodes_returned) {
+    var html = "";
+    html += "<table>";
+    html += "<tr>";
+    html += "<th>num</th>";    
+    html += "<th>x target</th>";
+    html += "<th>y target</th>";
+    html += "<th>z target</th>";    
+    html += "<th>x actual</th>";
+    html += "<th>y actual </th>";
+    html += "<th>z acutal</th>";
+    html += "<th>d</th>";        
+    html += "</tr>";
+    for (key in locked_nodes) {
+	var nd = locked_nodes[key];
+	if (nd.pos) {
+	html += "<tr>";
+	html += "<td>";
+	html += nd.node_number;
+	html += "</td>";
+	html += "<td>";
+	html += nd.pos.x.toFixed(2); 
+	html += "</td>";
+	html += "<td>";
+	html += nd.pos.y.toFixed(2); 
+	html += "</td>";	
+	html += "<td>";
+	html += nd.pos.z.toFixed(2); 
+	    html += "</td>";
+	}
+	if (nodes_returned && nd.node_number) {
+	    var r_loc = nodes_returned[nd.node_number];
+	    html += "<td>";
+	    html += r_loc.x.toFixed(2);
+	    html += "</td>";
+	    html += "<td>";
+	    html += r_loc.y.toFixed(2);
+	    html += "</td>";	
+	    html += "<td>";
+	    html += r_loc.z.toFixed(2); 
+	    html += "</td>";	
+	    html += "<td>";
+	    var target = new THREE.Vector3(nd.pos.x,nd.pos.y,nd.pos.z);
+	    var actual = new THREE.Vector3(r_loc.x,r_loc.y,r_loc.z);
+	    var dist = target.distanceTo(actual);
+	    html += dist.toFixed(2);
+	    html += "</td>";	
+	}
+	html += "</tr>";
+    };
+    html += "</table>";
+    return html;
+}
+
+function set_locked_nodes_green() {
+    for (key in locked_nodes) {
+	for(var i = 0; i < am.meshes.length; i++) {
+	    var m =  am.meshes[i];
+	    if (m.name == key) {
+		m.original_color = m.material.color.getHex();
+		m.material.color.setHex( 0x00FF00 );
+	    }
+	}
+    }
+}
+
+function convert_node_name_to_number(nm) {
+    if (nm.length > 1) {
+	console.log("WARNING! Node Name too big for simple algorithm! : "+nm);
+    }
+    var c = nm.charCodeAt(0) - 65;
+    return c;
+}
 function onMouseUp(e) {
     // DEBUG Hack
 
@@ -1206,43 +1223,32 @@ function onMouseUp(e) {
 
     var pos = projectOntoPlane(am,e.clientX,e.clientY,am.gplane,am.camera);
 
-    console.log("UP POSITION");
-    console.log(pos);
-    
+    if (am.manipulatedObject) {
+	console.log("Manipulated Object");
+	console.log(am.manipulatedObject);
+
+	var name = am.manipulatedObject.name;
+	var num = convert_node_name_to_number(name);
+
+	// if the shift key is down, we unlock, else we lockd
+	if (!e.shiftKey) {
+	    locked_nodes[name] = { node_number: num, pos: pos };
+	} else {
+	    am.manipulatedObject.material.color.setHex( am.manipulatedObject.original_color );
+	    am.movedButNotSent = false;
+	    delete locked_nodes[name];
+	    console.log(locked_nodes);
+	}
+	$("#textreport").html(render_locked_nodes(locked_nodes,null));
+	am.manipulatedObject = null;
+    }
     if(pos){
         setClickMarker(am,pos.x,pos.y,pos.z,am.scene);
-//        moveJointToPoint(am,pos.x,pos.y,pos.z);
     }
     // remove the marker
-    removeClickMarker(am);
 
- //    var entity = findNearestIntersectingObject(am,e.clientX,e.clientY,am.camera,am.meshes);
-//     var pos = entity.point;
-//     // This is fragile, we need to be able to change this geometry....
     
-//     if (!(pos &&
-// 	  (
-// 	      (entity.object.structureKind == "obstacle")
-// 		  || 
-// 		  (entity.object.structureKind == "joint")
-// 		  || 
-// 		  (entity.object.structureKind == "member")
-// 	  )
-// 	 )) {
-// 	return;
-//     }
-
-//     if (!e.shiftKey) {
-// 	if (am.manipulatedObject) {
-// //	    am.manipulatedObject.setGravity(am.FULL_GRAVITY);
-// 	    var index = am.lockedGroups.handlocked.indexOf(am.manipulatedObject);
-// 	    //	    if (index > -1) {
-// 	    am.manipulatedObject.material.color.setHex(am.manipulatedObject.original_color);
-// 	    // } else {
-// 	    // 	am.manipulatedObject.mesh.material.color.setHex(am.manipulatedObject.original_color);
-// 	    // }
-// 	}
-//     }
+    removeClickMarker(am);
 
     // Send the remove mouse joint to server
     removeJointConstraint(am);
@@ -1251,26 +1257,21 @@ function onMouseUp(e) {
     // Actually, this is really wrong, we need to keep track of the nodes that are truly locked
     // in place as compared to those that we have locked for convenience.
 
-    for(var i = 0; i < am.lockedGroups.temporary.length; i++) {
-    	var joint = am.lockedGroups.temporary[i];
-	//    	var zero = new Ammo.btVector3(0, 0, 0 );
-	//	if (am.lockedGroups.handlocked.indexOf(joint) < 0)
-	//    	    joint.setMassProps(am.JOINT_MASS,zero);
-    }
-    am.lockedGroups.temporary = [];
+    // for(var i = 0; i < am.lockedGroups.temporary.length; i++) {
+    // 	var joint = am.lockedGroups.temporary[i];
+    // }
+    // am.lockedGroups.temporary = [];
 
-    if (!e.shiftKey) {
-	var index = am.lockedGroups.handlocked.indexOf(am.manipulatedObject);
-	if (index > -1) {
-	    am.lockedGroups.handlocked.splice(index, 1);
-	    if (am.manipulatedObject.structureKind == "joint") {
-		//		var zero = new Ammo.btVector3(0, 0, 0 );
-		//		am.manipulatedObject.setMassProps(am.JOINT_MASS,zero);	
-	    }
-	}
+    // if (!e.shiftKey) {
+    // 	var index = am.lockedGroups.handlocked.indexOf(am.manipulatedObject);
+    // 	if (index > -1) {
+    // 	    am.lockedGroups.handlocked.splice(index, 1);
+    // 	    if (am.manipulatedObject.structureKind == "joint") {
+    // 	    }
+    // 	}
 
 
-    }
+    // }
 
     // if (e.shiftKey) {
 
@@ -1294,19 +1295,15 @@ function onMouseUp(e) {
     if (am.movedButNotSent) {
 	console.log("final");
 	console.log(pos);
-	gpos = pos;
+//	gpos = pos;
 	fetch_coords();
 //	send_to_robot_url();
 	am.movedButNotSent = false;
     }
+
     // Now we want to change color to show locked...
     // TODO: This is a global...
 
-    if (am.manipulatedObject != null) {
-	am.manipulatedObject.material.color.setHex( am.manipulatedObject.original_color );
-	am.manipulatedObject = null;
-    }
-    console.log("handlocked",am.lockedGroups.handlocked.length);
 }
 
 function projectOntoPlane(gui,screenX,screenY,thePlane,camera) {
@@ -1441,41 +1438,35 @@ function createGround(am) {
 
 
 function fetch_coords() {
+    var locked_nodes_string = JSON.stringify(locked_nodes);
     $.ajax({url: "http://127.0.0.1/goal",
-	    data: { 
-		"X": gpos.x, 
-		"Y": gpos.y, 
-		"Z": gpos.z,
-	    },
+	    data: {"locked" : locked_nodes_string },
 	    success: function(result) {
-		//	       alert(result);
 		am.clear_non_floor_body_mesh_pairs();
-		//		am.clear_non_floor_body_mesh_pairs();
-
+		
 		for( var i = am.scene.children.length - 1; i >= 0; i--) {
 		    var obj = am.scene.children[i];
 		    if (obj.type == "Mesh" && obj.name != "GROUND") {
 			am.scene.remove(obj);
 		    }
 		}
-		
 //		addOriginSphere();		
 		
 		am.helices = [];
 		am.helix_params = [];
-		
 		am.helices.push(
 		    {
 			helix_joints: [],
 			helix_members: []
 		    });
-		
 		// now basically we want to build the helix from these results...
 		//	       var pvec = new THREE.Vector3(0,HELIX_RADIUS*2.1,-1.0);
 		var pvec = new THREE.Vector3(0,0.0,0.0);	       
 		var nodes = JSON.parse(result);
 		console.log(nodes);
+		$("#textreport").html(render_locked_nodes(locked_nodes,nodes));
 		draw_custom_tetrahelix(nodes,pvec,am.helices[0]);
+		set_locked_nodes_green();		
 	    }
 	   });
 }

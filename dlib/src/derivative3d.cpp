@@ -2774,13 +2774,15 @@ BOOST_AUTO_TEST_CASE( test_solve_multiples_goals )
   column_vector E(3);
   column_vector G(3);
   column_vector H(3);
+  column_vector I(3);  
 
-  int NUM_GOALS = 2;
+  int NUM_GOALS = 3;
   //  int NUM_GOALS = 1;  
   column_vector* GS = new column_vector[NUM_GOALS];
   int test_goal_nodes[NUM_GOALS];
-  test_goal_nodes[0] = (thlx.num_nodes-1)/2;
-  test_goal_nodes[1] = thlx.num_nodes-1;
+  test_goal_nodes[0] = (thlx.num_nodes-1)*1/3;
+  test_goal_nodes[1] = (thlx.num_nodes-1)*2/3;
+  test_goal_nodes[2] = thlx.num_nodes-1;  
   
 
   // Note we use right-handed coordinates.
@@ -2805,15 +2807,27 @@ BOOST_AUTO_TEST_CASE( test_solve_multiples_goals )
   
   double Hx = 0;
   double Hy = 0;
-  double Hz = -3.0 + (thlx.num_nodes*ZDISTANCE / 2.0);
+  double Hz = -3.0 + (thlx.num_nodes*ZDISTANCE*1 / 3.0);
 
   Hy = 2.6;
   Hx = 0.6;
   
   H = Hx,Hy,Hz;
   
+
+  double Ix = 0;
+  double Iy = 0;
+  double Iz = -3.0 + (thlx.num_nodes*ZDISTANCE*2 / 3.0);
+
+  Iy = 0;
+  Ix = 0;
+  
+  I = Ix,Iy,Iz;
+
   GS[0] = H;
-  GS[1] = G;
+  GS[1] = I;
+  GS[2] = G;
+  
   
   // Note: This is done in this order so that we -Z will be 
   coords[0] = A;
@@ -2885,7 +2899,6 @@ BOOST_AUTO_TEST_CASE( test_solve_multiples_goals )
   H(2) = Hz + frac;
   
   thlx.goals[0] = H;
-  // thlx.goals[1] = ;
 
   solve_inverse_problem(inv.an);
 
