@@ -1,0 +1,1583 @@
+<!--
+
+    Copyright 2017, Robert L. Read
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="./images/favicon.ico">
+
+    <title>{{ site.projecttitle }}</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap theme -->
+    <link href="bootstrap/css/bootstrap-theme.min.css" rel="stylesheet">
+
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <!-- Make sure to include these modifications after Bootstrap -->
+    <link rel="stylesheet" type="text/css" href="stylesheets/toc-layout.css">
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+      <![endif]-->
+
+  <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="javascripts/jquery.tableofcontents.js" type="text/javascript" charset="utf-8"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <!--    <script src="../../assets/js/ie10-viewport-bug-workaround.js"></script> -->
+
+    <script type="text/javascript" charset="utf-8"></script>
+
+        <link rel="stylesheet" href="./jquery-ui-1.11.4.custom/jquery-ui.min.css">
+<!--    <link rel="stylesheet" href="./jquery-ui-1.12.4.custom/jquery-ui.structure.min.css">
+    <link rel="stylesheet" href="./jquery-ui-1.12.4.custom/jquery-ui.theme.min.css">
+-->
+
+     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+
+    <script src="./js/scijs-newton-raphson.js"></script>
+
+    <script src="./js/tm_bundle.js"></script>
+
+    <script src="./js/axes.js"></script>
+    <script src="./js/three.js"></script>
+    <script src="./js/THREE.MeshLine.js"></script>
+    <script src="./js/OrbitControls.js"></script>
+    <script src="./js/Detector.js"></script>
+    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+   <script src="./js/d3-scale.min.js"></script>
+   <script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
+
+<script src="https://d3js.org/d3-array.v1.min.js"></script>
+<script src="https://d3js.org/d3-collection.v1.min.js"></script>
+<script src="https://d3js.org/d3-color.v1.min.js"></script>
+<script src="https://d3js.org/d3-format.v1.min.js"></script>
+<script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
+<script src="https://d3js.org/d3-time.v1.min.js"></script>
+<script src="https://d3js.org/d3-time-format.v2.min.js"></script>
+<script src="https://d3js.org/d3-scale.v1.min.js"></script>
+  </head>
+
+    <section id="visualsection" style="{border: red;}">
+    </section>
+
+    <input type="button" id="solve" value="Solve!">
+    <section id="textreport">
+
+    </section>
+
+
+	<script type="x-shader/x-vertex" id="vertexShader">
+
+			varying vec3 vWorldPosition;
+
+			void main() {
+
+				vec4 worldPosition = modelMatrix * vec4( position, 1.0 );
+				vWorldPosition = worldPosition.xyz;
+
+				gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+			}
+
+		</script>
+
+		<script type="x-shader/x-fragment" id="fragmentShader">
+
+			uniform vec3 topColor;
+			uniform vec3 bottomColor;
+			uniform float offset;
+			uniform float exponent;
+
+			varying vec3 vWorldPosition;
+
+			void main() {
+
+				float h = normalize( vWorldPosition + offset ).y;
+				gl_FragColor = vec4( mix( bottomColor, topColor, max( pow( max( h , 0.0), exponent ), 0.0 ) ), 1.0 );
+
+			}
+
+
+		</script>
+    <script>
+    var tm = UGLY_GLOBAL_SINCE_I_CANT_GET_MY_MODULE_INTO_THE_BROWSER;
+
+
+var OPERATION = "normal"; // "normal" or "helices"
+
+var TET_DISTANCE = 0.5;
+
+var origin = [0,0];
+
+// Detects webgl
+if ( ! Detector.webgl ) {
+    Detector.addGetWebGLMessage();
+    document.getElementById( 'visualsection' ).innerHTML = "";
+}
+
+function addShadowedLight(scene, x, y, z, color, intensity ) {
+    var directionalLight = new THREE.DirectionalLight( color, intensity );
+    directionalLight.position.set( x, y, z );
+    scene.add( directionalLight );
+    directionalLight.castShadow = true;
+    var d = 1;
+    directionalLight.shadow.camera.left = -d;
+    directionalLight.shadow.camera.right = d;
+    directionalLight.shadow.camera.top = d;
+    directionalLight.shadow.camera.bottom = -d;
+    directionalLight.shadow.camera.near = 1;
+    directionalLight.shadow.camera.far = 4;
+    directionalLight.shadow.mapSize.width = 1024;
+    directionalLight.shadow.mapSize.height = 1024;
+    directionalLight.shadow.bias = -0.005;
+}
+function createParalellepiped( sx, sy, sz, pos, quat, material ) {
+    var pp = new THREE.Mesh( new THREE.BoxGeometry( sx, sy, sz, 1, 1, 1 ), material );
+    pp.castShadow = false;;
+    pp.receiveShadow = true;
+    pp.position.set(pos.x,pos.y,pos.z);
+    return pp;
+
+}
+// Not sure how to use the quaternion here,
+function createSphere(r,pos,color) {
+    //    var cmat = memo_color_mat(tcolor);
+    var tcolor = new THREE.Color(color);
+    var cmat = new THREE.MeshPhongMaterial( { color: tcolor } );
+    var ball = new THREE.Mesh( new THREE.SphereGeometry( r, 18, 16 ), cmat );
+    ball.position.set(pos.x,pos.y,pos.z);
+    ball.castShadow = false;;
+    ball.receiveShadow = true;
+    return ball;
+}
+
+function get_member_color(gui,len) {
+    if (len < am.MIN_EDGE_LENGTH)
+	return d3.color("black");
+    else if (len > am.MAX_EDGE_LENGTH)
+	return d3.color("black");
+    else {
+	var p = (len - am.MIN_EDGE_LENGTH) / (am.MAX_EDGE_LENGTH - am.MIN_EDGE_LENGTH);
+	return d3.rgb(gui.color_scale(len));
+    }
+}
+
+function create_actuator(d,b_a,b_z,pos,cmat) {
+    var len = d+ -am.JOINT_RADIUS*2;
+    var quat = new THREE.Quaternion();
+
+    var d = new THREE.Vector3(b_z.x,b_z.y,b_z.z);
+    d.sub(b_a);
+    d.divideScalar(2);
+    d.add(pos);
+    var mesh =  createParalellepiped(
+	am.INITIAL_EDGE_WIDTH,
+	am.INITIAL_EDGE_WIDTH,
+	len,
+	pos,
+	quat,
+	cmat );
+
+    mesh.lookAt(b_z);
+
+    mesh.castShadow = false;;
+    mesh.receiveShadow = true;
+    am.scene.add(mesh);
+    mesh.structureKind = "member";
+    mesh.name = b_a.name + " " + b_z.name;
+    return mesh;
+}
+
+function memo_color_mat(tcolor) {
+    var string = tcolor.getHexString();
+    if (!(string in am.color_material_palette)) {
+	var cmat = new THREE.MeshPhongMaterial( { color: tcolor } );
+	am.color_material_palette[string] = cmat;
+    }
+    return am.color_material_palette[string]
+}
+function alphabetic_name(n) {
+    if (n < 26) {
+	return String.fromCharCode(65+n);
+    } else {
+	if (n < 26*26) {
+	    return alphabetic_name(Math.floor(n/26))+alphabetic_name(n % 26);
+	} else {
+	    return ""+n;
+	}
+    }
+}
+
+var scolors = [ d3.color("DarkRed"), d3.color("DarkOrange"), d3.color("Indigo") ];
+var smats = [ new THREE.Color(0x8B0000),
+	      new THREE.Color(0xFF8C00),
+	      new THREE.Color(0x000082)];
+
+
+
+var AM = function() {
+    this.container,
+    this.stats;
+    this.camera;
+    this.controls;
+    this.scene;
+    this.sceneOrtho;
+    this.renderer;
+    this.textureLoader;
+    this.clock = new THREE.Clock();
+    this.clickRequest = false;
+    this.mouseCoords = new THREE.Vector2();
+    this.raycaster = new THREE.Raycaster();
+    this.ballMaterial = new THREE.MeshPhongMaterial( { color: 0x202020 } );
+    this.pos = new THREE.Vector3();
+    this.quat = new THREE.Quaternion();
+
+
+    //    this.BT_CONSTRAINT_STOP_CFM = 3;
+    //    this.BT_CONSTRAINT_STOP_ERP = 1
+    //    this.myCFMvalue = 0.0;
+    //    this.myERPvalue = 0.8;
+
+    this.jointBody = null;
+
+    this.playgroundDimensions = {
+	w:10,
+	d:10,
+	h:3
+    };
+    this.GROUND_WIDTH = 1.0;
+
+    this.gravity_on = true;
+    this.margin = 0.05;
+
+    this.armMovement = 0;
+
+    //    this.window_height_factor = 1/4.0;
+    //    this.window_height_factor = 0.5;
+    this.window_height_factor = 0.8;
+    // Sadly, this seems to do nothing!
+    this.CAMERA_RADIUS_FACTOR = 1;
+
+    this.grid_scene = null;
+    // Used in manipulation of objects
+    this.gplane=false;
+
+
+    this.INITIAL_EDGE_LENGTH = TET_DISTANCE;
+    this.INITIAL_EDGE_WIDTH = this.INITIAL_EDGE_LENGTH/40;
+    this.INITIAL_HEIGHT = 3*this.INITIAL_EDGE_LENGTH/2;
+
+    this.NUMBER_OF_TETRAHEDRA = 70;
+    //       this.NUMBER_OF_TETRAHEDRA = 5;
+
+
+    //    this.JOINT_RADIUS = 0.09*this.INITIAL_EDGE_LENGTH; // This is the current turret joint ball.
+    this.JOINT_RADIUS = 0.3*this.INITIAL_EDGE_LENGTH; // This is the current turret joint ball.
+
+    this.LENGTH_FACTOR = 20;
+
+    // Helices look like this...
+    // {
+    // 	helix_joints: [],
+    // 	helix_members: []
+    // }
+    this.helices = [];
+
+
+
+    this.meshes = [];
+    this.bodies = [];
+
+
+    // This is sometimes useful for debugging.
+    //    this.jointGeo = new THREE.BoxGeometry( this.JOINT_RADIUS*2,this.JOINT_RADIUS*2,this.JOINT_RADIUS*2);
+    this.jointGeo = new THREE.SphereGeometry( this.JOINT_RADIUS,32,32);
+    this.jointMaterial = new THREE.MeshPhongMaterial( { color: 0x0000ff } );
+
+    this.floorTexture = new THREE.ImageUtils.loadTexture("images/logo-white-background.png");
+
+    this.MIN_EDGE_LENGTH = this.INITIAL_EDGE_LENGTH/2;
+    this.MAX_EDGE_LENGTH  = this.INITIAL_EDGE_LENGTH*2;
+    this.color_scale = d3.scale.quantile().domain([this.MIN_EDGE_LENGTH, this.MAX_EDGE_LENGTH])
+	.range(['violet', 'indigo', '#8A2BE2', 'blue', 'green', 'yellow', '#FFD700', 'orange', '#FF4500']);
+    this.color_material_palette = {};
+
+    this.GROUND_PLANE_MESH;
+    this.GROUND_BODY;
+    //    this.meshes.push(this.GROUND_PLANE_MESH);
+    //    this.bodies.push(this.GROUND_BODY);
+
+    // This is whatever body we are operating on with the locator.
+    this.selectedBody;
+
+    this.lockedGroups = { handlocked: [],
+			  temporary: []}
+
+
+    this.latestLookAt = new THREE.Vector3(0,0,0);
+
+    this.helix_params = [];
+}
+AM.prototype.push_body_mesh_pair = function(body,mesh) {
+    this.meshes.push(mesh);
+    this.bodies.push(body);
+}
+AM.prototype.remove_body_mesh_pair = function(body,mesh) {
+    for(var i = this.meshes.length - 1; i >= 0; i--) {
+	if(this.meshes[i].name === mesh.name) {
+	    this.meshes.splice(i, 1);
+	    this.bodies.splice(i, 1);
+	}
+    }
+}
+
+AM.prototype.clear_non_floor_body_mesh_pairs = function() {
+    this.meshes = [];
+    this.bodies = [];
+    //    this.meshes.push(am.GROUND_PLANE_MESH);
+    //    this.bodies.push(am.GROUND_BODY);
+}
+
+var am = new AM();
+
+
+var bulbLight, bulbMat, ambientLight, object, loader, stats;
+var ballMat, cubeMat, floorMat;
+// ref for lumens: http://www.power-sure.com/lumens.htm
+var bulbLuminousPowers = {
+    "110000 lm (1000W)": 110000,
+    "3500 lm (300W)": 3500,
+    "1700 lm (100W)": 1700,
+    "800 lm (60W)": 800,
+    "400 lm (40W)": 400,
+    "180 lm (25W)": 180,
+    "20 lm (4W)": 20,
+    "Off": 0
+};
+// ref for solar irradiances: https://en.wikipedia.org/wiki/Lux
+var hemiLuminousIrradiances = {
+    "0.0001 lx (Moonless Night)": 0.0001,
+    "0.002 lx (Night Airglow)": 0.002,
+    "0.5 lx (Full Moon)": 0.5,
+    "3.4 lx (City Twilight)": 3.4,
+    "50 lx (Living Room)": 50,
+    "100 lx (Very Overcast)": 100,
+    "350 lx (Office Room)": 350,
+    "400 lx (Sunrise/Sunset)": 400,
+    "1000 lx (Overcast)": 1000,
+    "18000 lx (Daylight)": 18000,
+    "50000 lx (Direct Sun)": 50000
+};
+var params = {
+    shadows: true,
+    exposure: 0.68,
+    bulbPower: Object.keys( bulbLuminousPowers )[ 4 ],
+    hemiIrradiance: Object.keys( hemiLuminousIrradiances )[0]
+};
+
+
+function initGraphics() {
+
+    am.container = document.getElementById( 'visualsection' );
+
+    var PERSPECTIVE_NEAR = 0.3;
+
+
+    // if (OPERATION == "helices") {
+    // 	var width = 10;
+    // 	var height = width * (window.innerHeight *am.window_height_factor) / window.innerWidth;
+    // 	am.camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, 1, 1000 );
+    // } else {
+        am.camera = new THREE.PerspectiveCamera( 60, window.innerWidth / (window.innerHeight * am.window_height_factor), PERSPECTIVE_NEAR, 2000 );
+//    }
+
+    //   am.camera.aspect = window.innerWidth / (window.innerHeight * am.window_height_factor);
+
+    var origin = new THREE.Vector3(0,0,0);
+    am.camera.lookAt(origin);
+
+    //    am.camera.quaternion.setFromAxisAngle(new THREE.Vector3(0,1,0), (Math.PI/2));
+
+    am.scene = new THREE.Scene();
+    am.scene.fog = new THREE.Fog( 0x000000, 500, 10000 );
+
+    am.camera.position.x = 0.0;
+    am.camera.position.y = 0.0;
+    am.camera.position.z =  10.0;
+
+    am.controls = new THREE.OrbitControls( am.camera, am.container );
+    am.controls.target.set(0,0,0);
+
+    am.renderer = new THREE.WebGLRenderer( { antialias: true } );
+    am.renderer.setClearColor( 0xffffff );
+    am.renderer.autoClearColor = true;
+
+    am.renderer.setPixelRatio( window.devicePixelRatio );
+    am.renderer.setSize( window.innerWidth, window.innerHeight*am.window_height_factor );
+    am.SCREEN_WIDTH = am.renderer.getSize().width;
+    am.SCREEN_HEIGHT = am.renderer.getSize().height;
+    am.camera.radius = ( am.SCREEN_WIDTH + am.SCREEN_HEIGHT ) / this.CAMERA_RADIUS_FACTOR;
+
+
+    am.cameraOrtho = new THREE.OrthographicCamera( 0, am.SCREEN_WIDTH, am.SCREEN_HEIGHT, 0, - 10, 10 );
+
+    hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 1 );
+    am.scene.add( hemiLight );
+
+    var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.8 );
+    directionalLight.position = new THREE.Vector3(100,5,0);
+    am.scene.add( directionalLight );
+
+    var ambientLight = new THREE.AmbientLight( 0x404040 );
+
+    am.grid_scene = new THREE.Scene();
+    am.grid_scene.fog = new THREE.Fog( 0x000000, 500, 10000 );
+
+    // GROUND
+    var groundGeo = new THREE.PlaneBufferGeometry( 10000, 10000 );
+    var groundMat;
+    if (OPERATION == "normal") {
+	groundMat = new THREE.MeshPhongMaterial( { color: 0x777777, specular: 0x050505 } );
+    }
+    // else {
+    // 	groundMat = new THREE.MeshPhongMaterial( { color: 0xfffffff, specular: 0x050505 } );
+    // }
+    //    groundMat.color.setHSL( 0.095, 1, 0.75 );
+
+    var ground = new THREE.Mesh( groundGeo, groundMat );
+    ground.name = "GROUND";
+    ground.rotation.x = -Math.PI/2;
+    ground.position.y = 0;
+    am.scene.add( ground );
+
+    ground.receiveShadow = true;
+
+
+    // HACK:  These diemensions are probably not right here!
+    gridInit(am.grid_scene,am.playgroundDimensions);
+
+    am.container.innerHTML = "";
+
+    am.container.appendChild( am.renderer.domElement );
+
+    am.sceneOrtho = new THREE.Scene();
+
+    window.addEventListener( 'resize', onWindowResize, false );
+
+}
+
+AM.prototype.push_body_mesh_pair = function(body,mesh) {
+    this.meshes.push(mesh);
+    this.bodies.push(body);
+}
+AM.prototype.remove_body_mesh_pair = function(body,mesh) {
+    for(var i = this.meshes.length - 1; i >= 0; i--) {
+	if(this.meshes[i].name === mesh.name) {
+	    this.meshes.splice(i, 1);
+	    this.bodies.splice(i, 1);
+	}
+    }
+    //    delete mesh["ammo_obj"];
+    for(var i = this.rigidBodies.length - 1; i >= 0; i--) {
+	if(this.rigidBodies[i].name === body.name) {
+	    this.rigidBodies.splice(i, 1);
+	}
+    }
+}
+
+
+function onWindowResize() {
+    am.camera.aspect = window.innerWidth / (window.innerHeight * am.window_height_factor);
+    am.renderer.setSize( window.innerWidth, window.innerHeight * am.window_height_factor );
+
+    am.camera.updateProjectionMatrix();
+    am.SCREEN_WIDTH = am.renderer.getSize().width;
+    am.SCREEN_HEIGHT = am.renderer.getSize().height;
+    am.camera.radius = ( am.SCREEN_WIDTH + am.SCREEN_HEIGHT ) / this.CAMERA_RADIUS_FACTOR;
+
+    am.cameraOrtho = new THREE.OrthographicCamera( 0, am.SCREEN_WIDTH, am.SCREEN_HEIGHT, 0, - 10, 10 );
+}
+
+function animate() {
+    // Seems this is likely to be a problem...
+    requestAnimationFrame( animate );
+    render();
+}
+
+var sprite_controls = new function () {
+    this.size = 50;
+    this.sprite = 0;
+    this.transparent = true;
+    this.opacity = 0.6;
+    this.colorize = 0xffffff;
+    this.textcolor = "yellow";
+    this.rotateSystem = true;
+
+    this.clear = function (x,y) {
+        am.sceneOrtho.children.forEach(function (child) {
+	    if (child instanceof THREE.Sprite) am.sceneOrtho.remove(child);
+        })
+    };
+
+    this.draw_and_create = function (sprite,x,y,message) {
+	var fontsize = 128;
+	var ctx, texture,
+	    spriteMaterial,
+	    canvas = document.createElement('canvas');
+	ctx = canvas.getContext('2d');
+	ctx.font = fontsize + "px Arial";
+
+	// setting canvas width/height before ctx draw, else canvas is empty
+	canvas.width = ctx.measureText(message).width;
+	canvas.height = fontsize * 2; // fontsize * 1.5
+
+	// after setting the canvas width/height we have to re-set font to apply!?! looks like ctx reset
+	ctx.font = fontsize + "px Arial";
+	ctx.fillStyle = this.textcolor;
+	ctx.fillText(message, 0, fontsize);
+
+	texture = new THREE.Texture(canvas);
+	texture.minFilter = THREE.LinearFilter; // NearestFilter;
+	texture.needsUpdate = true;
+
+	var spriteMaterial = new THREE.SpriteMaterial({
+	    opacity: this.opacity,
+	    color: this.colorize,
+	    transparent: this.transparent,
+	    map : texture});
+
+	spriteMaterial.scaleByViewport = true;
+	spriteMaterial.blending = THREE.AdditiveBlending;
+
+        if (!sprite) {
+	    sprite = new THREE.Sprite(spriteMaterial);
+	}
+
+	sprite.scale.set(this.size, this.size, this.size);
+	sprite.position.set(x, y, 0);
+
+	am.sceneOrtho.add(sprite);
+	return sprite;
+    };
+};
+
+function render() {
+    var deltaTime = am.clock.getDelta();
+
+    sprite_controls.clear();
+    am.controls.update( deltaTime );
+
+    // note this....
+    //    am.renderer.autoClear = true;
+    am.renderer.render( am.scene, am.camera );
+    if (OPERATION == "normal") {
+	am.renderer.render( am.grid_scene, am.camera);
+    }
+    am.renderer.autoClear = false;
+    am.renderer.render(am.sceneOrtho, am.cameraOrtho);
+}
+
+function initiation_stuff() {
+    // Initialize Three.js
+    if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+}
+
+
+function init() {
+    initGraphics();
+    createGround(am);
+}
+
+function add_equitetrabeam_helix(am,chi,lambda,rho,radius,pvec,len) {
+    am.helices.push(
+	{
+	    helix_joints: [],
+	    helix_members: []
+	});
+    var onehop = tm.one_hop(radius,rho,len);
+    var twohop = tm.two_hop(radius,rho,len);
+    var d = tm.find_drho_from_r_el(rho,radius,len);
+    var pitch = 2*Math.PI*d/rho;
+    am.helix_params.push ({ rho: rho,
+			    len: len,
+			    chirality: chi,
+			    radius: radius,
+			    onehop: onehop,
+			    twohop: twohop,
+			    d: d,
+			    pitch: pitch,
+			    lambda: lambda});
+
+    var hp = am.helix_params.slice(-1)[0];
+    load_NTetHelix(am,am.helices.slice(-1)[0],
+		   am.NUMBER_OF_TETRAHEDRA,
+		   pvec,hp);
+    //    build_central();
+    return hp;
+}
+
+initiation_stuff();
+
+init();
+//animate();
+
+// var len = am.INITIAL_EDGE_LENGTH;
+
+
+// function compute_helix_minimax(helix) {
+//     var min = 100000000;
+//     var max = 0.0;
+//     for(var i = 0; i < Math.min(helix.helix_members.length,100); i++) {
+// 	var member = helix.helix_members[i];
+// 	var a = member.a.mesh.position;
+// 	var b = member.b.mesh.position;
+// 	var d = a.distanceTo(b);
+// 	if (i < 100) {
+// 	    //	    console.log("member:",i);
+// 	    //	    console.log("a:",member.a.mesh.position);
+// 	    //	    console.log("b:",member.b.mesh.position);
+// 	    var q0 = 180*Math.atan2(member.a.mesh.position.x,
+// 	    			    member.a.mesh.position.y)/Math.PI;
+// 	    var q1 = 180*Math.atan2(member.b.mesh.position.x,
+// 	    			    member.b.mesh.position.y)/Math.PI;
+
+// 	    //	    console.log("distance:",d,q1-q0);
+// 	}
+
+// 	if (min > d) min = d;
+// 	if (max < d) max = d;
+//     }
+//     //    console.log("min, max", min, max);
+//     //    console.log("score: ", (100*max/min -100) + "%");
+
+//     return [min,max,(100*max/min -100)];
+// }
+
+
+//  var r0 = (2/3)*Math.sqrt(2/3);
+var r0 = (2/3)*Math.sqrt(2/3);
+// This is the splitting difference.
+// var r0 = Math.sqrt(35/9)/4;
+var trial = 0;
+var num = 4;
+
+//add_equitetrabeam_helix_lambda(am, 1.0, pvec0, len);
+
+
+
+// function draw_central() {
+//     am.clear_non_floor_body_mesh_pairs();
+//     for( var i = am.scene.children.length - 1; i >= 0; i--) {
+// 	var obj = am.scene.children[i];
+// 	if (obj.type == "Mesh" && obj.name != "GROUND") {
+// 	    am.scene.remove(obj);
+// 	}
+//     }
+//     am.helices = [];
+//     am.helix_params = [];
+//     draw_and_register();
+// }
+
+
+// function draw_and_register() {
+//     var pvec0 = new THREE.Vector3(0,HELIX_RADIUS*3,-3);
+//     var hp = draw_new(pvec0);
+//     var h = am.helices.slice(-1)[0];
+// }
+
+function draw_new(pvec) {
+    return add_equitetrabeam_helix(am,CHIRALITY_CCW,null,
+				   RAIL_ANGLE_RHO_d*Math.PI/180,
+				   HELIX_RADIUS,pvec,TET_DISTANCE);
+}
+
+function draw_many() {
+    for(var i = 0; i < 6; i++) {
+	var rho = (i / 5.0) *  RAIL_ANGLE_RHO_d*Math.PI/180;
+	var pvec0 = new THREE.Vector3(((5 - i)/ 2.0)*2 + -3,HELIX_RADIUS*3,-3);
+	add_equitetrabeam_helix(am,CHIRALITY_CCW,null,rho,HELIX_RADIUS,pvec0,TET_DISTANCE);
+    }
+}
+
+function build_central() {
+    //    var pvec0 = new THREE.Vector3(0,0,0);
+    var pvec0 = new THREE.Vector3(0,HELIX_RADIUS*3,-3);
+
+    // I can't figure out if HELIX_RADIUS is wrong, if
+    // my formula is wrong, or if the CylinderGeometry is wrong....
+    // The formula checks out in the 2-D case.
+    var ir1 = tm.inradius_assumption1(Math.PI*RAIL_ANGLE_RHO_d/180,HELIX_RADIUS);
+    var ir2 = tm.inradius_assumption2(Math.PI*RAIL_ANGLE_RHO_d/180,HELIX_RADIUS);
+
+    console.log("inradius1", ir1);
+    console.log("inradius2", ir2);
+    {
+	var geometry = new THREE.CylinderGeometry( ir1, ir1, 3, 32 );
+	var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+	var cylinder = new THREE.Mesh( geometry, material );
+	cylinder.rotateX(Math.PI/2);
+	cylinder.translateZ(-HELIX_RADIUS*3);
+	am.scene.add( cylinder );
+    }
+}
+
+
+
+function draw_helices() {
+    var pvec0 = new THREE.Vector3(0,HELIX_RADIUS*2.1,-1.0);
+    var hp = draw_new(pvec0);
+    var h = am.helices.slice(-1)[0];
+    var score = compute_helix_minimax(h)[2];
+    hp.score = score;
+    hp.inradius = tm.inradius_assumption1(hp.rho,hp.radius);
+    register_trials(trial++,OPTIMALITY,RAIL_ANGLE_RHO_d,HELIX_RADIUS,hp.d,TET_DISTANCE,
+		    hp.onehop,
+		    hp.twohop,
+		    hp.pitch,
+		    hp.inradius,
+		    hp.score);
+
+    var factor =  3*tm.BCtheta/tm.BCrho;
+    draw_helix(pvec0,0,hp,factor,"black",1.0,0.003);
+
+    draw_helix(pvec0,0,hp,1,"red",1.2,0.005);
+    draw_helix(pvec0,1,hp,1,"orange",1.2,0.005);
+    draw_helix(pvec0,2,hp,1,"blue",1.2,0.005);
+}
+
+function draw_helix(pvec,rail,hparams,factor,color,fudge,lw) {
+    var lineGeometry = new THREE.Geometry();
+    var path = new THREE.Group();
+
+    // var material = new THREE.LineBasicMaterial( {
+    // 	color: color.toString(),
+    // 	// Sadly, linewidth doesn't work with the WebGLRenderer
+    // 	linewidth: 10,
+    // 	linecap: 'round', //ignored by WebGLRenderer
+    // 	linejoin:  'round' //ignored by WebGLRenderer
+    // } );
+
+
+    //  am.scene.add(path);
+    var currentPosition = new THREE.Vector3(0, 0, 0);
+    var lastPosition = null;
+
+
+    var tets = am.NUMBER_OF_TETRAHEDRA;
+
+    var len = hparams.len;
+    var rho = hparams.rho;
+    var d = hparams.d;
+    var radius = hparams.radius*fudge;
+    var lambda = hparams.lambda;
+
+    var big = (tets+1)*d;
+
+    //    var limit = 1000.0;
+    var limit = 1000.0;
+    for(var i = 0; i < limit; i++) {
+	var chi = hparams.chirality;
+	var n = i * (big / limit);
+	var q = tm.H_general_factor(chi,n,rail,rho,d,radius,factor);
+	var v = new THREE.Vector3(q[0], q[1], q[2]);
+	v = v.add(pvec);
+	currentPosition = v;
+	if (!lastPosition) lastPosition = currentPosition;
+
+	lineGeometry.vertices.push(currentPosition);
+
+	lastPosition = currentPosition;
+    }
+
+    var line = new MeshLine();
+    line.setGeometry(lineGeometry);
+
+    var material = new MeshLineMaterial({
+	color: new THREE.Color(color),
+	lineWidth: lw
+    }
+				       );
+    //    material.color = new THREE.Color("red");
+
+    var mesh = new THREE.Mesh( line.geometry, material );
+    am.scene.add( mesh );
+}
+
+function draw_custom_tetrahelix(results,pvec,helix
+			       ) {
+    var colors = [ d3.color("DarkRed"), d3.color("DarkOrange"), d3.color("Blue") ];
+    var darkgreen = d3.color("#008000");
+    var dcolor = [null,darkgreen,d3.color("purple")];
+    var n = results.length;
+    for(var i = 0; i < n; i++) {
+	var rail = i % 3;
+	//	var num = Math.floor(i/3);
+	//	var q = tm.H_general(chi,num,rail,myRho,d,radius);
+	var v = new THREE.Vector3(results[i].x, results[i].y, results[i].z);
+	v = v.add(pvec);
+
+	var pos = new THREE.Vector3();
+	pos.set( v.x, v.y, v.z);
+	var mesh = createSphere(am.JOINT_RADIUS,pos,smats[rail]);
+	mesh.structureKind = "joint";
+	mesh.castShadow = true;
+	mesh.receiveShadow = false;
+	var body = {};
+	body.rail =  rail;
+	body.number = i / 3;
+	body.name = alphabetic_name(i);
+//	console.log("name ="+body.name);
+//	console.log("mesh ="+mesh.structureKind);
+	body.mesh = mesh;
+	mesh.name = body.name;
+
+	am.scene.add(mesh);
+
+	helix.helix_joints.push(body);
+	am.push_body_mesh_pair(body,mesh);
+
+	for(var k = 0; k < Math.min(3,i) && k < i; k++) {
+	    var h = i-(k+1);
+
+	    // Sadly, increasing the mass of the members seems to be
+	    // necessary to keep the edges from passing through the obstacles.
+	    // This is a very unfortunate tuning...I suspect it is a weakness
+	    // in the solver of physics engine.
+	    var pos = new THREE.Vector3();
+	    var quat = new THREE.Quaternion();
+
+	    var b_z = helix.helix_joints[i];
+	    var b_a = helix.helix_joints[h];
+	    var o_a = b_a.mesh.position;
+	    var o_z = b_z.mesh.position;
+
+	    var v_z = new THREE.Vector3(o_a.x,o_a.y,o_a.z);
+	    var v_a = new THREE.Vector3(o_z.x,o_z.y,o_z.z);
+	    var dist = v_a.distanceTo(v_z);
+
+	    var v_avg = new THREE.Vector3(v_z.x,v_z.y,v_z.z);
+	    v_avg.add(v_a);
+	    v_avg.multiplyScalar(0.5);
+
+	    pos.set( v_avg.x, v_avg.y, v_avg.z);
+            quat.set( 0, 0, 0, 1 );
+
+	    var diff = ((b_a.rail - b_z.rail)+3) % 3;
+	    var cmat;
+	    var tcolor;
+	    if (diff != 0) {
+		if (OPERATION == "helices") {
+		    // What we really want to do here is to interpolate the
+		    // color of the end nodes!
+		    tcolor = new THREE.Color(0x008800);
+		    cmat  = memo_color_mat(tcolor);
+		} else {
+		    if (diff == 2) {
+			tcolor = new THREE.Color(0x9400D3);
+			cmat  = memo_color_mat(tcolor);
+		    }
+		    if (diff== 1) {
+			tcolor = new THREE.Color(0x008000);
+			cmat  = memo_color_mat(tcolor);
+		    }
+		}
+	    } else {
+		var cm = smats[b_a.rail]
+		cmat = new THREE.MeshPhongMaterial( {color : cm } );
+	    }
+	    var member_color = (diff != 0) ? dcolor[diff] : colors[b_a.rail];
+
+	    var mesh = create_actuator(dist,v_a,v_z,pos,cmat);
+	    if (b_a.name > b_z.name) {
+		var t = b_a;
+		b_a = b_z;
+		b_z = t;
+	    }
+	    var memBody = {};
+	    memBody.name = b_a.name + " " + b_z.name;
+	    memBody.link_a = b_a;
+	    memBody.link_z = b_z;
+	    memBody.endpoints = [];
+	    memBody.endpoints[0] = b_a;
+	    memBody.endpoints[1] = b_z;
+
+	    for(var x = helix.helix_members.length -1; x >= 0; x--) {
+		if (helix.helix_members[x].body.name == memBody) {
+		    helix.helix_member.splice(x,1);
+		}
+	    }
+	    var link = { a: b_a, b: b_z, body: memBody};
+	    helix.helix_members.push(link);
+	    mesh.structureKind = "member";
+	    am.push_body_mesh_pair(memBody,mesh);
+	}
+    }
+}
+
+
+
+
+
+// I have a problem there that when you quit moving the mouse,
+// the jointBody and constrainedBody both become detaches from
+// the mouse---that is, their normal physics apply, EXCEPT
+// for right when your move the mouse.  We could in theory
+// disable the physics for the object until MouseUp.  I am not
+// sure how to do this in Bullet.
+
+function onMouseMove(e){
+
+    // Move and project on the plane
+    if (am.gplane && am.selectedBody) {
+
+	var mouse3D = new THREE.Vector3( ( event.clientX / am.renderer.getSize().width ) * 2 - 1,   //x
+					 -( event.clientY / (am.renderer.getSize().height) ) * 2 + 1,  //y
+					 0.5 );                                            //z
+	mouse3D.unproject( am.camera );
+
+        var pos = projectOntoPlane(am,e.clientX,e.clientY,am.gplane,am.camera);
+
+        if(pos){
+            setClickMarker(am,pos.x,pos.y,pos.z,am.scene);
+//            moveJointToPoint(am,pos.x,pos.y,pos.z);
+        }
+    }
+}
+
+// BUG: It is easy to get to constrainedBodies someone both constrained,
+// But that is not the intention of the interaction tool, and is very annoying.
+function onMouseDown(e){
+    // Find mesh from a ray
+
+    var mouse3D = new THREE.Vector3( ( e.clientX / am.renderer.getSize().width ) * 2 - 1,   //x
+				     -( e.clientY / (am.renderer.getSize().height) ) * 2 + 1,  //y
+				     0.5 );                                            //z
+    mouse3D.unproject( am.camera );
+    mouse3D.sub(am.camera.position);
+    mouse3D.project( am.camera );
+
+    var entity = findNearestIntersectingObject(am,e.clientX,e.clientY,am.camera,am.meshes);
+    var pos = entity.point;
+    // This is fragile, we need to be able to change this geometry....
+
+    console.log(entity);
+
+    if (pos &&
+	(
+	    (entity.object.structureKind == "obstacle")
+		||
+		(entity.object.structureKind == "joint")
+		||
+		(entity.object.structureKind == "member")
+	)
+       ){
+        var idx = am.meshes.indexOf(entity.object);
+
+	//	alert("found" + idx);
+
+	if (e.ctrlKey) {
+	    am.latestLookAt.x = pos.x;
+	    am.latestLookAt.y = pos.y;
+	    am.latestLookAt.z = pos.z;
+	}
+
+	//            constraintDown = true;
+        // Set marker on contact point
+        setClickMarker(am,pos.x,pos.y,pos.z,am.scene);
+	// what we really want to do here is to change the color, but stash the old color first to restore...
+	var original_color = am.meshes[idx].material.color.getHex();
+	am.meshes[idx].material.original_color = original_color;
+	am.meshes[idx].material.color.setHex( 0x00FF00 );
+
+        // Set the movement plane
+        setScreenPerpCenter(pos,am);
+
+        if(idx !== -1){
+	    var obj = am.meshes[idx];
+	    //		am.manipulatedObject = obj;
+	    am.manipulatedObject = am.meshes[idx];
+	    // This is roughly the same as being handlocked
+	    if (original_color != 0) {
+		am.manipulatedObject.original_color = original_color;
+	    }
+//	    addMouseConstraint(am,pos.x,pos.y,pos.z,obj);
+	    am.selectedBody = obj;
+	}
+
+    }
+}
+
+
+// TODO: This is specific to CANNON
+function removeJointConstraint(gui) {
+    // Remove constriant from world
+    if (!gui.selectedBody) {
+	return;
+    }
+//    gui.physicsWorld.removeConstraint(gui.mouseConstraint);
+    gui.mouseConstraint = false;
+    gui.selectedBody = null;
+}
+
+function establish_controls(gui) {
+    gui.controls = new THREE.OrbitControls( gui.camera, gui.container );
+    gui.controls.enableDamping = true;
+    gui.controls.dampingFactor = 0.25;
+    gui.controls.enableZoom = true;
+    gui.controls.enabled = true;
+
+    // We may be able to make this the last object clicked to change the controls.
+    gui.controls.target.set(0,0,0);
+    gui.controls.target.set(gui.latestLookAt.x,gui.latestLookAt.y,gui.latestLookAt.z);
+}
+
+
+/*
+Okay, this is my attempt to quickly model the idea of multiple goal nodes. The basic GUI
+idea is that there are a set of nodes, we will render them in a non RYB color --- say Green.
+A Green node has a target position. By clicking and dragging a non-green node, you turn it
+Green and lock its position. By clicking on a node that is green without moving it (much) you unlock it.
+
+We will provide addtional information in text.  We will render the actual position of each node
+as returned to use by the optimizer, in addition to the target nodes, and the distances.
+
+The best say to implement all of this is start by just making it work properly with one node!
+
+*/
+
+// var gpos = { x: 0, y: 0, z: 0};
+
+var locked_nodes = {};
+
+var EXAMPLE_NODE = { node_number: 0, pos: null};
+
+// return html rendering of the locked nodes.
+function render_locked_nodes(locked_nodes,nodes_returned) {
+    var html = "";
+    html += "<table>";
+    html += "<tr>";
+    html += "<th>num</th>";
+    html += "<th>x target</th>";
+    html += "<th>y target</th>";
+    html += "<th>z target</th>";
+    html += "<th>x actual</th>";
+    html += "<th>y actual </th>";
+    html += "<th>z acutal</th>";
+    html += "<th>d</th>";
+    html += "</tr>";
+    for (key in locked_nodes) {
+	var nd = locked_nodes[key];
+	if (nd.pos) {
+	html += "<tr>";
+	html += "<td>";
+	html += nd.node_number;
+	html += "</td>";
+	html += "<td>";
+	html += nd.pos.x.toFixed(2);
+	html += "</td>";
+	html += "<td>";
+	html += nd.pos.y.toFixed(2);
+	html += "</td>";
+	html += "<td>";
+	html += nd.pos.z.toFixed(2);
+	    html += "</td>";
+	}
+	if (nodes_returned && nd.node_number) {
+	    var r_loc = nodes_returned[nd.node_number];
+	    html += "<td>";
+	    html += r_loc.x.toFixed(2);
+	    html += "</td>";
+	    html += "<td>";
+	    html += r_loc.y.toFixed(2);
+	    html += "</td>";
+	    html += "<td>";
+	    html += r_loc.z.toFixed(2);
+	    html += "</td>";
+	    html += "<td>";
+	    var target = new THREE.Vector3(nd.pos.x,nd.pos.y,nd.pos.z);
+	    var actual = new THREE.Vector3(r_loc.x,r_loc.y,r_loc.z);
+	    var dist = target.distanceTo(actual);
+	    html += dist.toFixed(2);
+	    html += "</td>";
+	}
+	html += "</tr>";
+    };
+    html += "</table>";
+    return html;
+}
+
+function set_locked_nodes_green() {
+    for (key in locked_nodes) {
+	// Let me experimentally add the target mesh locations as dark green nodes...
+	var o = locked_nodes[key];
+	var p = o.pos;
+	var mesh = createSphere(am.JOINT_RADIUS,p,new THREE.Color(0x006400));
+	mesh.structureKind = "joint";
+	mesh.castShadow = true;
+	mesh.receiveShadow = true;
+	am.scene.add(mesh);
+	for(var i = 0; i < am.meshes.length; i++) {
+	    var m =  am.meshes[i];
+	    if (m.name == key) {
+		m.original_color = m.material.color.getHex();
+		m.castShadow = true;
+		m.receiveShadow = true;
+		m.material.color.setHex( 0x00FF00 );
+	    }
+	}
+    }
+}
+
+function convert_node_name_to_number(nm) {
+    if (nm.length > 1) {
+	console.log("WARNING! Node Name too big for simple algorithm! : "+nm);
+    }
+    var c = nm.charCodeAt(0) - 65;
+    return c;
+}
+function onMouseUp(e) {
+    // DEBUG Hack
+
+    var mouse3D = new THREE.Vector3( ( event.clientX / am.renderer.getSize().width ) * 2 - 1,   //x
+				     -( event.clientY / (am.renderer.getSize().height) ) * 2 + 1,  //y
+				     0.5 );                                            //z
+
+    //  mouse3D.unproject( am.camera );
+    mouse3D.unproject( am.camera );
+    mouse3D.sub(am.camera.position);
+    mouse3D.project( am.camera );
+
+
+    var pos = projectOntoPlane(am,e.clientX,e.clientY,am.gplane,am.camera);
+    if (!pos) {
+	return;
+    }
+
+    if (am.manipulatedObject && pos) {
+	console.log("Manipulated Object");
+	console.log(am.manipulatedObject);
+
+	var name = am.manipulatedObject.name;
+	var num = convert_node_name_to_number(name);
+
+	// if the shift key is down, we unlock, else we lockd
+	if (!e.shiftKey) {
+	    locked_nodes[name] = { node_number: num, pos: pos };
+	} else {
+	    am.manipulatedObject.material.color.setHex( am.manipulatedObject.original_color );
+	    am.movedButNotSent = false;
+	    delete locked_nodes[name];
+	    console.log(locked_nodes);
+	}
+	$("#textreport").html(render_locked_nodes(locked_nodes,null));
+	am.manipulatedObject = null;
+    }
+    if(pos){
+        setClickMarker(am,pos.x,pos.y,pos.z,am.scene);
+    }
+    // remove the marker
+
+
+    removeClickMarker(am);
+
+    // Send the remove mouse joint to server
+    removeJointConstraint(am);
+
+    // Restore joint masses....
+    // Actually, this is really wrong, we need to keep track of the nodes that are truly locked
+    // in place as compared to those that we have locked for convenience.
+
+    // for(var i = 0; i < am.lockedGroups.temporary.length; i++) {
+    // 	var joint = am.lockedGroups.temporary[i];
+    // }
+    // am.lockedGroups.temporary = [];
+
+    // if (!e.shiftKey) {
+    // 	var index = am.lockedGroups.handlocked.indexOf(am.manipulatedObject);
+    // 	if (index > -1) {
+    // 	    am.lockedGroups.handlocked.splice(index, 1);
+    // 	    if (am.manipulatedObject.structureKind == "joint") {
+    // 	    }
+    // 	}
+
+
+    // }
+
+    // if (e.shiftKey) {
+
+    // 	for(var i = 0; i < am.lockedGroups.handlocked.length; i++) {
+    // 	    var joint = am.lockedGroups.handlocked[i];
+    // 	    if (joint.name != am.manipulatedObject) {
+    // 		var zero = new Ammo.btVector3(0, 0, 0 );
+    // 		joint.setMassProps(0.0,zero);
+    // 	    }
+    // 	}
+    // }
+
+    if (am.gplane.visible == true) {
+	am.gplane.visible = false;
+	// We need to re-establish the controls because I don't have
+	// any good way of exiting the active state...
+	am.controls.dispose();
+	establish_controls(am);
+    }
+
+    if (am.movedButNotSent) {
+//	console.log("final");
+//	console.log(pos);
+//	gpos = pos;
+	solve_via_coords();
+//	send_to_robot_url();
+	am.movedButNotSent = false;
+    }
+
+    // Now we want to change color to show locked...
+    // TODO: This is a global...
+
+}
+
+function projectOntoPlane(gui,screenX,screenY,thePlane,camera) {
+    var x = screenX;
+    var y = screenY;
+    var now = new Date().getTime();
+    // project mouse to that plane
+    // This is probably highly wrong...
+    // this means that we can only fold an object on itself.
+    // I think this would work if you have
+    var hit = findNearestIntersectingObject(gui,screenX,screenY,camera,[thePlane]);
+    if(hit)
+        return hit.point;
+    else return false;
+}
+function findNearestIntersectingObject(gui,clientX,clientY,camera,objects) {
+    var mouse3D = new THREE.Vector3( ( event.clientX / gui.renderer.getSize().width ) * 2 - 1,   //x
+                                     -( event.clientY / (gui.renderer.getSize().height) ) * 2 + 1,  //y
+                                     0.5 );                                            //z
+
+    var mouse = new THREE.Vector2();
+    mouse.x = (event.clientX / gui.renderer.getSize().width) * 2 - 1;
+    mouse.y = -(event.clientY / (gui.renderer.getSize().height)) * 2 + 1;
+
+//    console.log(mouse);
+
+    var raycaster = new THREE.Raycaster();
+    try {
+	raycaster.setFromCamera(mouse, camera);
+	var intersects = raycaster.intersectObjects( objects );
+	var closest = false;
+	if (intersects.length > 0) {
+            closest = intersects[0];
+//	    console.log("found!");
+	}
+	return closest;
+    } catch (err) {
+	console.log("Error: "+err);
+	return null;
+    }
+}
+
+function initHandlers() {
+    am.container = document.getElementById( 'visualsection' );
+//    am.container.addEventListener("mousemove", onMouseMove, true );
+    am.container.addEventListener("mousedown", onMouseDown, true );
+    am.container.addEventListener("mouseup", onMouseUp, true );
+}
+
+function setClickMarker(gui,x,y,z) {
+    if(!gui.clickMarker){
+        var shape = new THREE.SphereGeometry(gui.MARKER_RADIUS/4, 8, 8);
+        gui.clickMarker = new THREE.Mesh(shape, gui.markerMaterial);
+        gui.scene.add(gui.clickMarker);
+    }
+    gui.clickMarker.visible = true;
+    gui.clickMarker.position.set(x,y,z);
+    gui.movedButNotSent = true;
+}
+
+
+function removeClickMarker(gui){
+    if(gui.clickMarker){
+	gui.clickMarker.visible = false;
+    }
+}
+// This function creates a virtual movement plane for the mouseJoint to move in
+function setScreenPerpCenter(point, gui) {
+    // If it does not exist, create a new one
+    if(!gui.gplane) {
+	// We need to be precese about what these coordinates are!
+        var planeGeo = new THREE.PlaneGeometry(4000,4000);
+	// Something has change in three.js, apparently ray casting only
+	// works with visible objects.  Since we are creating a plan to
+	// move the joint in, I am going to try to create an object here that makes since.
+	var plane_material = new THREE.MeshLambertMaterial( { color: 0x110000 } );
+	plane_material.transparent = true;
+	plane_material.opacity = 0.0;
+
+	gui.gplane = new THREE.Mesh(planeGeo,plane_material);
+
+        gui.scene.add(gui.gplane);
+    }
+    gui.gplane.visible = true;
+    gui.gplane.name = "movementplane";
+    gui.controls.enabled = false;
+
+    // Center at mouse position
+    gui.gplane.position.copy(point);
+
+    // Make it face toward the camera
+    gui.gplane.quaternion.copy(gui.camera.quaternion);
+}
+
+function addOriginSphere() {
+    var mesh = createSphere(0.2,pos, new THREE.Color(0xff0000));
+
+    var body = {};
+    body.name = "spud";
+    mesh.name = "spud";
+    am.push_body_mesh_pair(body,mesh);
+    am.scene.add(mesh);
+}
+
+
+function createGround(am) {
+    // Ground
+    // TODO: make these local!
+    //    am.pos.set( 0, -GROUND_WIDTH/2, 0 );
+    am.pos.set( 0, -am.GROUND_WIDTH/2, 0 );
+    am.quat.set( 0, 0, 0, 1 );
+
+    am.floorTexture.wrapS = am.floorTexture.wrapT = THREE.RepeatWrapping;
+    am.floorTexture.repeat.set( 10, 10 );
+
+    var floorMaterial = new THREE.MeshBasicMaterial( { map: am.floorTexture, side: THREE.DoubleSide } );
+
+    floorMaterial.transparent = true;
+    floorMaterial.opacity = 0.7;
+
+    var ground = createParalellepiped( am.playgroundDimensions.w, am.GROUND_WIDTH,
+				       am.playgroundDimensions.d,
+				       0, am.pos, am.quat, floorMaterial );
+
+    am.GROUND_PLANE_MESH = ground;
+
+    //    ground["ammo_obj"].setFriction( 0.99 );
+
+    ground.castShadow = true;
+    ground.receiveShadow = true;
+}
+
+// A Problem here is defined as a set of posts
+// and a set of holes.
+var PROBLEM;
+function solve_via_service() {
+
+    var problem_string = JSON.stringify(PROBLEM);
+    $.ajax({url: "http://127.0.0.1/posthole",
+	    data: {"problem" : problem_string },
+	    success: function(result) {
+		am.clear_non_floor_body_mesh_pairs();
+
+		for( var i = am.scene.children.length - 1; i >= 0; i--) {
+		    var obj = am.scene.children[i];
+		    if (obj.type == "Mesh" && obj.name != "GROUND") {
+			am.scene.remove(obj);
+		    }
+		}
+
+		am.helices = [];
+		am.helix_params = [];
+		am.helices.push(
+		    {
+			helix_joints: [],
+			helix_members: []
+		    });
+		// now basically we want to build the helix from these results...
+		//	       var pvec = new THREE.Vector3(0,HELIX_RADIUS*2.1,-1.0);
+		var pvec = new THREE.Vector3(0,0.0,0.0);
+		var nodes = JSON.parse(result);
+		console.log(nodes);
+		$("#textreport").html(nodes);
+//		draw_custom_tetrahelix(nodes,pvec,am.helices[0]);
+//		set_locked_nodes_green();
+	    }
+	   });
+}
+
+
+// Here I attempt to define a post-and-hole problem.
+// A basic problem a structure:
+// { n: 3;
+//   C: An array of THREE.js Unit vectors
+//   A: Solid half-angles < Pi/2
+// }
+// We want a function that renders such a scene, possibly as a set of discs.
+// In THREE.js, this can be done a simple circle.
+
+
+// A simple problem for testing...
+function generate_plus_sign_problem() {
+  var C = [];
+  C[0] = new THREE.Vector3(0,0,1);
+  C[1] = new THREE.Vector3(0,1,0);
+  C[2] = new THREE.Vector3(0,0,-1);
+  C[3] = new THREE.Vector3(0,-1,0);
+
+  var A = [];
+  A[0] = 0;
+  A[1] = 0;
+  A[2] = 0;
+  A[3] = 0;
+  return { n: 4, C: C , A: A};
+}
+
+// A simple problem for testing...
+function generate_plus_sign_holes() {
+  var C = [];
+  C[0] = new THREE.Vector3(0,0,1);
+  C[1] = new THREE.Vector3(0,1,0);
+  C[2] = new THREE.Vector3(0,0,-1);
+  C[3] = new THREE.Vector3(0,-1,0);
+
+  var A = [];
+  A[0] = Math.PI/16;
+  A[1] = Math.PI/16;
+  A[2] = Math.PI/16;
+  A[3] = Math.PI/16;
+  return { n: 4, C: C , A: A};
+}
+
+function render_around_sphere(c,g,r,color,e,scene) {
+    // post is a unit vector, we can use quaternion on it...
+  var post = c.clone();
+  post.applyEuler(e);
+  var geometry = g.clone();
+  var material = new THREE.MeshPhongMaterial( {color: color, side: THREE.DoubleSide} );
+  var cylinder = new THREE.Mesh( geometry, material );
+
+  var R = new THREE.Matrix4();
+
+  var trans = new THREE.Matrix4();
+  trans.makeTranslation(0,r,0);
+  const q0 = new THREE.Quaternion();
+  q0.setFromUnitVectors(new THREE.Vector3(0,1,0),post);
+  var rot0 = new THREE.Matrix4();
+  rot0.makeRotationFromQuaternion(q0);
+  R.multiply(rot0);
+  R.multiply(trans);
+//  R.multiply(rot);
+  cylinder.applyMatrix(R);
+  scene.add( cylinder );
+}
+
+// Posts will be rendered as cylinders. At present I am not adding
+// the post width into the math. r is the radius of the inner sphere.
+function render_posts(p,r,e,scene) {
+  const ch = r/4.0;  // cylinder height
+  const cr = r/30.0; // cylinder radius
+  const n = p.n;
+  p.C.forEach(post => {
+    // post is a unit vector, we can use quaternion on it...
+    var geometry = new THREE.CylinderGeometry( cr, cr, ch, 32 );
+
+    render_around_sphere(post,geometry,r,0xff0000,e,scene);
+  });
+}
+
+function render_holes(p,r,e,scene) {
+  const ch = r/4.0;  // cylinder height
+  const n = p.n;
+  const Y = new THREE.Vector3(0,1,0)
+  for(var i = 0; i < n; i++) {
+    // post is a unit vector, we can use quaternion on it...
+    var post = p.C[i];
+    var cr = r * Math.sin(p.A[i]);
+    var geometry = new THREE.CircleGeometry( cr, 10 );
+
+    // Translate by the radius upward before rotating...
+    var rot = new THREE.Matrix4();
+    rot.makeRotationAxis(new THREE.Vector3(1,0,0),Math.PI/2);
+    geometry.applyMatrix(rot);
+    render_around_sphere(post,geometry,r,0x00ff00,e,scene);
+  }
+}
+
+function computeEulerAngles() {
+  var a = new THREE.Euler( 0, 1, 1.57, 'XYZ' );
+  return a;
+}
+
+function test_render_of_post_problem() {
+
+  var p = generate_plus_sign_problem();
+
+  var i = new THREE.Euler( 0, 0, 0, 'XYZ' );
+  render_posts(p,1.1,i,am.scene);
+  var h = generate_plus_sign_holes();
+
+  PROBLEM = { holes: h,
+              posts: p };
+
+  var a = new THREE.Euler( 0, 1, 1.57, 'XYZ' );
+  render_holes(h,1.0,a,am.scene);
+}
+
+
+
+    $( "#solve").click( solve_via_service );
+
+
+    initHandlers();
+
+    var pos = new THREE.Vector3();
+pos.set( 0.0, 0.0, 0.0);
+
+
+test_render_of_post_problem();
+
+
+    animate();
+
+    // addOriginSphere();
+
+    solve_via_service();
+
+
+
+    </script>
