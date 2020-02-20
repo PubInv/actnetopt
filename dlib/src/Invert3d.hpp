@@ -27,7 +27,7 @@
 // #include "Obstacle.hpp"
 
 #include <math.h>
-#include <time.h>  
+#include <time.h>
 
 using namespace std;
 using namespace dlib;
@@ -42,9 +42,9 @@ class Invert3d {
 public:
 
   Tetrahelix *an;
-  static Tetrahelix *global_truss;  
+  static Tetrahelix *global_truss;
   Invert3d();
-  
+
   // This function weights how close our values are to the goals.
   // At present, this is literally of the unweighted sum of the distances,
   // or th l2_norms between each goal node and its corresponding position.
@@ -62,7 +62,7 @@ public:
   //  Obstacle ob;
 
   void set_global_truss();
-  
+
 };
 
 #endif

@@ -217,9 +217,11 @@ function render_graph(M,C,color,trans) {
 createGrid(params.width / (2 * 10.0));
 render_origin();
 
-var stm = ANO.big_triangle_problem();
+var stm = ANO.simple_triangle_problem();
 
-var NODE = 'j';
+var NODE = stm.goals[0].nd;
+console.log("GOAL",NODE);
+
 stm.goals[0] = { nd: NODE,
 	     pos: new THREE.Vector2(2,5),
 		 wt: 3 };
@@ -281,7 +283,7 @@ var step = 0;
 var color = ['red','blue','green','purple','gray'];
 var ycnt = 0;
 var xcnt = 0;
-var limit = 40;
+var limit = 400;
 
 step = 0;
 
@@ -291,12 +293,19 @@ step = 0;
 var lstep = 0;
 
 function animate(s) {
+    two.clear();
+	createGrid(params.width / (2 * 10.0));
+	render_origin();
     //    console.log(s);
     var ALGS_PER_ROW = 6;
-    if ((step % 2) == 0) {
-	var lstep = step / 2;
-    xcnt = lstep  % ALGS_PER_ROW;
-    ycnt = Math.floor(lstep / ALGS_PER_ROW);
+//    if ((step % 2) == 0) {
+    //
+//    var lstep = step / 2;
+//    xcnt = lstep  % ALGS_PER_ROW;
+//	ycnt = Math.floor(lstep / ALGS_PER_ROW);
+
+	xcnt = 2;
+	ycnt = 1;
 
 	var c = {};
 	for(var k in s.cur) {
@@ -308,10 +317,11 @@ function animate(s) {
 		     color[lstep % color.length],
 		     ( x => {
 			 var p = ANO.copy_vector(x);
-			 p.add(new THREE.Vector2((xcnt-(ALGS_PER_ROW/2))*6,10*((-ycnt+1))));
+			 p.add(new THREE.Vector2(0,0));
+//			 p.add(new THREE.Vector2((xcnt-(ALGS_PER_ROW/2))*6,10*((-ycnt+1))));
 			 return p;
 		     }));
-    }
+  //  }
 	step++;
     console.log(step,s.s.length);
     console.log(step,s.s);    
@@ -382,24 +392,12 @@ function do_one_numerical_optimization(nd,x,y) {
     var fd = function(X) {
 	if ((step % N) == 0) {
 	    var lstep = step / N;
-//	    xcnt = lstep  % ALGS_PER_ROW;
-	    //	    ycnt = Math.floor(lstep / ALGS_PER_ROW);
 
 	    xcnt = 2;
 	    ycnt = 1;
 
 	    
 	    var C = {};
-/*	    Object.keys(stm.fixed).forEach(function (n,ix) {
-		C[n] = new THREE.Vector2(stm.coords[n].x,stm.coords[n].y);
-	    });
-	    names.forEach(function (n,ix) {
-		C[n] = new THREE.Vector2(X[ix*2],X[ix*2+1]);
-	    });
-
-	    ALL_SOLUTIONS.push(C);	    
-	    render_one(C,x,y,xcnt,ycnt,color[lstep % color.length]);
-*/
 	    Object.keys(stm.fixed).forEach(function (n,ix) {
 		var k = Object.keys(stm.fixed)[ix];
 		C[k] = new THREE.Vector2(stm.coords[n].x,stm.coords[n].y);
@@ -461,15 +459,14 @@ function do_one_strainfront_optimization(nd,x,y) {
 
 }
 
-var USE_STRAINFRONT = 1;
+var USE_STRAINFRONT = 0;
+;
 $("#visualsection")
     .bind('click', function(e) {
 	two.clear();
 
 	ycnt = 0;
 	xcnt = 0;
-	limit = 40;
-
 	step = 0;
 	
 	createGrid(params.width / (2 * 10.0));
@@ -486,6 +483,7 @@ $("#visualsection")
 	} else {
 	    do_one_numerical_optimization(NODE,x,y);
 	}
+	console.log("NON_COMPLIANCE",ANO.max_non_compliant(stm.model,ALL_SOLUTIONS[ALL_SOLUTIONS.length-1]));
 	});
 
 

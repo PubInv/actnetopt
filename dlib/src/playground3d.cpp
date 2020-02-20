@@ -1,4 +1,4 @@
-// playground.cpp -- Interactive tool for testing configuration of a robotic manipulator via gradient techniquies 
+// playground.cpp -- Interactive tool for testing configuration of a robotic manipulator via gradient techniquies
 // Copyright (C) Robert L. Read, 2018
 //
 // This program is free software: you can redistribute it and/or modify
@@ -56,10 +56,10 @@ void solve_inverse_problem(Tetrahelix *an) {
     cout << "QQQ goal node [solve_inverse] \n";
     print_vec(an->goals[0]);
   }
-  
+
   column_vector sp(an->var_edges);
   column_vector lb(an->var_edges);
-  column_vector ub(an->var_edges);      
+  column_vector ub(an->var_edges);
 
   // We need the Tetrahelix to have distances in order to iniitilize this meaningfully
   double upper_bound = 0;
@@ -68,11 +68,11 @@ void solve_inverse_problem(Tetrahelix *an) {
 
     int n = an->edge_number_of_nth_variable_edge(i);
     sp(i) = an->distance(n);
-    
+
     lb(i) = an->lower_bound(i);
     ub(i) = an->upper_bound(i);
     if (ub(i) > upper_bound) upper_bound = ub(i);
-    if ((lower_bound == -1) || (lb(i) < lower_bound)) lower_bound = lb(i);    
+    if ((lower_bound == -1) || (lb(i) < lower_bound)) lower_bound = lb(i);
   }
   Invert3d inv;
   inv.an = an;
@@ -102,7 +102,7 @@ void solve_inverse_problem(Tetrahelix *an) {
 					    //   cg_search_strategy(),
     			     //			     newton_search_strategy,
 			    //    			     objective_delta_stop_strategy(1e-5),
-    			     objective_delta_stop_strategy(1e-5),			    
+    			     objective_delta_stop_strategy(1e-5),
     			     *Invert3d::objective,
     			     *Invert3d::derivative,
     			     sp,
@@ -111,7 +111,7 @@ void solve_inverse_problem(Tetrahelix *an) {
     			     );
     // I uses this to get rid of the warning
     score = score + 0.0;
-    if (debug) 
+    if (debug)
       cout << "got a score : " << score << "\n";
     for (int i = 0; i < an->var_edges; ++i) {
       an->distance(i+3) = best_distances[i];
@@ -123,7 +123,7 @@ void solve_inverse_problem(Tetrahelix *an) {
 
 int mainx(Tetrahelix *an,column_vector* coords)
 {
-  cout << "goal node [mainx] " << an->goals[0] << "\n";  
+  cout << "goal node [mainx] " << an->goals[0] << "\n";
     try
     {
       // However, that is a low priority until I get the playground working.
@@ -140,16 +140,16 @@ int mainx(Tetrahelix *an,column_vector* coords)
 
 	  //	  column_vector* coordsx = new column_vector[an->num_nodes];
 	  cout << "goal node [mainx] " << an->goals[0] << "\n";
-	  
+
 	  TetrahelixConfiguration thc(an,coords);
 	  thc.forward_find_coords();
 	  //	  solve_forward_find_coords(an,coords);
 	  cout << "SOLVE_INVERSE\n";
 	  solve_inverse_problem(an);
-	  
+
 	  thc.forward_find_coords();
 	  //	  solve_forward_find_coords(an,coords);
-	  
+
 	}
     }
     catch (std::exception& e)
@@ -192,7 +192,7 @@ Tetrahelix *init_Tetrahelix(int truss_nodes,double upper, double lower,double in
 
   // These are examples of adding different goals...
   //  an->add_goal_node(an->num_nodes*1/3,1*bx/3+-2.0,1*by/3,0.5);
-  //  an->add_goal_node(an->num_nodes*2/3,2*bx/3+ 5.0,2*by/3,0.5);  
+  //  an->add_goal_node(an->num_nodes*2/3,2*bx/3+ 5.0,2*by/3,0.5);
   double mx = 1.0;
   double my = 1.0;
   double mz = 1.0;
@@ -219,18 +219,18 @@ void handle_goal_target_physical(Tetrahelix *an,  column_vector* coordsx,double 
   gl(0) = x;
   gl(1) = y;
   gl(2) = z;
-  handle_goal_target(an,coordsx,gl);  
+  handle_goal_target(an,coordsx,gl);
 }
 
 void handle_goal_target(Tetrahelix *an,  column_vector* coordsx,column_vector gl) {
   an->goals[an->goals.size() - 1] = gl;
   cout  << "goal : " << gl << "\n";
   cout << "goal node : " << an->goal_nodes[0] << "\n";
-  best_score = std::numeric_limits<float>::max();	
+  best_score = std::numeric_limits<float>::max();
   auto start = std::chrono::high_resolution_clock::now();
-	
+
   mainx(an,coordsx);
-	
+
   auto elapsed = std::chrono::high_resolution_clock::now() - start;
   long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
   long long milliseconds = microseconds/ 1000.0;
@@ -240,20 +240,19 @@ void handle_goal_target(Tetrahelix *an,  column_vector* coordsx,column_vector gl
 
 void handle_goal_target_physical(Tetrahelix *an,  column_vector* coordsx) {
   cout << "Interpreted as double!\n";
-  handle_goal_target(an,coordsx);  
+  handle_goal_target(an,coordsx);
 }
 
 void handle_goal_target(Tetrahelix *an,  column_vector* coordsx) {
   //  an->goals[an->goals.size() - 1] = gl;
-  best_score = std::numeric_limits<float>::max();	
+  best_score = std::numeric_limits<float>::max();
   auto start = std::chrono::high_resolution_clock::now();
-	
+
   mainx(an,coordsx);
-	
+
   auto elapsed = std::chrono::high_resolution_clock::now() - start;
   long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
   long long milliseconds = microseconds/ 1000.0;
 
   cout << "optimization tim: ms = " << milliseconds << "\n";
 }
-

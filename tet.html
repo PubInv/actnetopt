@@ -981,12 +981,6 @@ function onMouseMove(e){
     }
 }
 
-function addMouseConstraint(gui,x,y,z,body) {
-    // The cannon body constrained by the mouse joint
-    var constrainedBody = body;
-    gui.selectedBody = body;	
-}
-
 // BUG: It is easy to get to constrainedBodies someone both constrained,
 // But that is not the intention of the interaction tool, and is very annoying.
 function onMouseDown(e){
@@ -1005,7 +999,7 @@ function onMouseDown(e){
 
     console.log(entity);
     
-    if (pos &&
+    if (pos && 
 	(
 	    (entity.object.structureKind == "obstacle")
 		|| 
@@ -1024,67 +1018,27 @@ function onMouseDown(e){
 	    am.latestLookAt.z = pos.z;
 	}
 	
-	if (e.shiftKey) {
-	    // If the shiftKey is down, we are going to toggle whether or not this one is fixed...
-	    // and we will visually represent that by turning the joint red, I guess.
-	    if(idx !== -1) {
-		var obj = am.meshes[idx];
-		am.manipulatedObject = obj;
-		am.manipulatedObject.mesh = am.meshes[idx];
-		
-		var index_locked = am.lockedGroups.handlocked.indexOf(obj);
-		if (index_locked < 0) {
-		    am.lockedGroups.handlocked.push(obj);
-		    // ATTACH ORIGINAL COLOR TO THE OBJECT, NOT THE MESH --- I"M LOSING IT HERE.
-		    am.manipulatedObject.original_color = am.meshes[idx].material.color.getHex();
-		    //		    var zero = new Ammo.btVector3(0, 0, 0 );
-		    //		    am.manipulatedObject.setMassProps(0.0,zero);
-		    addMouseConstraint(am,pos.x,pos.y,pos.z,obj);
-		    // Now we want to change color to show locked...
-		    // TODO: This is a global...
-		    am.meshes[idx].material.color.setHex( 0x000000 );
-		} else {
-		    am.lockedGroups.handlocked.splice(index_locked,1);
-		    am.manipulatedObject.mesh.material.color.setHex(am.manipulatedObject.original_color);
-		}
-	    }
-	} else {
-	    //            constraintDown = true;
-            // Set marker on contact point
-            setClickMarker(am,pos.x,pos.y,pos.z,am.scene);
-	    // what we really want to do here is to change the color, but stash the old color first to restore...
-	    var original_color = am.meshes[idx].material.color.getHex();
-	    am.meshes[idx].material.original_color = original_color;
-	    am.meshes[idx].material.color.setHex( 0x00FF00 );
-	    console.log("SPUD!");
+	//            constraintDown = true;
+        // Set marker on contact point
+        setClickMarker(am,pos.x,pos.y,pos.z,am.scene);
+	// what we really want to do here is to change the color, but stash the old color first to restore...
+	var original_color = am.meshes[idx].material.color.getHex();
+	am.meshes[idx].material.original_color = original_color;
+	am.meshes[idx].material.color.setHex( 0x00FF00 );
 
-            // Set the movement plane
-            setScreenPerpCenter(pos,am);
+        // Set the movement plane
+        setScreenPerpCenter(pos,am);
 
-            if(idx !== -1){
-		var obj = am.meshes[idx];
-		//		am.manipulatedObject = obj;
-		am.manipulatedObject = am.meshes[idx];
-		// This is roughly the same as being handlocked
-		if (original_color != 0) {
-		    am.manipulatedObject.original_color = original_color;
-		}
-		addMouseConstraint(am,pos.x,pos.y,pos.z,obj);
-		// // Now we want to set all others to be empty mass until mouseUp!
-		// if (am.FORCE_REGIME != "ALLOW") {
-		//     for(var i = 0; i < am.robot.robot_joints.length; i++) {
-		// 	var joint = am.robot.robot_joints[i];
-		// 	if (joint != obj) {
-		// 	    if (am.lockedGroups.handlocked.indexOf(joint) >= -1) {
-		// 		var zero = new Ammo.btVector3(0, 0, 0 );
-		// 		console.log("joint:");
-		// 		console.log(joint);
-		// 		am.lockedGroups.temporary.push(joint);
-		// 	    }
-		// 	}
-		//     }
-		// }
+        if(idx !== -1){
+	    var obj = am.meshes[idx];
+	    //		am.manipulatedObject = obj;
+	    am.manipulatedObject = am.meshes[idx];
+	    // This is roughly the same as being handlocked
+	    if (original_color != 0) {
+		am.manipulatedObject.original_color = original_color;
 	    }
+//	    addMouseConstraint(am,pos.x,pos.y,pos.z,obj);
+	    am.selectedBody = obj;		    
 	}
 
     }
@@ -1191,10 +1145,20 @@ function render_locked_nodes(locked_nodes,nodes_returned) {
 
 function set_locked_nodes_green() {
     for (key in locked_nodes) {
+	// Let me experimentally add the target mesh locations as dark green nodes...
+	var o = locked_nodes[key];
+	var p = o.pos;
+	var mesh = createSphere(am.JOINT_RADIUS,p,new THREE.Color(0x006400));
+	mesh.structureKind = "joint";	
+	mesh.castShadow = true;
+	mesh.receiveShadow = true;
+	am.scene.add(mesh);
 	for(var i = 0; i < am.meshes.length; i++) {
 	    var m =  am.meshes[i];
 	    if (m.name == key) {
 		m.original_color = m.material.color.getHex();
+		m.castShadow = true;
+		m.receiveShadow = true;
 		m.material.color.setHex( 0x00FF00 );
 	    }
 	}
@@ -1222,8 +1186,11 @@ function onMouseUp(e) {
 
 
     var pos = projectOntoPlane(am,e.clientX,e.clientY,am.gplane,am.camera);
+    if (!pos) {
+	return;
+    } 
 
-    if (am.manipulatedObject) {
+    if (am.manipulatedObject && pos) {
 	console.log("Manipulated Object");
 	console.log(am.manipulatedObject);
 
@@ -1293,8 +1260,8 @@ function onMouseUp(e) {
     }
     
     if (am.movedButNotSent) {
-	console.log("final");
-	console.log(pos);
+//	console.log("final");
+//	console.log(pos);
 //	gpos = pos;
 	fetch_coords();
 //	send_to_robot_url();
@@ -1348,7 +1315,7 @@ function findNearestIntersectingObject(gui,clientX,clientY,camera,objects) {
 
 function initHandlers() {
     am.container = document.getElementById( 'visualsection' );
-    am.container.addEventListener("mousemove", onMouseMove, true );
+//    am.container.addEventListener("mousemove", onMouseMove, true );
     am.container.addEventListener("mousedown", onMouseDown, true );
     am.container.addEventListener("mouseup", onMouseUp, true );
 }
@@ -1436,8 +1403,8 @@ function createGround(am) {
     ground.receiveShadow = true;
 }
 
-
 function fetch_coords() {
+
     var locked_nodes_string = JSON.stringify(locked_nodes);
     $.ajax({url: "http://127.0.0.1/goal",
 	    data: {"locked" : locked_nodes_string },
@@ -1473,6 +1440,7 @@ function fetch_coords() {
 
 
     $( "#fetch").click( fetch_coords );
+
 
     initHandlers();
 

@@ -19,6 +19,7 @@
 #include <dlib/optimization.h>
 #include "custom_logger.hpp"
 #include "ActNetUtility.hpp"
+#include "posthole.hpp"
 
 using namespace std;
 using namespace restbed;
@@ -33,60 +34,93 @@ column_vector* coordsx;
 
 void get_method_handler_goal( const shared_ptr< Session > session )
 {
-    cerr << "goal invoked\n";
 
-    const auto request = session->get_request( );
+  cerr << "goal invoked\n";
 
-    size_t content_length = request->get_header( "Content-Length", 0 );
+  const auto request = session->get_request( );
 
-    session->fetch( content_length, [ request ]( const shared_ptr< Session > session, const Bytes & body )
-    {
+  size_t content_length = request->get_header( "Content-Length", 0 );
 
-      auto problem = request->get_query_parameter( "problem" );
+  session->fetch( content_length, [ request ]( const shared_ptr< Session > session, const Bytes & body )
+                  {
+                    int debug = 1;
+                    auto problem_json = request->get_query_parameter( "problem" );
 
-      cout << "PROBLEM" << problem << "\n";
+                    cout << "PROBLEM" << problem_json << "\n";
 
-      auto j3 = json::parse(problem);
+                    auto j3 = json::parse(problem_json);
 
-      auto h = j3["holes"];
-      auto p = j3["posts"];
-      int n = h["n"];
+                    auto hj = j3["holes"];
+                    auto pj = j3["posts"];
+                    int n = hj["n"];
 
-      cout << "N = " << n << "\n";
-      auto hc = h["C"];
-      auto ha = h["A"];
+                    cout << "N = " << n << "\n";
+                    auto hc = hj["C"];
+                    auto pc = pj["C"];
+                    auto ha = hj["A"];
 
-      cout << "hc = " << hc << "\n";
+                    cout << "hc = " << hc << "\n";
 
-      cout << "ha[0] = " << ha[0] << "\n";
-      cout << "hc[0][x] = " << hc[0]["x"] << "\n";
+                    cout << "ha[0] = " << ha[0] << "\n";
+                    cout << "hc[0][x] = " << hc[0]["x"] << "\n";
 
-      cout << "ha[0] = " << ha[0] << "\n";
+                    cout << "ha[0] = " << ha[0] << "\n";
 
-      int i = 0;
-      for (json::iterator it = hc.begin(); it != hc.end(); ++it) {
-	std::cout << "hc" << i++ << "\n";
-	std::cout << it.key() << " : " << it.value() << "\n";
-	auto v = it.value();
-      }
-      for (json::iterator it = ha.begin(); it != ha.end(); ++it) {
-	std::cout << "ha" << i++ << "\n";
-	std::cout << it.key() << " : " << it.value() << "\n";
-	auto v = it.value();
-      }
+                    Holes *h = new Holes();
+                    h->n = n;
+                    h->fixed_index = 0;
+                    h->c = new column_vector[n];
+                    h->a = new double[n];
 
-      if (true) {
-        //	    std::cout << " d["<< i << "]" << coordsx[i](0) << "," << coordsx[i](1) << "," << coordsx[i](2) << std::endl;
-            std::string s = "Euler 0,1,2";
-            fprintf( stdout, "%s\n", s.c_str() );
-            std::ostringstream oss;
-            oss << s.length();
-            std::string len = oss.str();
-            session->close( OK, s.c_str(), {  { "Content-Length", len } } );
-      } else {
-        session->close( BAD_REQUEST, "could not find x or y", { { "Content-Length", "21" }, { "Connection", "close" } } );
-      }
-    });
+                    Posts *p = new Posts();
+                    p->n = n;
+                    p->fixed_index = 0;
+                    p->c = new column_vector[n];
+
+                    cout << "made" << "\n";
+
+                    for(int i = 0; i < n; i++) {
+                      h->c[i].set_size(3);
+                      h->c[i](0) = hc[i]["x"];
+                      h->c[i](1) = hc[i]["y"];
+                      h->c[i](2) = hc[i]["z"];
+                      cout << i << "\n";
+                      print_vec(h->c[i]);
+                    }
+
+                    for(int i = 0; i < n; i++) {
+                      p->c[i].set_size(3);
+                      p->c[i](0) = pc[i]["x"];
+                      p->c[i](1) = pc[i]["y"];
+                      p->c[i](2) = pc[i]["z"];
+                      cout << i << "\n";
+                      print_vec(p->c[i]);
+                    }
+
+                    PostHoleProblem *problem = new PostHoleProblem();
+                    problem->h = h;
+                    problem->p = p;
+
+                    column_vector angles = problem->solve_problem();
+
+                    if (debug) {
+                      print_vec(angles);
+                    }
+
+                    if (true) {
+                      //	    std::cout << " d["<< i << "]" << coordsx[i](0) << "," << coordsx[i](1) << "," << coordsx[i](2) << std::endl;
+
+                      std::ostringstream ossx;
+                      ossx << "[" << angles(0) << ", " << angles(1) << ", " << angles(2) << "]\n";
+                      std::string s = ossx.str();
+                      std::ostringstream oss;
+                      oss << s.length();
+                      std::string len = oss.str();
+                      session->close( OK, s.c_str(), {  { "Content-Length", len } } );
+                    } else {
+                      session->close( BAD_REQUEST, "could not find x or y", { { "Content-Length", "21" }, { "Connection", "close" } } );
+                    }
+                  });
 }
 
 void options_method_handler_goal( const shared_ptr< Session > session )

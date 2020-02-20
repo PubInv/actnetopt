@@ -43,9 +43,9 @@ class Invert {
 public:
 
   TriLadder *an;
-  static TriLadder *global_truss;  
+  static TriLadder *global_truss;
   Invert();
-  
+
   // This function weights how close our values are to the goals.
   // At present, this is literally of the unweighted sum of the distances,
   // or th l2_norms between each goal node and its corresponding position.
@@ -61,7 +61,7 @@ public:
   static column_vector derivative(const column_vector& ds);
 
   Obstacle ob;
-  
+
 };
 
 #endif

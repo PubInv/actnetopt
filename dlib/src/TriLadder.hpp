@@ -24,8 +24,6 @@
 #include "ActNetUtility.hpp"
 #include "Obstacle.hpp"
 
-#include <math.h>
-
 #define PI 3.14159265
 
 using namespace std;
@@ -60,7 +58,7 @@ public:
   // copy assignment; I have no idea why
 
  Obstacle obstacle;
- 
+
   int num_nodes;   // = LADDER_NODES;
   int num_edges; //  = (num_nodes-3)*2 + 3;
   int var_edges;   // = num_edges-1;
@@ -85,7 +83,7 @@ public:
 	    double l,
 	    double m,
 	    double i);
-  
+
   const char* name = "ABCDE";
 
   // writing out the edges in the graph
@@ -94,7 +92,7 @@ public:
   //  Graph g;
   //  Edge e;
 
-  //  static const int num_edges = 3;  
+  //  static const int num_edges = 3;
   //  Edge edge_array[num_edges];
   column_vector fixed_nodes;
   //  int node_fixing_order[num_nodes];
@@ -107,10 +105,10 @@ public:
 
 
   column_vector distance;
-  
+
   column_vector lower_bound;
   column_vector upper_bound;
-  
+
   // This is a map into the goal position for each goal.
   // goal_nodes[a] = b => goals[a] should be considered node b.
   std::vector<int> goal_nodes;
@@ -121,13 +119,13 @@ public:
   // This really assumes a single goal node is being moved;
   // in order for this to work for many goal nodes I would have
   // to accept a set of labeled vectors for each goal node.
- double compute_d_score_from_vector(double x,double y);   
+ double compute_d_score_from_vector(double x,double y);
 
 
 // The goal of this is to compute a single derivative vector for the
 // change in length to edge number edge_number.
 // This returns a simple double because we have made the penalty function a
-// part of it.  
+// part of it.
 double compute_single_derivative_dtheta(column_vector cur_coords[],
 			       int edge_number);
 
@@ -148,7 +146,7 @@ double compute_dtheta_internal_da(column_vector A,
 column_vector compute_goal_derivative_c(column_vector cur_coords[],
 								int edge_number,
 						   int goal_node_number);
- 
+
 column_vector compute_external_effector_derivative_c(column_vector cur_coords[],
 						     int edge_number,
 						     int goal_node_number);
@@ -156,12 +154,12 @@ column_vector compute_external_effector_derivative_c(column_vector cur_coords[],
 column_vector compute_internal_effector_derivative_c(column_vector cur_coords[],
 						      int edge_number,
 						      int goal_node_number);
- 
+
  void set_fixed_coords(column_vector coords[]);
 
 };
- 
- 
+
+
 // I think this is the form actually required by functions such as find_min_box_constrained
 // Probably this will have to call compute_single_derivative for each edge.
 column_vector derivative (const column_vector& m);
@@ -175,10 +173,10 @@ double get_angle(column_vector a, column_vector b, column_vector c);
 class FindCoords {
 public:
   column_vector a;
-  column_vector b;    
+  column_vector b;
 
   TriLadder *an;
-  
+
   // Should the third point cc or ccw from a to b?
   // In other words, we use this to disambiguate the two distance based solutions.
   Chirality chi;
@@ -186,7 +184,7 @@ public:
   //     const double dab = 1.5; // This is in fact a constant in our frame
   double dac; // these are in fact inputs to the problem
   double dbc;
-  
+
   // this is just the objective (NOT optional)
   // This input is an x,y position for c
   // The lengths between a, b, and c are constants (effectively, input to the problem)

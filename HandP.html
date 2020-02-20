@@ -1412,6 +1412,8 @@ function solve_via_service() {
     $.ajax({url: "http://127.0.0.1/posthole",
 	    data: {"problem" : problem_string },
 	    success: function(result) {
+              console.log("result",result);
+
 		am.clear_non_floor_body_mesh_pairs();
 
 		for( var i = am.scene.children.length - 1; i >= 0; i--) {
@@ -1430,12 +1432,12 @@ function solve_via_service() {
 		    });
 		// now basically we want to build the helix from these results...
 		//	       var pvec = new THREE.Vector3(0,HELIX_RADIUS*2.1,-1.0);
-		var pvec = new THREE.Vector3(0,0.0,0.0);
-		var nodes = JSON.parse(result);
-		console.log(nodes);
-		$("#textreport").html(nodes);
-//		draw_custom_tetrahelix(nodes,pvec,am.helices[0]);
-//		set_locked_nodes_green();
+	      var pvec = new THREE.Vector3(0,0.0,0.0);
+	      var nodes = JSON.parse(result);
+	      console.log(nodes);
+	      $("#textreport").html(nodes);
+              var e = new THREE.Euler(nodes[0],nodes[1],nodes[2]);
+              render_of_post_problem(e);
 	    }
 	   });
 }
@@ -1475,6 +1477,10 @@ function generate_plus_sign_holes() {
   C[2] = new THREE.Vector3(0,0,-1);
   C[3] = new THREE.Vector3(0,-1,0);
 
+  var e = new THREE.Euler( Math.PI/8, Math.PI/7, Math.PI/9, 'XZY' );
+  for(var i = 0; i < 4; i++) {
+    C[i].applyEuler(e);
+  }
   var A = [];
   A[0] = Math.PI/16;
   A[1] = Math.PI/16;
@@ -1558,6 +1564,16 @@ function test_render_of_post_problem() {
   render_holes(h,1.0,a,am.scene);
 }
 
+function render_of_post_problem(e) {
+
+  var p = generate_plus_sign_problem();
+  var i = new THREE.Euler( 0, 0, 0, 'XYZ' );
+  render_posts(p,1.1,i,am.scene);
+  var h = generate_plus_sign_holes();
+  PROBLEM = { holes: h,
+              posts: p };
+  render_holes(h,1.0,e,am.scene);
+}
 
 
     $( "#solve").click( solve_via_service );

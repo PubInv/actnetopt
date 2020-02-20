@@ -28,7 +28,7 @@ http_service: $(OBJ_DIR)/http_service.o $(OBJ_DIR)/playground.o $(OBJ_DIR)/TriLa
 http_service3d: $(OBJ_DIR)/http_service3d.o $(OBJ_DIR)/playground3d.o $(OBJ_DIR)/Tetrahelix.o $(OBJ_DIR)/Invert3d.o $(OBJ_DIR)/Obstacle.o $(OBJ_DIR)/ActNetUtility.o
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-http_service_posthole: $(OBJ_DIR)/http_service_posthole.o $(OBJ_DIR)/ActNetUtility.o
+http_service_posthole: $(OBJ_DIR)/http_service_posthole.o $(OBJ_DIR)/ActNetUtility.o $(OBJ_DIR)/posthole.o
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 test: $(OBJ_DIR)/derivative.o $(OBJ_DIR)/TriLadder.o $(OBJ_DIR)/Invert.o $(OBJ_DIR)/Obstacle.o
@@ -63,6 +63,9 @@ $(OBJ_DIR)/Invert.o: $(SRC_DIR)/Invert.cpp $(SRC_DIR)/Invert.hpp
 
 $(OBJ_DIR)/Invert3d.o: $(SRC_DIR)/Invert3d.cpp $(SRC_DIR)/Invert3d.hpp
 	$(CC) $(CXXFLAGS) $(CPPFLAGS)  -c $(SRC_DIR)/Invert3d.cpp -o $(OBJ_DIR)/Invert3d.o
+
+$(OBJ_DIR)/posthole.o: $(SRC_DIR)/posthole.cpp $(SRC_DIR)/posthole.hpp
+	$(CC) $(CXXFLAGS) $(CPPFLAGS)  -c $(SRC_DIR)/posthole.cpp -o $(OBJ_DIR)/posthole.o
 
 $(OBJ_DIR)/Obstacle.o: $(SRC_DIR)/Obstacle.cpp $(SRC_DIR)/Obstacle.hpp
 	$(CC) $(CXXFLAGS) $(CPPFLAGS)  -c $(SRC_DIR)/Obstacle.cpp -o $(OBJ_DIR)/Obstacle.o

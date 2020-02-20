@@ -16,7 +16,7 @@
 
 #include "Invert3d.hpp"
 #include "Obstacle.hpp"
-#include <time.h>  
+#include <time.h>
 
 using namespace std;
 using namespace dlib;
@@ -34,7 +34,7 @@ int debug_inv = 0;
 Invert3d::Invert3d() {
 
 }
-  
+
   double Invert3d::operator() ( const column_vector& ds) const
   {
     global_truss = an;
@@ -53,7 +53,7 @@ Invert3d::Invert3d() {
   double Invert3d::objective(const column_vector& ds) {
     int debug = 0;
     if (debug) {
-      cout << "OBJECTIVE:  \n"; 
+      cout << "OBJECTIVE:  \n";
     }
     if (debug) {
       cout << "GOALS AAA\n";
@@ -72,7 +72,7 @@ Invert3d::Invert3d() {
       if (debug) {
 	cout << "\n";
       }
-    
+
   //   cout << "OBJECTIVE AAA\n";
   // for (int i = 0; i < global_truss->num_edges; ++i) {
   //   cout << " i, distances(i) " << i << " , " << global_truss->distance(i) << "\n";
@@ -86,8 +86,8 @@ Invert3d::Invert3d() {
   // here on the stack....
     TetrahelixConfiguration thc(global_truss,coords);
     thc.forward_find_coords();
-  
-    //    solve_forward_find_coords(global_truss,coords);	  
+
+    //    solve_forward_find_coords(global_truss,coords);
 
     if (debug) {
     for(int i = 0; i < global_truss->num_nodes; i++) {
@@ -101,7 +101,7 @@ Invert3d::Invert3d() {
       cout << global_truss->goals[0] << "\n";
       cout << global_truss->goals[1] << "\n";
     }
-    
+
     double v = 0.0;
     for(int i = 0; i < global_truss->goal_nodes.size(); i++) {
       int idx = global_truss->goal_nodes[i];
@@ -110,14 +110,14 @@ Invert3d::Invert3d() {
       if (debug) {
 	cout << "goal node[i] " << i << " " << idx << "\n";
 	cout << "goal " << g << "\n";
-	cout << "Goals[i] " << global_truss->goals[i] << "\n";	
+	cout << "Goals[i] " << global_truss->goals[i] << "\n";
 	cout << "distance to goal : " << distance_3d(g,c) << "\n";
       }
       v += (global_truss->goal_weights[i]*distance_3d(g,c));
     }
 
     //    cout << " v = " << v << "\n";
-    
+
     // now we must add in the increase to the object caused by the obstacle!!
     // for(int j = 0; j < global_truss->num_nodes; j++) {
     //   // Now, does the partial derivative of this node exist?
@@ -133,12 +133,12 @@ Invert3d::Invert3d() {
      if (debug_inv)   cout << "found best: " << v << "\n";
      for (int i = 0; i < global_truss->var_edges; ++i) {
        best_distances[i] = ds(i);
-       if (debug_inv) std::cout << i << " : " << ds(i) << std::endl;       
+       if (debug_inv) std::cout << i << " : " << ds(i) << std::endl;
      }
      best_score = v;
    }
    delete[] coords;
-   return v;    
+   return v;
   }
 
 column_vector normalize3(column_vector v) {
@@ -146,11 +146,11 @@ column_vector normalize3(column_vector v) {
   column_vector zero(3);
   zero(0) = 0.0;
   zero(1) = 0.0;
-  zero(2) = 0.0;  
+  zero(2) = 0.0;
   double len = distance_3d(zero,v);
   r(0) = v(0)/len;
   r(1) = v(1)/len;
-  r(2) = v(2)/len;  
+  r(2) = v(2)/len;
   return r;
 }
 
@@ -164,7 +164,7 @@ column_vector Invert3d::derivative(const column_vector& ds) {
   if (debug) {
     cout << "DERIVATIVE CALLED\n";
   }
-  
+
   for (int i = 0; i < global_truss->var_edges; ++i) {
     int n = global_truss->edge_number_of_nth_variable_edge(i);
     global_truss->distance(n) = ds(i);
@@ -185,15 +185,15 @@ column_vector Invert3d::derivative(const column_vector& ds) {
   TetrahelixConfiguration thc(global_truss,coords);
   thc.forward_find_coords();
   //  solve_forward_find_coords(global_truss,coords);
-  
+
   clock_t t;
   t = clock();
   global_truss->initialize_Jacobian_memo();
-  global_truss->fill_Jacobian(coords);  
+  global_truss->fill_Jacobian(coords);
   matrix<double> Ju = global_truss->get_Jacobian(coords,global_truss->num_nodes-1);
-  t = clock() - t;	
+  t = clock() - t;
   time_in_jacobian += t;
-  
+
   if (debug) {
     cout << "Jacobian:\n";
     cout << Ju;
@@ -208,9 +208,9 @@ column_vector Invert3d::derivative(const column_vector& ds) {
     if (debug) print_vec(coords[i]);
   }
   debug = 0;
-  
+
   column_vector d(global_truss->var_edges);
-      
+
   for(int i = 0; i < global_truss->var_edges; i++) {
     // The true edge number is one higher than the index of the variable edges, since the first is fixed.
     int e = global_truss->edge_number_of_nth_variable_edge(i);
@@ -223,7 +223,7 @@ column_vector Invert3d::derivative(const column_vector& ds) {
 	cout << "GOAL COORDS: \n";
 	print_vec(g);
       }
-      int idx = global_truss->goal_nodes[j];	
+      int idx = global_truss->goal_nodes[j];
       column_vector c = coords[idx];
 
       if (debug) {
@@ -231,23 +231,23 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       }
 
       column_vector d;
-      
+
       //      global_truss->compute_goal_derivative_j(coords,i,idx);
 
       if (USE_DIFFERENTIAL) {
-	t = clock();		
+	t = clock();
 	d = global_truss->compute_goal_differential_c(coords,e,idx);
 	t = clock() - t;
-	time_in_differential += t;;	
+	time_in_differential += t;;
       } else if (USE_JACOBIAN) {
 	// There are a compute of problems here---I don't seem to really be using the goal_number here!!!
 	// Note that this uses the variable number, NOT the true edge number.
-	t = clock();	
+	t = clock();
 	d = global_truss->compute_goal_derivative_j(coords,i,idx);
-	t = clock() - t;	
+	t = clock() - t;
 	time_in_jacobian += t;;
       } else {
-	d = global_truss->compute_goal_derivative_c(coords,e,idx);	
+	d = global_truss->compute_goal_derivative_c(coords,e,idx);
       }
 
       if ((d(0) > 1000.0) || (abs(d(1)) > 1000.0)) {
@@ -279,13 +279,13 @@ column_vector Invert3d::derivative(const column_vector& ds) {
 	  cout << "goal position: ";
 
 	  print_vec(g);
-      
+
 	  cout << "goal direction: ";
 	  print_vec(goal_direction);
 
 	  cout << "derivative: ";
 	  print_vec(d);
-      
+
 	  cout << "ds/de: ";
 	  cout << ds_de;
 	  cout << "\n";
@@ -293,9 +293,9 @@ column_vector Invert3d::derivative(const column_vector& ds) {
 
 	prod += ds_de;
       }
-      
+
     }
-    //    cout << "edge,prod = " << e << " , " << prod <<"\n";    
+    //    cout << "edge,prod = " << e << " , " << prod <<"\n";
     d(i) = prod;
 
     if (global_truss->obstacle != NULL) {
@@ -311,7 +311,7 @@ column_vector Invert3d::derivative(const column_vector& ds) {
       // about that now.
 
       double d_obst = 0.0;
-      
+
       // first we will run through all nodes.
       int first_node = global_truss->large_node(e);
       // Note this creates a n^2 operation in the number of nodes---
@@ -322,9 +322,9 @@ column_vector Invert3d::derivative(const column_vector& ds) {
 	double p = global_truss->obstacle->partial(di);
 	//	cout << " presumably since we have no obstacles this should be zero!\n";
 	//	cout << p << "\n";
-	
+
 	if (p != 0.0) {
-	  column_vector deriv_v = global_truss->compute_goal_derivative_c(coords,e,j);	  
+	  column_vector deriv_v = global_truss->compute_goal_derivative_c(coords,e,j);
 
 	  column_vector n_to_center = global_truss->obstacle->center - coords[j];
 
@@ -351,4 +351,3 @@ column_vector Invert3d::derivative(const column_vector& ds) {
   delete[] coords;
   return d;
 }
-  

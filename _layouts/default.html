@@ -1,3 +1,22 @@
+/*
+
+    Copyright 2017, Robert L. Read
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -42,19 +61,79 @@
     
     <script type="text/javascript" charset="utf-8"></script>
     
-    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+        <link rel="stylesheet" href="./jquery-ui-1.11.4.custom/jquery-ui.min.css">
+<!--    <link rel="stylesheet" href="./jquery-ui-1.12.4.custom/jquery-ui.structure.min.css">    
+    <link rel="stylesheet" href="./jquery-ui-1.12.4.custom/jquery-ui.theme.min.css">
+-->
+
+     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+
+    <script src="./js/scijs-newton-raphson.js"></script>    
+    
+    <script src="./js/axes.js"></script>
+    <script src="./js/three.js"></script>
+    <script src="./js/THREE.MeshLine.js"></script>    
+    <script src="./js/OrbitControls.js"></script>
+    <script src="./js/Detector.js"></script>    
+    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>    
+   <script src="./js/d3-scale.min.js"></script>
+   <script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
+
+<script src="https://d3js.org/d3-array.v1.min.js"></script>
+<script src="https://d3js.org/d3-collection.v1.min.js"></script>
+<script src="https://d3js.org/d3-color.v1.min.js"></script>
+<script src="https://d3js.org/d3-format.v1.min.js"></script>
+<script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
+<script src="https://d3js.org/d3-time.v1.min.js"></script>
+<script src="https://d3js.org/d3-time-format.v2.min.js"></script>
+<script src="https://d3js.org/d3-scale.v1.min.js"></script>
+
+    
     
   </head>
 
       <style>
+#table-wrapper {
+  position:relative;
+}
+#table-scroll {
+  height:100%;
+  overflow:auto;  
+  margin-top:20px;
+}
+#table-wrapper table {
+  width:100%;
+
+}
+#table-wrapper table * {
+  color:black;
+}
+#table-wrapper table thead th .text {
+  position:absolute;   
+  top:-20px;
+  z-index:2;
+  height:20px;
+  width:35%;
+  border:1px solid red;
+}
+
+.newtrace {
+    color: red;
+    font-size: large;
+    background-color: yellow;
+}
     </style>
 
 
   <body>
-
+    <script src="./js/bundle.js"></script>
     {% include header.html %}
+        <div id="threecontainer" class="img">
+    </div>
+    
     <div id="content-wrapper">
       <div class="inner clearfix">
         <section id="main-content">
@@ -62,22 +141,7 @@
 	  {% include sub-footer.html %}
 
         </section>
-	 <aside>
-	  <ul id="toc">	  
-	  </ul>
-	 </aside>
 
- 
-        <aside id="sidebar">
-          <a href="{{ site.repourl }}/zipball/master" class="button">
-            <small>Download</small>
-            .zip file
-          </a>
-          <a href="{{ site.repourl }}/tarball/master" class="button">
-            <small>Download</small>
-            .tar.gz file
-          </a>
-	</aside>
       </div>
 
 
@@ -93,37 +157,6 @@
 
   
 </script>
-
-  
-  <!-- Bootstrap core JavaScript
-    ================================================== -->
-    <!-- Placed at the end of the document so the pages load faster -->
-<!--    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script> -->
-    <script src="bootstrap/js/bootstrap.min.js"></script>
-    <script src="javascripts/jquery.tableofcontents.js" type="text/javascript" charset="utf-8"></script>
-    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
-<!--    <script src="../../assets/js/ie10-viewport-bug-workaround.js"></script> -->
-<script type="text/javascript" charset="utf-8">
-	$(function(){ $("#toc").tableOfContents(); })
-</script>
-<script>
-  window.fbAsyncInit = function() {
-    FB.init({
-      appId      : '1766271753661448',
-      xfbml      : true,
-      version    : 'v2.7'
-    });
-  };
-
-  (function(d, s, id){
-     var js, fjs = d.getElementsByTagName(s)[0];
-     if (d.getElementById(id)) {return;}
-     js = d.createElement(s); js.id = id;
-     js.src = "//connect.facebook.net/en_US/sdk.js";
-     fjs.parentNode.insertBefore(js, fjs);
-   }(document, 'script', 'facebook-jssdk'));
-</script>
-
   </body>
 </html>
 

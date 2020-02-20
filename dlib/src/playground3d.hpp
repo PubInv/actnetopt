@@ -33,7 +33,7 @@ class Input
 // Methods
 public:
   void (* buttondown)();
-  
+
   Input(void(*f)());
    ~Input();
 
@@ -50,11 +50,11 @@ public:
 
   double x;
   double y;
-  
+
 // Data
 private:
    SDL_Event m_event;
-   bool m_keysHeld[323]; 
+   bool m_keysHeld[323];
    bool m_windowClosed;
 };
 

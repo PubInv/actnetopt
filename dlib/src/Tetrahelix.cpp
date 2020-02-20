@@ -77,19 +77,19 @@ int Tetrahelix::edges_in_tetrahelix(int n) {
 
 int Tetrahelix::large_node(int e) {
   if (e == 0) {
-    return 1;    
+    return 1;
   }
   if (e == 1) {
-    return 2;        
+    return 2;
   }
   if (e == 2) {
-    return 3;        
+    return 3;
   }
   if (e == 3) {
-    return 2;        
+    return 2;
   }
   if (e == 4) {
-    return 3;        
+    return 3;
   }
   if (e == 5) {
     return 3;
@@ -99,19 +99,19 @@ int Tetrahelix::large_node(int e) {
 
 int Tetrahelix::small_node(int e) {
   if (e == 0) {
-    return 0;    
+    return 0;
   }
   if (e == 1) {
-    return 0;        
+    return 0;
   }
   if (e == 2) {
-    return 0;        
+    return 0;
   }
   if (e == 3) {
-    return 1;        
+    return 1;
   }
   if (e == 4) {
-    return 1;        
+    return 1;
   }
   if (e == 5) {
     return 2;
@@ -154,26 +154,26 @@ int edge_between_aux(int x,int y) {
   }
   if (y == 1) {
     if (x == 0) {
-      return 0;    
+      return 0;
     }
   }
   if (y == 2) {
     if (x == 0) {
-      return 1;        
+      return 1;
     }
     if (x == 1) {
-      return 3;        
+      return 3;
     }
   }
   if (y == 3) {
     if (x == 0) {
-      return 2;        
+      return 2;
     }
     if (x == 1) {
-      return 4;        
+      return 4;
     }
     if (x == 2) {
-      return 5;        
+      return 5;
     }
   }
   int v = (y - 2)*3 + (3 - d);
@@ -185,7 +185,7 @@ int Tetrahelix::edge_between(int x,int y) {
     abort();
     return -1;
   } else if (x == y) {
-    abort();    
+    abort();
     return -1;
   } else return (x < y) ? edge_between_aux(x,y) : edge_between_aux(y,x);
 }
@@ -203,7 +203,7 @@ Tetrahelix::Tetrahelix(int nodes,
   initial_d = i;
 
     num_nodes = nodes;
-    
+
     num_edges = edges_in_tetrahelix(num_nodes);
 
     // Note: This is wildly different than the 2d case, which requires just one fixed edge.
@@ -211,32 +211,32 @@ Tetrahelix::Tetrahelix(int nodes,
     node_fixing_order = new int[num_nodes];
 
     // This is dangerous; I think possibly it should be removed...
-    lcoords = new column_vector[num_nodes];      
+    lcoords = new column_vector[num_nodes];
 
     fixed_nodes.set_size(3);
     fixed_nodes(0) = A;
     fixed_nodes(1) = B;
-    fixed_nodes(2) = C;    
+    fixed_nodes(2) = C;
 
     // add the edges to the graph object
     distance.set_size(num_edges);
     lower_bound.set_size(num_edges);
-    upper_bound.set_size(num_edges);    
+    upper_bound.set_size(num_edges);
     for (int i = 0; i < num_edges; ++i) {
       distance(i) = median_d;
     }
-    
+
     for (int i = 0; i <var_edges; ++i) {
       lower_bound(i) = lower_bound_d;
-      upper_bound(i) = upper_bound_d;            
+      upper_bound(i) = upper_bound_d;
     }
 
     column_vector coords[3];
     init_fixed_coords_to_z_axis_alignment(coords);
     init_fixed_coords(coords);
-    
+
     Jacobian_memo = new matrix<double>[num_nodes];
-    Jacobian_memo_v = new bool[num_nodes];    
+    Jacobian_memo_v = new bool[num_nodes];
 }
 
 void Tetrahelix::initialize_Jacobian_memo() {
@@ -249,7 +249,7 @@ column_vector fixed[3];
 void Tetrahelix::init_fixed_coords(column_vector fcoords[]) {
   fixed[0] = fcoords[0];
   fixed[1] = fcoords[1];
-  fixed[2] = fcoords[2];  
+  fixed[2] = fcoords[2];
 }
 
 void Tetrahelix::init_fixed_coords_to_z_axis_alignment(column_vector coords[]) {
@@ -260,9 +260,9 @@ void Tetrahelix::init_fixed_coords_to_z_axis_alignment(column_vector coords[]) {
     temp0 = 0.25980762113533157,  0.7794228634059948,  -1;
     coords[0] = temp0*f;
 
-    temp0 =  -0.17320508075688773, 0.9730720307163656, -0.841886116991581;   
+    temp0 =  -0.17320508075688773, 0.9730720307163656, -0.841886116991581;
     coords[1] = temp0*f;
-    
+
     temp0 =  -0.028867513459481214,  0.5212239736588337, -0.683772233983162;
     coords[2] = temp0*f;
     fixed[0] = coords[0];
@@ -273,7 +273,7 @@ void Tetrahelix::init_fixed_coords_to_z_axis_alignment(column_vector coords[]) {
 void Tetrahelix::restore_fixed_coords(column_vector coords[]) {
   coords[0] = fixed[0];
   coords[1] = fixed[1];
-  coords[2] = fixed[2];  
+  coords[2] = fixed[2];
 }
 
 // In all probability, this can be unified with the 2D case
@@ -283,7 +283,7 @@ double FindCoords3d::operator() ( const column_vector& x) const
     column_vector y(3);
     y  = x(0), x(1), x(2);
 
-    
+
     column_vector ac(3);
     ac = y - a;
 
@@ -292,7 +292,7 @@ double FindCoords3d::operator() ( const column_vector& x) const
 
     column_vector cc(3);
     cc = y - c;
-    
+
 
     double an = ac(0)*ac(0)+ac(1)*ac(1)+ac(2)*ac(2);
     double bn = bc(0)*bc(0)+bc(1)*bc(1)+bc(2)*bc(2);
@@ -323,7 +323,7 @@ column_vector find_point_from_transformed(Chirality sense,double AB, double AC, 
   double AD_m2 = AD * AD; double BC_m2 = BC * BC;
   double BD_m2 = BD * BD; double CD_m2 = CD * CD;
   double qx = AB;
-  double rx = (AB_m2 + AC_m2 - BC_m2) / (2.0 * AB);    
+  double rx = (AB_m2 + AC_m2 - BC_m2) / (2.0 * AB);
   double ry = sqrt (AC_m2 - rx * rx);
   double sx = (AB_m2 + AD_m2 - BD_m2) / (2.0 * AB);
   double sy = (BD_m2 - (sx - qx) * (sx - qx) - CD_m2 + (sx - rx) * (sx - rx) + ry * ry) / (2 * ry);
@@ -345,7 +345,7 @@ column_vector find_point_from_transformed(Chirality sense,double AB, double AC, 
   }
     column_vector A(3);
     column_vector B(3);
-    column_vector C(3);     
+    column_vector C(3);
     A = 0.0,0.0,0.0;
     B = qx,0.0,0.0;
     column_vector D(3);
@@ -363,7 +363,7 @@ column_vector find_point_from_transformed(Chirality sense,double AB, double AC, 
 	print_vec(C);
 	print_vec(D);
       }
-      assert(sense == senseABC);	      
+      assert(sense == senseABC);
     }
     return D;
 
@@ -382,7 +382,7 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
   column_vector pAp = trans(pA);
   column_vector pBp = trans(pB);
   column_vector pCp = trans(pC);
-  
+
 
   // Based on Kuba Ober's answer we need to compute F And G.
   // now we want to rotate the vector AB until it is pointing along the X axis.
@@ -393,7 +393,7 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
   dlib::vector<double,3> A = Avec.normalize();
   dlib::vector<double,3> B(1.0,0.0,0.0);
   // now both A and B are unit vectors.
-  
+
   dlib::matrix<double,3,3> U;
 
   dlib::vector<double,3> AxB = A.cross(B);
@@ -407,7 +407,7 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
       // This means that A and B point in opposite directions, and  must do something else
       // In this case the rotation can be Pi around either the z or y axis to get us
       // where we need to be...I prefer to ratate and z
-      alignX =  rotate_around_z(M_PI)* trans;    
+      alignX =  rotate_around_z(M_PI)* trans;
   } else {
     if (equal(A,B)) {
       U = 1,0,0,
@@ -424,21 +424,21 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
       dlib::matrix<double,3,3> G;
       G(0,0) = c;
       G(1,0) = s;
-      G(2,0) = 0;   
+      G(2,0) = 0;
 
       G(0,1) = -s;
       G(1,1) = c;
-      G(2,1) = 0;   
+      G(2,1) = 0;
 
       G(0,2) = 0;
       G(1,2) = 0;
-      G(2,2) = 1;   
+      G(2,2) = 1;
 
       dlib::vector<double,3> u = A;
       // NOTE: if A == B, this is a real problem. A special case that must be handled.
       // cout << "A = " << A << "\n";
-      // cout << "B = " << B << "\n";        
-      // cout << "B - c*A) = " << B - c*A << "\n";    
+      // cout << "B = " << B << "\n";
+      // cout << "B - c*A) = " << B - c*A << "\n";
       dlib::vector<double,3> v = (B - c*A).normalize();
       //      cout << " v = " << v << "\n";
 
@@ -447,20 +447,20 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
       dlib::matrix<double,3,3> F;
       F(0,0) = u(0);
       F(1,0) = u(1);
-      F(2,0) = u(2);   
+      F(2,0) = u(2);
 
       F(0,1) = v(0);
       F(1,1) = v(1);
-      F(2,1) = v(2);   
+      F(2,1) = v(2);
 
       F(0,2) = w(0);
       F(1,2) = w(1);
-      F(2,2) = w(2);   
-  
+      F(2,2) = w(2);
+
       dlib::matrix<double,3,3> Finv = inv(F);
       U = F * G * Finv;
     }
-    dlib::vector<double,3> zero(0,0,0);  
+    dlib::vector<double,3> zero(0,0,0);
     point_transform_affine3d firstRotation(U,zero);
 
     // now we have a transform that translates point B onto the X Axis.
@@ -469,27 +469,27 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
     // So we need to compute the angle to rotate, call it theta.
     // theta = asin(C_y)
     alignX =  firstRotation * trans;
-  } 
+  }
 
   // Here we rotate C via our transform....
   column_vector Cn = alignX(pC);
-  if (debug)  {  
+  if (debug)  {
    cout << "Cn\n";
    print_vec(Cn);
 
-    
+
    cout << "Cn(2) " << Cn(2) << "\n";
    cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
   }
 
-  double len = alignX(pC).length();  
+  double len = alignX(pC).length();
   double denom = sqrt(Cn(0)*Cn(0) + Cn(1)*Cn(1));
   if (debug) {
    cout << "len " << len << "\n";
    cout << "denom: " << denom << "\n";
    cout << Cn(0)*Cn(0) + Cn(1)*Cn(1) << "\n";
   }
-  
+
   double value = Cn(2)/denom;
 
   if (debug) {
@@ -500,7 +500,7 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
 
   theta = -atan2(Cn(2),Cn(1));
 
-  if (debug) cout << "theta: " << theta*180/(M_PI) << "\n";      
+  if (debug) cout << "theta: " << theta*180/(M_PI) << "\n";
 
   // // The big question here is does this transform in some since reverse chirality?
   // // Is there a way for us to test that this maintains chirality?
@@ -516,8 +516,8 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
   //   // We can obviously make two choises on how to rotate...
   //   // These two are opposite directions because atan2(x,y) + atan2(y,x) = PI/2.
   //    theta = atan2(Cn(1),Cn(2));
-  //   //  theta = -atan2(Cn(2),Cn(1));    
-  //   if (debug) cout << "theta: " << theta*180/(M_PI) << "\n";    
+  //   //  theta = -atan2(Cn(2),Cn(1));
+  //   if (debug) cout << "theta: " << theta*180/(M_PI) << "\n";
   // }
 
   // Now, if theta is a multiple of 180 degrees, we don't really need to rotate...
@@ -527,8 +527,8 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
     // cout << "pc " << pC << "\n";
     // cout << alignX(pC) << "\n";
     // cout << alignX.get_m() << "\n";
-    // cout << alignX.get_b() << "\n";  
-    result = rotate_around_x(0) *alignX;    
+    // cout << alignX.get_b() << "\n";
+    result = rotate_around_x(0) *alignX;
   } else {
     result = rotate_around_x(theta) * alignX;
   }
@@ -537,13 +537,13 @@ point_transform_affine3d compute_transform_to_axes2(column_vector pA, column_vec
     cout << "These should be aligned... \n";
     column_vector lA = result(pA);
     column_vector lB = result(pB);
-    column_vector lC = result(pC);    
-    
+    column_vector lC = result(pC);
+
     print_vec(lA);
     print_vec(lB);
-    print_vec(lC);        
+    print_vec(lC);
   }
-  
+
   return result;
 }
 
@@ -556,15 +556,15 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   int debug = 0;
   if (debug) cout << "ad bd cd\n";
   if (debug) cout << ad << " " << bd << " " << cd << "\n";
-  
+
   // First compute all 6 distances....
   double ab = distance_3d(pa,pb);
   double ac = distance_3d(pa,pc);
   double bc = distance_3d(pb,pc);
-  
+
   // Now find transformation that rotates and translates to axes...
   if (debug) cout << "pa pb pc \n";
-  if (debug) cout << pa << " " << pb << " " << pc << "\n";  
+  if (debug) cout << pa << " " << pb << " " << pc << "\n";
   point_transform_affine3d tform = compute_transform_to_axes2(pa,pb,pc);
 
   column_vector Ap(3);
@@ -574,15 +574,15 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   Ap = tform(pa);
   if (debug) cout << "Ap \n";
   if (debug) print_vec(Ap);
-  
+
   Bp = tform(pb);
   if (debug) cout << "Bp \n";
   if (debug) print_vec(Bp);
-  
+
   Cp = tform(pc);
   if (debug) cout << "Cp \n";
   if (debug) print_vec(Cp);
-  
+
   point_transform_affine3d tform_inv = inv(tform);
   if (debug) cout << "tform inv\n";
   if (debug) cout << tform_inv.get_m();
@@ -591,12 +591,12 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   if (debug) cout << "INPUT YYY\n";
   if (debug) cout << ab << " " << ac << " " << ad << " " << bc << " " << bd << " " << cd << "\n";
   column_vector D = find_point_from_transformed(sense,ab,ac,ad,bc,bd,cd,valid);
-  
+
   if (isnan(D(0)) || isnan(D(1)) || isnan(D(2))) {
     cout << "INPUT YYY\n";
     cout << D(0) << "\n";
     cout << D(1) << "\n";
-    cout << D(2) << "\n";        
+    cout << D(2) << "\n";
     cout << ab << " " << ac << " " << ad << " " << bc << " " << bd << " " << cd << "\n";
   }
   // assert(!isnan(D(0)));
@@ -606,7 +606,7 @@ column_vector find_fourth_point_given_three_points_and_three_distances(Chirality
   Chirality untransformed = tet_chirality(pa,pb,pc,tform_inv(D));
   Chirality transformed = tet_chirality(Ap,Bp,Cp,D);
   if (debug) {
-    cout << "Chirality demanded: " << sense << "\n";  
+    cout << "Chirality demanded: " << sense << "\n";
     cout << "Chirality of transformed computations: " << transformed << "\n";
     cout << "Chirality of untransformed computations: " << untransformed << "\n";
   }
@@ -638,7 +638,7 @@ bool TetrahelixConfiguration::forward_find_coords() {
          print_vec(coords[i]);
        }
     }
-    
+
     // Basic structure: Iteratively find coordinates based on simple triangulations.
     // This only works for actuator networks in which we can
     int fs = thlx->fixed_nodes.size();
@@ -667,7 +667,7 @@ bool TetrahelixConfiguration::forward_find_coords() {
       // and minimize the function
       if (debug_find) std::cout << "f.a " << f.a << std::endl;
       if (debug_find) std::cout << "f.b " << f.b << std::endl;
-      if (debug_find) std::cout << "f.c " << f.c << std::endl;      
+      if (debug_find) std::cout << "f.c " << f.c << std::endl;
 
       int ecd = thlx->edge_between(i,i-1);
       int ebd = thlx->edge_between(i,i-2);
@@ -688,7 +688,7 @@ bool TetrahelixConfiguration::forward_find_coords() {
 
 	cout << f.a << "\n";
 	cout << f.a << "\n";
-	
+
 	cout << f.b << "\n";
 	cout << f.c << "\n";
 	cout << "=======\n";
@@ -701,7 +701,7 @@ bool TetrahelixConfiguration::forward_find_coords() {
 								   f.dad,f.dbd,f.dcd,&lvalid);
       valid &= lvalid;
 
-      
+
       coords[i].set_size(3);
       coords[i] = y;
       if (debug) {
@@ -710,12 +710,12 @@ bool TetrahelixConfiguration::forward_find_coords() {
 	cout << "valid?: " << valid << "\n";
 	cout << " distances \n";
 	for (int i = 0; i < thlx->num_nodes-1; ++i) {
-	  for (int j = i+1; j <  thlx->num_nodes; ++j) {    
+	  for (int j = i+1; j <  thlx->num_nodes; ++j) {
 	    cout << " i,j : " << i << "," << j << " ";
 	    cout << distance_3d(coords[i],coords[j]) << "\n";
 	  }
 	}
-	
+
       }
       if (debug_find) std::cout << "f(y) " << f(y) << std::endl;
     }
@@ -727,7 +727,7 @@ bool TetrahelixConfiguration::forward_find_coords() {
          print_vec(coords[i]);
        }
     }
-    
+
     return valid;
 };
 
@@ -841,17 +841,17 @@ column_vector compute_rotation_about_points(column_vector A,
   // cout << "A B\n";
   // print_vec(A);
   // print_vec(B);
-  
+
   point_transform_affine3d tform = compute_transform_to_axes2(A,B,M);
   // cout << tform.get_m() << "\n";
-  // cout << tform.get_b() << "\n";  
-  
+  // cout << tform.get_b() << "\n";
+
 
   column_vector M_on_axis = tform(M);
-  
+
   // cout << "M_on_axis \n";
   // cout << M_on_axis;
-  
+
 
   point_transform_affine3d rotate0 = rotate_around_x(theta);
   column_vector M_rotated = rotate0(M_on_axis);
@@ -882,17 +882,17 @@ column_vector Tetrahelix::compute_goal_differential_c(column_vector cur_coords[]
   TetrahelixConfiguration thc(this,cur_coords);
   set_distances(cur_coords);
   thc.forward_find_coords();
-  
+
   column_vector g_orig = cur_coords[goal_node_number];
   double orig_length = distance(edge_number);
   distance(edge_number) += delta_fraction * distance(edge_number);
 
   thc.forward_find_coords();
-  
+
   column_vector differential = (cur_coords[goal_node_number] - g_orig)/delta_fraction;
   distance(edge_number) = orig_length;
-  
-  thc.forward_find_coords();  
+
+  thc.forward_find_coords();
 
   return differential;
 }
@@ -908,7 +908,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   int debug = 0;
   //  if (edge_number == 5) debug = 1;
   if (debug) cout << "INIT COMPUTE_GOAL_DERIVATIVE\n";
-  //  cout << "iniit! \n";  
+  //  cout << "iniit! \n";
   // This has to be reconstructed....
   column_vector d_e_a(3);
 
@@ -943,7 +943,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
 
 
   if (debug)  cout << "edge" << e << " small " << s << " large "  << l << "\n";
-  if (debug)  cout << "a b c d  " << a << " " << b << " " << c << " " << d << "\n"; 
+  if (debug)  cout << "a b c d  " << a << " " << b << " " << c << " " << d << "\n";
 
   // How does this choose the chirality? Which side of the triangle BCD does A occur on?
   // If we look at the tip of A the BCD is on the other side (from our eye), does BCD go
@@ -981,14 +981,14 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
       print_vec(C);
       print_vec(D);
       cout << "\n";
-    
-    assert(tet == CCW);    
+
+    assert(tet == CCW);
   }
 
 
   double ac = distance_3d(A,C);
   double cd = distance_3d(C,D);
-  double ad = distance_3d(D,A);        
+  double ad = distance_3d(D,A);
   double bc = distance_3d(B,C);
   double bd = distance_3d(B,D);
   double ab = distance_3d(A,B);
@@ -1003,7 +1003,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   }
 
 
-  // cout << "ab ac ad bc bd cd  " << ab << " " << ac << " " << ad << " " << bc  << " " << bd << " "  << cd << "\n";   
+  // cout << "ab ac ad bc bd cd  " << ab << " " << ac << " " << ad << " " << bc  << " " << bd << " "  << cd << "\n";
   // Are these properly tested?  I have reason to believe this may not be right!!!
   // These are supposed to be the interior strap angles...
   // I believe these are supposed by two-dimensional angles for simple triangles..
@@ -1036,9 +1036,9 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
     // interior is the negation of the EXTERIOR, so we change the sign
 
     if (debug) {
-      cout << " dAB_LENCD  " << dAB_LENCD*180/(M_PI) << "\n";  
+      cout << " dAB_LENCD  " << dAB_LENCD*180/(M_PI) << "\n";
 
-  // now to compute the vector, we must take dvtheta rotate the vector 
+  // now to compute the vector, we must take dvtheta rotate the vector
   // around the line A-B the vector of the goal_node
 
   //   cout << "computing rotaiton: " << dvtheta*180/(M_PI) << " of " << en << "\n";
@@ -1059,7 +1059,7 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
       cout << "G = ";
       print_vec(G);
       cout << "\n";
-      
+
       cout << "CP \n";
       print_vec(CP);
     }
@@ -1067,13 +1067,13 @@ column_vector Tetrahelix::compute_goal_derivative_c(column_vector cur_coords[],
   // I now suspect this is rotating in the wrong direction! Or that I mus
   // at least be careful of the order!
     //  column_vector Emoved = compute_rotation_about_points(A,B,dAB_LENCD,en);
-    //  column_vector differential = Emoved - en;  
-    //  debug = 0;  
+    //  column_vector differential = Emoved - en;
+    //  debug = 0;
   if (debug) {
     //    cout << "differential ";
     //    print_vec(differential);
     cout << "deriv ";
-    print_vec(deriv);  
+    print_vec(deriv);
   }
   //  return Emoved - en;
   //  return differential;
@@ -1094,7 +1094,7 @@ column_vector Tetrahelix::compute_goal_derivative_j(column_vector cur_coords[],
   }
   assert(var_edge_number < var_edges);
   edge_length_deriv(var_edge_number) = 1.0;
-  matrix<double> deriv_i = normalize(Jacobian_temp * edge_length_deriv);  
+  matrix<double> deriv_i = normalize(Jacobian_temp * edge_length_deriv);
   return deriv_i;
 }
 
@@ -1111,13 +1111,13 @@ double Tetrahelix::d_dihedralBC_dCD_aux(double BC, double BD, double CD, double 
   double a = aBCE;
 
   // f = cos DCE
-  double f = cosine_from_three_sides(CD,CE,DE); 
+  double f = cosine_from_three_sides(CD,CE,DE);
   // g = cos BCD
   double g = cosine_from_three_sides(CD,BC,BD);
 
   double fp = dcos_adj(CD,CE,DE);
   double gp = dcos_adj(CD,BC,BD);
-  
+
   double sa = sin(a);
   double ca = cos(a);
 
@@ -1125,7 +1125,7 @@ double Tetrahelix::d_dihedralBC_dCD_aux(double BC, double BD, double CD, double 
   double t1 = sa*(fp - ca*gp)/sqrt(1 - g*g);
   double t2 = sa*g*gp*(f - ca*g);
   double t2den = pow((1 - g*g),3.0/2.0);
-  
+
   double num = t1 + t2/t2den;
   double n1 = pow(sa*(f - ca*g),2);
   double den = sqrt(1 - (n1/(1-g*g)));
@@ -1133,7 +1133,7 @@ double Tetrahelix::d_dihedralBC_dCD_aux(double BC, double BD, double CD, double 
   //  cout << "internal debug values:\n";
   //  cout << "num den n1 t1 t2:\n";
   //  cout << num << " " << den << " " << n1 << " " << t1 << " " << t2 << "\n";
-  
+
   return num/den;
 }
 
@@ -1178,7 +1178,7 @@ double Tetrahelix::d_dihedralBC_dCD(column_vector cur_coords[],
   int e = d+1;
 
   if (debug)  cout << "edge" << e << " small " << s << " large "  << l << "\n";
-  if (debug)  cout << "a b c d  e" << a << " " << b << " " << c << " " << d << " " << e << "\n"; 
+  if (debug)  cout << "a b c d  e" << a << " " << b << " " << c << " " << d << " " << e << "\n";
 
   // How does this choose the chirality? Which side of the triangle BCD does A occur on?
   // If we look at the tip of A the BCD is on the other side (from our eye), does BCD go
@@ -1192,12 +1192,12 @@ double Tetrahelix::d_dihedralBC_dCD(column_vector cur_coords[],
 
   double bc = distance_3d(B,C);
   double bd = distance_3d(B,D);
-  double be = distance_3d(B,E);  
-  double cd = distance_3d(C,D);        
+  double be = distance_3d(B,E);
+  double cd = distance_3d(C,D);
   double ce = distance_3d(C,E);
   double de = distance_3d(D,E);
 
-  //  if (debug)  cout << "bc bd be cd ce de" << bc << " " << bd << " " << be << " " << cd << " " << ce << " " << de << "\n";   
+  //  if (debug)  cout << "bc bd be cd ce de" << bc << " " << bd << " " << be << " " << cd << " " << ce << " " << de << "\n";
 
   double ang_BCE = angle_from_three_sides(bc,ce,be);
 
@@ -1258,7 +1258,7 @@ column_vector Tetrahelix::compute_goal_derivative_after_edge_internal(column_vec
   int e = d+1;
 
   if (debug)  cout << "edge" << e_n << " small " << s << " large "  << l << "\n";
-  if (debug)  cout << "a b c d  e\n" << a << " " << b << " " << c << " " << d << " " << e << "\n"; 
+  if (debug)  cout << "a b c d  e\n" << a << " " << b << " " << c << " " << d << " " << e << "\n";
 
   // How does this choose the chirality? Which side of the triangle BCD does A occur on?
   // If we look at the tip of A the BCD is on the other side (from our eye), does BCD go
@@ -1281,7 +1281,7 @@ column_vector Tetrahelix::compute_goal_derivative_after_edge_internal(column_vec
   if (debug) {
     cout << "C to E\n";
     print_vec(C_to_E);
-    cout << "B to C\n";  
+    cout << "B to C\n";
     print_vec(B_to_C);
   }
   column_vector cp = cross_product(B_to_C,C_to_E);
@@ -1289,11 +1289,11 @@ column_vector Tetrahelix::compute_goal_derivative_after_edge_internal(column_vec
     cout << "cross product\n";
     print_vec(cp);
   }
-  
+
   column_vector dE_dl = cp * d_BC;
   return dE_dl;
 }
-		   
+
 // TODO: Add number of fixed nodes as a definite function and replace all
 // references to naked literals that depend on it.
 
@@ -1307,7 +1307,7 @@ void Tetrahelix::set_distances(column_vector coords[]) {
       //      cout << i << " " << " " << s << " " << l << " " << d << "\n";
       distance(i) = d;
     }
-    
+
 }
 
 void set_row_from_vector(matrix<double> *M, column_vector c, int row, int col, int n) {
@@ -1318,17 +1318,17 @@ void set_row_from_vector(matrix<double> *M, column_vector c, int row, int col, i
 
 void stack_9x3_matrix(matrix<double> *JK,matrix<double> J1,matrix<double> J2,matrix<double> J3) {
   for(int i = 0; i < 3; i++) {
-    for(int j = 0; j < 3; j++) {    
+    for(int j = 0; j < 3; j++) {
       (*JK)(i,j) = J1(i,j);
     }
   }
   for(int i = 0; i < 3; i++) {
-    for(int j = 0; j < 3; j++) {    
+    for(int j = 0; j < 3; j++) {
       (*JK)(i+3,j) = J2(i,j);
     }
   }
   for(int i = 0; i < 3; i++) {
-    for(int j = 0; j < 3; j++) {    
+    for(int j = 0; j < 3; j++) {
       (*JK)(i+6,j) = J3(i,j);
     }
   }
@@ -1359,23 +1359,23 @@ matrix<double> Tetrahelix::JacobianBase(column_vector coords[]) {
     cout << Btet;
     cout << "End Btet\n";
   }
-  
-  
+
+
   matrix<double> Btet_inv = inv(Btet);
 
-  if (debug) {  
+  if (debug) {
     cout << "Btet_inv \n";
     cout << Btet_inv;
     cout << "End Btet_inv\n";
   }
-  
+
   // now somehow I have to construct a 3 x 9 matrix with zero columns...
   // Since the base is the node numbered 3, stuts 0,1,2, 6,7,8, and 9
   // should be zero...this is very error prone.
   matrix<double> J3 = zeros_matrix<double>(3,var_edges);
   // Now, hopefully we can lay Btet_inv right in as 3,4,5....
   for(int i = 0; i < 3; i++) {
-    for(int j = 0; j < 3; j++) {    
+    for(int j = 0; j < 3; j++) {
       J3(i,j) = Btet_inv(i,j);
     }
   }
@@ -1425,19 +1425,19 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
     matrix<double> J2 = get_Jacobian(coords,node-2);
     matrix<double> J3 = get_Jacobian(coords,node-3);
     //    cout << "Got all memos!";
-  
+
     int n = node;
-  
+
     column_vector DA = normalize(coords[n] - coords[n-3]);
     column_vector DB = normalize(coords[n] - coords[n-2]);
     column_vector DC = normalize(coords[n] - coords[n-1]);
 
     matrix<double> Btet(3,3);
-    
+
     set_row_from_vector(&Btet,DA,0,0,3);
     set_row_from_vector(&Btet,DB,1,0,3);
     set_row_from_vector(&Btet,DC,2,0,3);
-  
+
     matrix<double> Atet = zeros_matrix<double>(3,9);
 
     int debug = 0;
@@ -1446,11 +1446,11 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
       cout << Atet;
       cout << "End Atet\n";
     }
-  
+
     set_row_from_vector(&Atet,-DA,0,0,3);
     set_row_from_vector(&Atet,-DB,1,3,3);
     set_row_from_vector(&Atet,-DC,2,6,3);
-  
+
     matrix<double> Btet_inv = inv(Btet);
 
 
@@ -1463,11 +1463,11 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
     //    matrix<double> JK = zeros_matrix<double>(9,3);
     matrix<double> JK = join_cols(join_cols(J3,J2),J1);
 
-    if (debug) {    
+    if (debug) {
       cout << "JK \n";
       cout << JK;
       cout << "JK\n";
-  
+
       cout << "part1 \n";
       cout << Atet * JK;
       cout << "part1\n";
@@ -1476,7 +1476,7 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
       cout << (Btet_inv*(Atet*JK));
       cout << "part2\n";
 
-    
+
       cout << "Btet_inv \n";
       cout << Btet_inv;
       cout << "End Btet_inv\n";
@@ -1493,12 +1493,12 @@ matrix<double> Tetrahelix::Jacobian(column_vector coords[],int node) {
     }
     matrix<double> Ju = Ctet - (Btet_inv*(Atet*JK));
 
-    if (debug) {        
+    if (debug) {
       cout << "Ju \n";
       cout << Ju;
       cout << "Ju\n";
     }
-  
+
     return Ju;
   }
 }
@@ -1517,9 +1517,9 @@ TetrahelixConfiguration::TetrahelixConfiguration(Tetrahelix* thlx,column_vector 
 void TetrahelixConfiguration::declare_coord_changed(int n) {
   forward_find_coords();
   clock_t t;
-  t = clock();	  
+  t = clock();
   matrix<double> Ju = thlx->Jacobian(coords,thlx->num_nodes-1);
-  t = clock() - t;	
+  t = clock() - t;
   time_in_jacobian += t;
   int debug = 0;
   if (debug) {

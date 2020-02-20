@@ -764,13 +764,13 @@ Via cosine law, let $x = \overline{AC}, y = \overline{AD}, z = \overline{CD}, r 
 t = \overline{BD}, q = \overline{CE},$
 
 \begin{align*}
-  f(z) =  & \frac{z^2 + q^2 + -s^2}{2z\cdot q} \\
-  f'(z) = & \frac{-q^2 + s^2 + z^2}{2 q z^2}
+  f(z,q,s) =  & \frac{z^2 + q^2 + -s^2}{2z\cdot q} \\
+  \frac{\partial f(z,q,s)}{\partial z} = & \frac{-q^2 + s^2 + z^2}{2 q z^2}
 \end{align*}
 
 \begin{align*}
   g(z) = &  \frac{r^2 + z^2 + -t^2}{2r\cdot z} \\
-  g'(z) = & \frac{-r^2 + t^2 + z^2}{2 r z^2}
+  \frac{\partial g(z,r,t)}{\partial z} = & \frac{-r^2 + t^2 + z^2}{2 r z^2}
 \end{align*}
 
 \begin{equation}
@@ -782,8 +782,8 @@ Let: $a = \angle BCE$.
 
 \begin{equation}
   \frac{\partial \angle BC}{\partial z} =
-  -\frac{\frac{\sin{a} (f'(z) - \cos{a} g'(z))}{\sqrt{1 - g(z)^2}} + \frac{\sin{a} g(z) g'(z) (f(z) - \cos{a} g(z))}{(1 - g(z)^2)^(3/2)}}
-{\sqrt{1 - \frac{\sin^2{a} (f(z) - \cos{a} g(z))^2}{1 - g(z)^2}}}
+  -\frac{\frac{\sin{(a)} (f'(z) - \cos{(a)} g'(z))}{\sqrt{1 - g(z)^2}} + \frac{\sin{(a)} g(z) g'(z) (f(z) - \cos{(a)} g(z))}{(1 - g(z)^2)^(3/2)}}
+{\sqrt{1 - \frac{\sin^2{(a)} (f(z) - \cos{(a)} g(z))^2}{1 - g(z)^2}}}
 \end{equation}
 
 
@@ -849,7 +849,74 @@ closed-form expression, which is worth investigation---possibly asking of StackE
 Given the derivative of position of the three corners of the triangle $\Delta DEF$ it should be possible to
 compute the motion of any point attached to this frame. Presumably this can found on a textbook on classical mechanics.
 
+As a matter of fact any node from $F$ on is fixed on the frame of $DE$. We only need to compute the general velocity
+of $DE$ from the velocity of the two points $D$ and $E$. This is a challenging dynamics problem, but cannot believe
+it is insoluble.
+
+\section{The Breakthrough}
+
+On June 7th, 2018, a breakthrough occurred: I used the computation of a differential to sidestep the analytic developement
+of the derivatives, and can now place the end effector effectively.
+
+This breakthrough requires study and a rearticulation of our goals.
+
+\begin{itemize}
+\item Discover the performance limits of this approach in terms of tetrahedra: how many tets can be solved in 100 ms?
+  \item Are there perofrmance benefits to developing the analytic derivatives?
+  \item We should write ``Using off-the shelf numerical optimization to control modular tetrahedral robots.''
+  \item Can my 2D approach to optimization be applied effectively in 3D?
+  \item Can we build a convenient system for leaving something absolutely fixed?
+    
+  \item ICRA Deadline is Sept. 10th
+  \item We should write ``Developing a crawling gait for modular tetrobot using numerical optimization.''
+  \item Can we build a playground of space compoose of nothing but tetrahelices? A sculpture of some kind? A sculpure which comes to life and walks?
+  \item Can we return to the bullet-engine simulation to build a walking robot?
+  \item Can we streamline a design toolkit to make this work?
+  \item Most powerful demonstration: move and then grab and then carry. Or move over obstacles. Carry weight over obstacles.
+  \item I need to read ICRA 2018
+    
+  \end{itemize}
+
+\section{Exploring the Jacobian Computation}
+
+I think I have been remiss: I am now resigned to study ``Dynamic Simulation of Tetrahedron-Based Tetrobot''.
+
+
 \section{Unvetted References}
+
+I have found some new and highly relevant research I need to read:
+
+\url{https://ieeexplore.ieee.org/abstract/document/7535310/}
+
+\url{https://ieeexplore.ieee.org/abstract/document/5442831/}
+
+\url{https://ieeexplore.ieee.org/abstract/document/7992710/}
+
+\url{http://journals.sagepub.com/doi/pdf/10.1177/027836498400300404}
+
+Note: Get this reference: [3] A Y N Sofla; D M Elzey; H N G Wadley, "Shape morphing hinged truss structures,''
+
+
+\url{https://search.proquest.com/openview/28b62ba79504a5c458a037f6d293c81d/1?pq-origsite=gscholar&cbl=18750&diss=y}
+
+This one is really huge in its implications:
+
+\url{http://shape.stanford.edu/research/pneumaticReelActuator/Usevitch_IROS_2017_LAR.pdf}
+
+Understand rigidity matrix: \url{https://en.wikipedia.org/wiki/Rigidity_matroid}
+
+
+I have to understand the ``Jacobian'' stuff discussed as the kinematics and dynamics of certain papers:
+
+Dynamic Simulation of Tetrahedron-Based Tetrobot
+
+
+Weaker references: \url{https://aip.scitation.org/doi/abs/10.1063/1.5005262}
+
+
+
+Note: This paper may relate to the gluss controller. https://www.emeraldinsight.com/doi/abs/10.1108/01439911011018911
+
 
 A starting point is: \cite{Hanahara2008}.
 
