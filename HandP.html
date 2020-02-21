@@ -152,6 +152,8 @@ var origin = [0,0];
 
 var PROBLEM_INDEX = 0;
 
+var MMR = 1.5 // MAX / MIN RATIO
+
 // Detects webgl
 if ( ! Detector.webgl ) {
     Detector.addGetWebGLMessage();
@@ -1430,7 +1432,7 @@ function create_problem() {
       helix_members: []
     });
   // Now try to update the problem!
-  create_problem_helix(3,7,1.5,PROBLEM_INDEX++);
+  create_problem_helix(3,7,MMR,PROBLEM_INDEX++);
 }
 function solve_via_service() {
 
@@ -1992,7 +1994,8 @@ pos.set( 0.0, 0.0, 0.0);
 
 initialize_problem();
 
-create_problem_helix(3,7,1.5,PROBLEM_INDEX++);
+// create_problem_helix(3,7,MMR,PROBLEM_INDEX++);
+// create_problem_helix(3,7,1.2,PROBLEM_INDEX++);
 
 
     animate();

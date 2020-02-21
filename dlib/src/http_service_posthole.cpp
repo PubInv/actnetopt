@@ -84,6 +84,8 @@ void get_method_handler_goal( const shared_ptr< Session > session )
                       h->c[i](0) = hc[i]["x"];
                       h->c[i](1) = hc[i]["y"];
                       h->c[i](2) = hc[i]["z"];
+                      h->a[i] = ha[i];
+
                       cout << i << "\n";
                       print_vec(h->c[i]);
                     }
