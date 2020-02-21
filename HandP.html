@@ -97,7 +97,8 @@
     <section id="visualsection" style="{border: red;}">
     </section>
 
-    <input type="button" id="solve" value="Solve!">
+  <input type="button" id="solve" value="Solve!">
+    <input type="button" id="problem" value="Problem!">
     <section id="textreport">
 
     </section>
@@ -1411,6 +1412,26 @@ function createGround(am) {
 // A Problem here is defined as a set of posts
 // and a set of holes.
 var PROBLEM;
+function create_problem() {
+  am.clear_non_floor_body_mesh_pairs();
+
+  for( var i = am.scene.children.length - 1; i >= 0; i--) {
+    var obj = am.scene.children[i];
+    if (obj.type == "Mesh" && obj.name != "GROUND") {
+      am.scene.remove(obj);
+    }
+  }
+
+  am.helices = [];
+  am.helix_params = [];
+  am.helices.push(
+    {
+      helix_joints: [],
+      helix_members: []
+    });
+  // Now try to update the problem!
+  create_problem_helix(3,7,1.5,PROBLEM_INDEX++);
+}
 function solve_via_service() {
 
     var problem_string = JSON.stringify(PROBLEM);
@@ -1418,23 +1439,6 @@ function solve_via_service() {
 	    data: {"problem" : problem_string },
 	    success: function(result) {
               console.log("result",result);
-
-		am.clear_non_floor_body_mesh_pairs();
-
-		for( var i = am.scene.children.length - 1; i >= 0; i--) {
-		    var obj = am.scene.children[i];
-		    if (obj.type == "Mesh" && obj.name != "GROUND") {
-			am.scene.remove(obj);
-		    }
-		}
-
-		am.helices = [];
-		am.helix_params = [];
-		am.helices.push(
-		    {
-			helix_joints: [],
-			helix_members: []
-		    });
 		// now basically we want to build the helix from these results...
 		//	       var pvec = new THREE.Vector3(0,HELIX_RADIUS*2.1,-1.0);
 	      var pvec = new THREE.Vector3(0,0.0,0.0);
@@ -1448,8 +1452,6 @@ function solve_via_service() {
 	      $("#textreport").html("score: " + score + "  [" + x + "," + y + "," + z + "]");
               render_of_post_problem(angles);
 
-              // Now try to update the problem!
-              create_problem_helix(3,7,1.5,PROBLEM_INDEX++);
 	    }
 	   });
 }
@@ -1513,10 +1515,23 @@ function createRotXYZMatrix(rotxyz) {
   return R;
 }
 
+function createRotZXZMatrix(rotxyz) {
+  var R = new THREE.Matrix4();
+  var rx = new THREE.Matrix4().makeRotationZ(rotxyz[0]);
+  var ry = new THREE.Matrix4().makeRotationX(rotxyz[1]);
+  var rz = new THREE.Matrix4().makeRotationZ(rotxyz[2]);
+  // This is a post-multiply
+  R.multiply(rx);
+  R.multiply(ry);
+  R.multiply(rz);
+  return R;
+}
+
 function render_around_sphere(c,g,r,color,rotxyz,scene) {
     // post is a unit vector, we can use quaternion on it...
   var post = c.clone();
   var M = createRotXYZMatrix(rotxyz);
+//  var M = createRotZXZMatrix(rotxyz);
   post.applyMatrix4(M);
 
   var geometry = g.clone();
@@ -1597,8 +1612,8 @@ function initialize_problem() {
               posts: null };
 }
 function render_of_post_problem(rotxyz) {
-  render_posts(PROBLEM.posts,1.1,[0,0,0],am.scene);
-  render_holes(PROBLEM.holes,1.0,rotxyz,am.scene);
+  render_posts(PROBLEM.posts,1.1/3,[0,0,0],am.scene);
+  render_holes(PROBLEM.holes,1.0/3,rotxyz,am.scene);
 }
 // This tries to rotate the vector A-B on to the X-Axis. C should end up in the XY plane.
 // I think if the the vector A-B points in the negative x direction, we have a special case
@@ -1931,7 +1946,8 @@ function create_problem_helix(j,n,r,k) {
   for(var i = 0; i < c; i++) AH.push(ps[i].clone());
   // 16 degrees = 4 * Math.PI / 45
   // 20 degrees = Math.PI / 9
-  for(var i = 0; i < c; i++) AHa.push( Math.PI / 9);
+  // 25 degrees = Math.PI / 9
+  for(var i = 0; i < c; i++) AHa.push( Math.PI / 8);
 
   if (!PROBLEM.holes) {
     PROBLEM.holes = { n: c, C: AH, A: AHa};
@@ -1964,7 +1980,8 @@ init_am();
         //     valid);
 
 
-    $( "#solve").click( solve_via_service );
+$( "#solve").click( solve_via_service );
+$( "#problem").click( create_problem );
 
 
     initHandlers();
