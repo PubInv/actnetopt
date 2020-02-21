@@ -137,7 +137,10 @@
 
 		</script>
     <script>
-    var tm = UGLY_GLOBAL_SINCE_I_CANT_GET_MY_MODULE_INTO_THE_BROWSER;
+  var tm = UGLY_GLOBAL_SINCE_I_CANT_GET_MY_MODULE_INTO_THE_BROWSER;
+
+const CHIRALITY_CCW = 1;
+const CHIRALITY_CW = 0;
 
 
 var OPERATION = "normal"; // "normal" or "helices"
@@ -145,6 +148,8 @@ var OPERATION = "normal"; // "normal" or "helices"
 var TET_DISTANCE = 0.5;
 
 var origin = [0,0];
+
+var PROBLEM_INDEX = 0;
 
 // Detects webgl
 if ( ! Detector.webgl ) {
@@ -1433,11 +1438,18 @@ function solve_via_service() {
 		// now basically we want to build the helix from these results...
 		//	       var pvec = new THREE.Vector3(0,HELIX_RADIUS*2.1,-1.0);
 	      var pvec = new THREE.Vector3(0,0.0,0.0);
-	      var nodes = JSON.parse(result);
-	      console.log(nodes);
-	      $("#textreport").html(nodes);
-              var e = new THREE.Euler(nodes[0],nodes[1],nodes[2]);
-              render_of_post_problem(e);
+	      var solution = JSON.parse(result);
+	      console.log(solution);
+              var angles = solution.angles;
+              var score = solution.score;
+              var x = angles[0] * 180 / Math.PI;
+              var y = angles[1] * 180 / Math.PI;
+              var z = angles[2] * 180 / Math.PI;
+	      $("#textreport").html("score: " + score + "  [" + x + "," + y + "," + z + "]");
+              render_of_post_problem(angles);
+
+              // Now try to update the problem!
+              create_problem_helix(3,7,1.5,PROBLEM_INDEX++);
 	    }
 	   });
 }
@@ -1477,9 +1489,9 @@ function generate_plus_sign_holes() {
   C[2] = new THREE.Vector3(0,0,-1);
   C[3] = new THREE.Vector3(0,-1,0);
 
-  var e = new THREE.Euler( Math.PI/8, Math.PI/7, Math.PI/9, 'XZY' );
+  var M = new createRotXYZMatrix( [Math.PI/7, Math.PI/3, Math.PI/5]);
   for(var i = 0; i < 4; i++) {
-    C[i].applyEuler(e);
+    C[i].applyMatrix4(M);
   }
   var A = [];
   A[0] = Math.PI/16;
@@ -1489,10 +1501,24 @@ function generate_plus_sign_holes() {
   return { n: 4, C: C , A: A};
 }
 
-function render_around_sphere(c,g,r,color,e,scene) {
+function createRotXYZMatrix(rotxyz) {
+  var R = new THREE.Matrix4();
+  var rx = new THREE.Matrix4().makeRotationX(rotxyz[0]);
+  var ry = new THREE.Matrix4().makeRotationY(rotxyz[1]);
+  var rz = new THREE.Matrix4().makeRotationZ(rotxyz[2]);
+  // This is a post-multiply
+  R.multiply(rx);
+  R.multiply(ry);
+  R.multiply(rz);
+  return R;
+}
+
+function render_around_sphere(c,g,r,color,rotxyz,scene) {
     // post is a unit vector, we can use quaternion on it...
   var post = c.clone();
-  post.applyEuler(e);
+  var M = createRotXYZMatrix(rotxyz);
+  post.applyMatrix4(M);
+
   var geometry = g.clone();
   var material = new THREE.MeshPhongMaterial( {color: color, side: THREE.DoubleSide} );
   var cylinder = new THREE.Mesh( geometry, material );
@@ -1508,13 +1534,13 @@ function render_around_sphere(c,g,r,color,e,scene) {
   R.multiply(rot0);
   R.multiply(trans);
 //  R.multiply(rot);
-  cylinder.applyMatrix(R);
+  geometry.applyMatrix(R);
   scene.add( cylinder );
 }
 
 // Posts will be rendered as cylinders. At present I am not adding
 // the post width into the math. r is the radius of the inner sphere.
-function render_posts(p,r,e,scene) {
+function render_posts(p,r,rotxyz,scene) {
   const ch = r/4.0;  // cylinder height
   const cr = r/30.0; // cylinder radius
   const n = p.n;
@@ -1522,11 +1548,11 @@ function render_posts(p,r,e,scene) {
     // post is a unit vector, we can use quaternion on it...
     var geometry = new THREE.CylinderGeometry( cr, cr, ch, 32 );
 
-    render_around_sphere(post,geometry,r,0xff0000,e,scene);
+    render_around_sphere(post,geometry,r,0xff0000,rotxyz,scene);
   });
 }
 
-function render_holes(p,r,e,scene) {
+function render_holes(p,r,rotxyz,scene) {
   const ch = r/4.0;  // cylinder height
   const n = p.n;
   const Y = new THREE.Vector3(0,1,0)
@@ -1540,7 +1566,7 @@ function render_holes(p,r,e,scene) {
     var rot = new THREE.Matrix4();
     rot.makeRotationAxis(new THREE.Vector3(1,0,0),Math.PI/2);
     geometry.applyMatrix(rot);
-    render_around_sphere(post,geometry,r,0x00ff00,e,scene);
+    render_around_sphere(post,geometry,r,0x00ccff,rotxyz,scene);
   }
 }
 
@@ -1553,27 +1579,389 @@ function test_render_of_post_problem() {
 
   var p = generate_plus_sign_problem();
 
-  var i = new THREE.Euler( 0, 0, 0, 'XYZ' );
-  render_posts(p,1.1,i,am.scene);
+  render_posts(p,1.1,[0,0,0],am.scene);
   var h = generate_plus_sign_holes();
 
   PROBLEM = { holes: h,
               posts: p };
 
-  var a = new THREE.Euler( 0, 1, 1.57, 'XYZ' );
-  render_holes(h,1.0,a,am.scene);
+  var rotxyz = [Math.PI/10,Math.PI/11,Math.PI/15];
+  render_holes(h,1.0,rotxyz,am.scene);
 }
 
-function render_of_post_problem(e) {
 
-  var p = generate_plus_sign_problem();
-  var i = new THREE.Euler( 0, 0, 0, 'XYZ' );
-  render_posts(p,1.1,i,am.scene);
-  var h = generate_plus_sign_holes();
-  PROBLEM = { holes: h,
-              posts: p };
-  render_holes(h,1.0,e,am.scene);
+function initialize_problem() {
+//  var p = generate_plus_sign_problem();
+//  var h = generate_plus_sign_holes();
+  PROBLEM = { holes: null,
+              posts: null };
 }
+function render_of_post_problem(rotxyz) {
+  render_posts(PROBLEM.posts,1.1,[0,0,0],am.scene);
+  render_holes(PROBLEM.holes,1.0,rotxyz,am.scene);
+}
+// This tries to rotate the vector A-B on to the X-Axis. C should end up in the XY plane.
+// I think if the the vector A-B points in the negative x direction, we have a special case
+// that causes a problem here. In that case we are 180 degrees out of sync. I need to think
+// carefully about how to handle this.
+function compute_transform_to_axes2(pa, pb, pc) {
+    var m = new THREE.Matrix4();
+    // Translate a to the origin...
+    m.makeTranslation(-pa.x, -pa.y, -pa.z);
+
+    var a0 = new THREE.Vector3(pa.x, pa.y, pa.z);
+    var b0 = new THREE.Vector3(pb.x, pb.y, pb.z);
+    var c0 = new THREE.Vector3(pc.x, pc.y, pc.z);
+
+    a0.applyMatrix4(m);
+    b0.applyMatrix4(m);
+    c0.applyMatrix4(m);
+
+    // now a0 should be at the origin;
+    var debug = 0;
+    if (debug) console.log("a0b0c0", a0, b0, c0);
+
+    var xaxis = new THREE.Vector3(1, 0, 0);
+    var yaxis = new THREE.Vector3(0, 1, 0);
+    var zaxis = new THREE.Vector3(0, 0, 1);
+
+    var b0norm = new THREE.Vector3(b0.x, b0.y, b0.z).normalize();
+    if (debug) console.log("b0norm", b0norm);
+
+    var q = new THREE.Quaternion()
+    q.setFromUnitVectors(b0norm, xaxis);
+    if (debug) console.log("quaternion", q);
+    var b1 = new THREE.Vector3(b0.x, b0.y, b0.z);
+    if (debug) console.log("b1", b1);
+    var c1 = new THREE.Vector3(c0.x, c0.y, c0.z);
+
+    b1 = b1.applyQuaternion(q);
+
+    if (debug) console.log("b1", b1);
+    c1 = c1.applyQuaternion(q);
+    // now b1 should be on the x axis..
+    if (debug) console.log("b1", b1);
+    var m1 = new THREE.Matrix4();
+    m1.makeRotationFromQuaternion(q);
+
+    var m2 = new THREE.Matrix4();
+
+    m2.multiplyMatrices(m1, m);
+    // m2 applied to our original points should give us b1,c1
+    var ct = new THREE.Vector3(pc.x, pc.y, pc.z);
+    ct.applyMatrix4(m2);
+    if (debug) console.log("===", ct, c1);
+
+
+    // Now finally, we need to rotate point c into the xy plane
+    var c2 = new THREE.Vector3(pc.x, pc.y, pc.z);
+
+
+    if (debug) console.log("c2 first", c2);
+    c2.applyMatrix4(m2);
+
+    if (debug) console.log("c2 trans", c2);
+
+    var theta = Math.atan2(c2.z, c2.y);
+    if (debug) console.log("theta", theta);
+
+    var m3 = new THREE.Matrix4();
+    m3.makeRotationX(-theta);
+
+    // If this is applied to C, it should place it in the XY plane (z = 0);
+    c2.applyMatrix4(m3);
+    if (debug) console.log("C2 after rotation", c2);
+
+    //    m4.multiplyMatrices(m2,m3);
+    //    console.log(m,m3,m4);
+
+    // m4 applied to our stating point must place it in the XY plane
+    var c3 = new THREE.Vector3(pc.x, pc.y, pc.z);
+    c3.applyMatrix4(m);
+    c3.applyMatrix4(m1);
+    c3.applyMatrix4(m3);
+    if (debug) console.log("POINT C3 FINAL", c3);
+
+    var c4 = new THREE.Vector3(pc.x, pc.y, pc.z);
+    var m4 = new THREE.Matrix4();
+    m4.identity()
+    m4.premultiply(m);
+    m4.premultiply(m1);
+    m4.premultiply(m3);
+    c4.applyMatrix4(m4);
+    if (debug) console.log("POINT C4 FINAL", c4);
+
+    return m4;
+}
+// This is a tricky but essential routine. Given a triangle abc and three distances
+// to a point d (da, db, dc), we have to find the point d.
+// The best way to do this is to translate and rotate the point to
+// the origin in a specific way, then comupte things simply, then perform the inverse transport.
+// We are using the right-hand rule. Following computer graphichs convention, is condidered "up"
+// and the Z dimenstion is considered depth.
+// A is at the origin
+// B is on the x axis (positive)
+// C is in the x-y plane
+// D is in the positive Z semiplane
+// I need to work out the naming very clearly! That is a task for tomorrow.
+// The input is the 6 distances.
+// This code inspired by Dave Barber: view-source:http://tamivox.org/redbear/tetra_calc/index.html
+
+function find_point_from_transformed(sense, AB, AC, AD, BC, BD, CD, v) {
+    // _m2 means "squared"
+    var AB_m2 = AB * AB; var AC_m2 = AC * AC;
+    var AD_m2 = AD * AD; var BC_m2 = BC * BC;
+    var BD_m2 = BD * BD; var CD_m2 = CD * CD;
+    var qx = AB;
+    var rx = (AB_m2 + AC_m2 - BC_m2) / (2.0 * AB);
+    var ry = Math.sqrt(AC_m2 - rx * rx);
+    var sx = (AB_m2 + AD_m2 - BD_m2) / (2.0 * AB);
+    var sy = (BD_m2 - (sx - qx) * (sx - qx) - CD_m2 + (sx - rx) * (sx - rx) + ry * ry) / (2 * ry);
+    var factor = AD_m2 - sx * sx - sy * sy;
+    var sz = 0;
+    var debug = 0;
+    if (factor < 0) {
+        if (debug) {
+            console.log("INTERNAL ERROR: this is not a legal tetrahedron\n");
+            console.log("AB AC AD BC BD CD\n");
+            console.log(AB, AC, AD, BC, BD, CD);
+        }
+        // I have no idea what to return here -- I'll return half the average distance.
+        sz = (AB + AC + AD + BC + BD + CD) / (6 * 2);
+        v.valid = false;
+    } else {
+        sz = Math.sqrt(AD_m2 - sx * sx - sy * sy);
+        v.valid = true;
+    }
+    A = new THREE.Vector3(0.0, 0.0, 0.0);
+    B = new THREE.Vector3(qx, 0.0, 0.0);
+    D = new THREE.Vector3(sx, sy, (sense == CHIRALITY_CCW) ? -sz : sz);
+    // We compute this only for debugging purposesn
+    C = new THREE.Vector3(rx, ry, 0.0);
+
+    // if (debug) {
+    //   Chirality senseABC = tet_chirality(A,B,C,D);
+    //     console.log("chirality (demanded, computed) ",sense,", ",senseABC,"\n");
+    //   if (sense != senseABC) {
+    //       console.log("SENSE CHECK ON TET FAILED!\n");
+    //       console.log(A,B,C,D);
+    //   }
+    //   assert(sense == senseABC);
+    // }
+    return D;
+
+}
+
+function find_fourth_point_given_three_points_and_three_distances(
+    sense,
+    pa, pb, pc,
+    ad, bd, cd,
+    valid) {
+
+    var debug = 0;
+    if (debug) console.log("ad bd cd\n");
+    if (debug) console.log(ad, bd, cd);
+
+    // First compute all 6 distances....
+    var ab = pa.distanceTo(pb);
+    var ac = pa.distanceTo(pc);
+    var bc = pb.distanceTo(pc);
+
+    // Now find transformation that rotates and translates to axes...
+    if (debug) console.log("pa pb pc \n");
+    if (debug) console.log(pa, pb, pc);
+
+    var tform = compute_transform_to_axes2(pa, pb, pc);
+
+    var Ap, Bp, Cp;
+
+    var Ap = pa.clone();
+    var Bp = pb.clone();
+    var Cp = pc.clone();
+
+    Ap = Ap.applyMatrix4(tform);
+    if (debug) console.log("Ap \n");
+    if (debug) console.log(Ap);
+
+    Bp = Bp.applyMatrix4(tform);
+    if (debug) console.log("Bp \n");
+    if (debug) console.log(Bp);
+
+    Cp = Cp.applyMatrix4(tform);
+    if (debug) console.log("Cp \n");
+    if (debug) console.log(Cp);
+
+    // Not written yet!
+    //    point_transform_affine3d tform_inv = inv(tform);
+    var tform_inv = new THREE.Matrix4();
+    tform_inv.getInverse(tform);
+
+    if (debug) console.log("tform inv\n");
+    if (debug) console.log(tform_inv.get_m());
+
+    // Now get the fourth point...
+    if (debug) console.log("INPUT YYY\n");
+    if (debug) console.log(ab, ac, ad, bc, bd, cd);
+    // TODO: Need to translate this
+    var D = find_point_from_transformed(sense, ab, ac, ad, bc, bd, cd, valid);
+
+    if (isNaN(D.x) || isNaN(D.y) || isNaN(D.z)) {
+        console.log("INPUT YYY\n");
+        console.log(D.x);
+        console.log(D.y);
+        console.log(D.z);
+        console.log(ab, ac, ad, bc, bd, cd);
+    }
+    // if (debug) {
+    //     Chirality untransformed = tet_chirality(pa,pb,pc,tform_inv(D));
+    //     Chirality transformed = tet_chirality(Ap,Bp,Cp,D);
+
+    //     console.log("Chirality demanded: " << sense << "\n";
+    //                 console.log("Chirality of transformed computations: " << transformed << "\n";
+    //                             console.log("Chirality of untransformed computations: " << untransformed << "\n";
+    // }
+    var D_inv = D.clone();
+    D_inv.applyMatrix4(tform_inv);
+    return D_inv;
+}
+
+function generate_joint_helix(n,r,k) {
+  var vs = [];
+  const max = 1*r;
+  const min = 1;
+  console.assert(n >= 4);
+  const member_cnt = 6 + (n-4) * 3;
+  var lengths = [];
+  for(var i = 0; i < member_cnt; i++) {
+    var mask = 1 << i;
+    console.log(" digital ",(k & mask) ? max : min);
+    lengths[i] = (k & mask) ? max : min;
+  }
+  console.log("lengths",lengths);
+  var v0 = new THREE.Vector3(0,0,0);
+  var v1 = new THREE.Vector3(0,0,lengths[0]);
+
+  var a = lengths[0];
+  var b = lengths[1];
+  var c = lengths[2];
+  var x = (a*a + b*b - c*c)/(2 * a);
+  var z = Math.sqrt(b*b - x*x);
+
+  var r0 = max * (2/3)*Math.sqrt(2/3);
+
+  var v2 = new THREE.Vector3(0,-z,x);
+  vs.push(v0);
+  vs.push(v1);
+  vs.push(v2);
+
+  // what the heck did I mean here?
+  var valid = { v: true };
+  var cnt = 6;
+  for(var i = 3; i < n; i++) {
+//     find_point_from_transformed(sense, ab, ac, ad, bc, bd, cd, valid);
+    var sense = CHIRALITY_CCW;
+    var D =
+        find_fourth_point_given_three_points_and_three_distances(
+          sense,
+          vs[i-3],
+          vs[i-2],
+          vs[i-1],
+          lengths[cnt],
+          lengths[cnt+1],
+          lengths[cnt+2],
+          valid);
+    vs.push(D);
+  }
+  return vs;
+}
+
+// Given the nodes of a tetrahelix, return the post problem
+// associated with joint j
+function createUnitPostsAroundJoint(j,vs) {
+  // first we compute the number of members...
+  var c = vs.length;
+  var n;
+  if ((j == 0) || (j == (c - 1))) {
+    n = 3;
+  } else if ((j == 1) || (j == (c - 2))) {
+    n = 4;
+  } else if ((j == 2) || (j == (c - 3))) {
+    n = 5;
+  } else {
+    n = 6;
+  }
+  var ps = [];
+  var a = Math.max(0,Math.floor(j-(n/2)));
+  var z = a + n;
+  for(var i = a; i <= Math.min(z,c-1); i++) {
+    if (i != j)
+      ps.push(vs[i].clone().normalize());
+  }
+  return ps;
+}
+
+
+// Apply this to joint j or n joints
+// r is the ratio.
+// k is the "index", interpreted as a binary.
+// It is interpreted as having the number of bits
+// correpsonding to the number of members, and
+// a "0" means "shortest" and "1" means "longest"
+// the ith bit controls if the min or max length should be applied for the
+function create_problem_helix(j,n,r,k) {
+  var vs = generate_joint_helix(n,r,k);
+
+  // Now translate the entire helix to joint j.
+  var pvec = vs[j].clone();
+
+  for(var i = 0; i < vs.length; i++) {
+    vs[i] = vs[i].sub(pvec);
+  }
+
+  var ps = createUnitPostsAroundJoint(j,vs);
+  console.log("k,ps",k,ps,vs);
+  var AP = [];
+  var c = ps.length;
+  for(var i = 0; i < c; i++) AP.push(0);
+
+  PROBLEM.posts = { n: c, C: ps, A: AP};
+
+  var AH = [];
+  var AHa = [];
+  for(var i = 0; i < c; i++) AH.push(ps[i].clone());
+  // 16 degrees = 4 * Math.PI / 45
+  // 20 degrees = Math.PI / 9
+  for(var i = 0; i < c; i++) AHa.push( Math.PI / 9);
+
+  if (!PROBLEM.holes) {
+    PROBLEM.holes = { n: c, C: AH, A: AHa};
+  }
+
+  console.log("PROBLEM",PROBLEM,k);
+
+  var pvec = new THREE.Vector3(0,0.0,0.0);
+  draw_custom_tetrahelix(vs,pvec,am.helices[0]);
+}
+
+function init_am() {
+		am.helices = [];
+		am.helix_params = [];
+		am.helices.push(
+		    {
+			helix_joints: [],
+			helix_members: []
+		    });
+}
+
+init_am();
+
+
+
+        // var v0 = find_fourth_point_given_three_points_and_three_distances(
+        //     CHIRALITY_CCW,
+        //     vs[1], vs[2], vs[3],
+        //     te, te, te,
+        //     valid);
 
 
     $( "#solve").click( solve_via_service );
@@ -1585,15 +1973,17 @@ function render_of_post_problem(e) {
 pos.set( 0.0, 0.0, 0.0);
 
 
-test_render_of_post_problem();
+initialize_problem();
+
+create_problem_helix(3,7,1.5,PROBLEM_INDEX++);
 
 
     animate();
 
     // addOriginSphere();
 
-    solve_via_service();
+//    solve_via_service();
 
-
+// render_of_post_problem([0,0,0]);
 
     </script>

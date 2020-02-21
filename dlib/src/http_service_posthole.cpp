@@ -102,7 +102,7 @@ void get_method_handler_goal( const shared_ptr< Session > session )
                     problem->p = p;
 
                     column_vector angles = problem->solve_problem();
-
+                    double score = objective_f(angles);
                     if (debug) {
                       print_vec(angles);
                     }
@@ -111,7 +111,9 @@ void get_method_handler_goal( const shared_ptr< Session > session )
                       //	    std::cout << " d["<< i << "]" << coordsx[i](0) << "," << coordsx[i](1) << "," << coordsx[i](2) << std::endl;
 
                       std::ostringstream ossx;
-                      ossx << "[" << angles(0) << ", " << angles(1) << ", " << angles(2) << "]\n";
+                      ossx << "{ \"score\": "<< score << ",\n"
+                           << "\"angles\": [" << angles(0) << ", " << angles(1) << ", " << angles(2) << "]\n"
+                           << "}\n";
                       std::string s = ossx.str();
                       std::ostringstream oss;
                       oss << s.length();

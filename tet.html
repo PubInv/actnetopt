@@ -37,8 +37,8 @@
     <link href="bootstrap/css/bootstrap-theme.min.css" rel="stylesheet">
 
     <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
-    <!-- Make sure to include these modifications after Bootstrap -->    
-    <link rel="stylesheet" type="text/css" href="stylesheets/toc-layout.css">    
+    <!-- Make sure to include these modifications after Bootstrap -->
+    <link rel="stylesheet" type="text/css" href="stylesheets/toc-layout.css">
     <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
     <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
     <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
@@ -49,7 +49,7 @@
       <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
       <![endif]-->
-    
+
   <!-- Bootstrap core JavaScript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
@@ -58,11 +58,11 @@
     <script src="javascripts/jquery.tableofcontents.js" type="text/javascript" charset="utf-8"></script>
     <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
     <!--    <script src="../../assets/js/ie10-viewport-bug-workaround.js"></script> -->
-    
+
     <script type="text/javascript" charset="utf-8"></script>
-    
+
         <link rel="stylesheet" href="./jquery-ui-1.11.4.custom/jquery-ui.min.css">
-<!--    <link rel="stylesheet" href="./jquery-ui-1.12.4.custom/jquery-ui.structure.min.css">    
+<!--    <link rel="stylesheet" href="./jquery-ui-1.12.4.custom/jquery-ui.structure.min.css">
     <link rel="stylesheet" href="./jquery-ui-1.12.4.custom/jquery-ui.theme.min.css">
 -->
 
@@ -73,14 +73,14 @@
 
     <script src="./js/scijs-newton-raphson.js"></script>
 
-    <script src="./js/tm_bundle.js"></script>        
-    
+    <script src="./js/tm_bundle.js"></script>
+
     <script src="./js/axes.js"></script>
     <script src="./js/three.js"></script>
-    <script src="./js/THREE.MeshLine.js"></script>    
+    <script src="./js/THREE.MeshLine.js"></script>
     <script src="./js/OrbitControls.js"></script>
-    <script src="./js/Detector.js"></script>    
-    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>    
+    <script src="./js/Detector.js"></script>
+    <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
    <script src="./js/d3-scale.min.js"></script>
    <script src="https://d3js.org/d3-interpolate.v1.min.js"></script>
 
@@ -92,16 +92,16 @@
 <script src="https://d3js.org/d3-time.v1.min.js"></script>
 <script src="https://d3js.org/d3-time-format.v2.min.js"></script>
 <script src="https://d3js.org/d3-scale.v1.min.js"></script>
-  </head>    
-     
+  </head>
+
     <section id="visualsection" style="{border: red;}">
     </section>
 
     <input type="button" id="fetch" value="Go!">
     <section id="textreport">
-    
+
     </section>
- 
+
 
 	<script type="x-shader/x-vertex" id="vertexShader">
 
@@ -135,7 +135,7 @@
 			}
 
 
-		</script>	
+		</script>
     <script>
     var tm = UGLY_GLOBAL_SINCE_I_CANT_GET_MY_MODULE_INTO_THE_BROWSER;
 
@@ -214,9 +214,9 @@ function create_actuator(d,b_a,b_z,pos,cmat) {
 	pos,
 	quat,
 	cmat );
-    
+
     mesh.lookAt(b_z);
-    
+
     mesh.castShadow = false;;
     mesh.receiveShadow = true;
     am.scene.add(mesh);
@@ -309,7 +309,7 @@ var AM = function() {
 
 
     //    this.JOINT_RADIUS = 0.09*this.INITIAL_EDGE_LENGTH; // This is the current turret joint ball.
-    this.JOINT_RADIUS = 0.3*this.INITIAL_EDGE_LENGTH; // This is the current turret joint ball.    
+    this.JOINT_RADIUS = 0.3*this.INITIAL_EDGE_LENGTH; // This is the current turret joint ball.
 
     this.LENGTH_FACTOR = 20;
 
@@ -320,19 +320,19 @@ var AM = function() {
     // }
     this.helices = [];
 
-    
-    
+
+
     this.meshes = [];
     this.bodies = [];
 
 
-    // This is sometimes useful for debugging.    
+    // This is sometimes useful for debugging.
     //    this.jointGeo = new THREE.BoxGeometry( this.JOINT_RADIUS*2,this.JOINT_RADIUS*2,this.JOINT_RADIUS*2);
     this.jointGeo = new THREE.SphereGeometry( this.JOINT_RADIUS,32,32);
     this.jointMaterial = new THREE.MeshPhongMaterial( { color: 0x0000ff } );
-    
+
     this.floorTexture = new THREE.ImageUtils.loadTexture("images/logo-white-background.png");
-    
+
     this.MIN_EDGE_LENGTH = this.INITIAL_EDGE_LENGTH/2;
     this.MAX_EDGE_LENGTH  = this.INITIAL_EDGE_LENGTH*2;
     this.color_scale = d3.scale.quantile().domain([this.MIN_EDGE_LENGTH, this.MAX_EDGE_LENGTH])
@@ -353,7 +353,7 @@ var AM = function() {
 
     this.latestLookAt = new THREE.Vector3(0,0,0);
 
-    this.helix_params = [];    
+    this.helix_params = [];
 }
 AM.prototype.push_body_mesh_pair = function(body,mesh) {
     this.meshes.push(mesh);
@@ -420,23 +420,23 @@ function initGraphics() {
     var PERSPECTIVE_NEAR = 0.3;
 
 
-    // if (OPERATION == "helices") { 
+    // if (OPERATION == "helices") {
     // 	var width = 10;
     // 	var height = width * (window.innerHeight *am.window_height_factor) / window.innerWidth;
     // 	am.camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, 1, 1000 );
     // } else {
         am.camera = new THREE.PerspectiveCamera( 60, window.innerWidth / (window.innerHeight * am.window_height_factor), PERSPECTIVE_NEAR, 2000 );
 //    }
-    
+
     //   am.camera.aspect = window.innerWidth / (window.innerHeight * am.window_height_factor);
 
     var origin = new THREE.Vector3(0,0,0);
     am.camera.lookAt(origin);
-    
+
     //    am.camera.quaternion.setFromAxisAngle(new THREE.Vector3(0,1,0), (Math.PI/2));
-    
+
     am.scene = new THREE.Scene();
-    am.scene.fog = new THREE.Fog( 0x000000, 500, 10000 );    
+    am.scene.fog = new THREE.Fog( 0x000000, 500, 10000 );
 
     am.camera.position.x = 0.0;
     am.camera.position.y = 0.0;
@@ -448,7 +448,7 @@ function initGraphics() {
     am.renderer = new THREE.WebGLRenderer( { antialias: true } );
     am.renderer.setClearColor( 0xffffff );
     am.renderer.autoClearColor = true;
-    
+
     am.renderer.setPixelRatio( window.devicePixelRatio );
     am.renderer.setSize( window.innerWidth, window.innerHeight*am.window_height_factor );
     am.SCREEN_WIDTH = am.renderer.getSize().width;
@@ -457,18 +457,18 @@ function initGraphics() {
 
 
     am.cameraOrtho = new THREE.OrthographicCamera( 0, am.SCREEN_WIDTH, am.SCREEN_HEIGHT, 0, - 10, 10 );
-    
+
     hemiLight = new THREE.HemisphereLight( 0xffffff, 0xffffff, 1 );
     am.scene.add( hemiLight );
 
     var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.8 );
     directionalLight.position = new THREE.Vector3(100,5,0);
     am.scene.add( directionalLight );
-    
+
     var ambientLight = new THREE.AmbientLight( 0x404040 );
 
     am.grid_scene = new THREE.Scene();
-    am.grid_scene.fog = new THREE.Fog( 0x000000, 500, 10000 );    
+    am.grid_scene.fog = new THREE.Fog( 0x000000, 500, 10000 );
 
     // GROUND
     var groundGeo = new THREE.PlaneBufferGeometry( 10000, 10000 );
@@ -489,10 +489,10 @@ function initGraphics() {
 
     ground.receiveShadow = true;
 
-    
+
     // HACK:  These diemensions are probably not right here!
     gridInit(am.grid_scene,am.playgroundDimensions);
-    
+
     am.container.innerHTML = "";
 
     am.container.appendChild( am.renderer.domElement );
@@ -526,13 +526,13 @@ AM.prototype.remove_body_mesh_pair = function(body,mesh) {
 function onWindowResize() {
     am.camera.aspect = window.innerWidth / (window.innerHeight * am.window_height_factor);
     am.renderer.setSize( window.innerWidth, window.innerHeight * am.window_height_factor );
-    
+
     am.camera.updateProjectionMatrix();
     am.SCREEN_WIDTH = am.renderer.getSize().width;
     am.SCREEN_HEIGHT = am.renderer.getSize().height;
     am.camera.radius = ( am.SCREEN_WIDTH + am.SCREEN_HEIGHT ) / this.CAMERA_RADIUS_FACTOR;
 
-    am.cameraOrtho = new THREE.OrthographicCamera( 0, am.SCREEN_WIDTH, am.SCREEN_HEIGHT, 0, - 10, 10 );    
+    am.cameraOrtho = new THREE.OrthographicCamera( 0, am.SCREEN_WIDTH, am.SCREEN_HEIGHT, 0, - 10, 10 );
 }
 
 function animate() {
@@ -559,7 +559,7 @@ var sprite_controls = new function () {
     this.draw_and_create = function (sprite,x,y,message) {
 	var fontsize = 128;
 	var ctx, texture,
-	    spriteMaterial, 
+	    spriteMaterial,
 	    canvas = document.createElement('canvas');
 	ctx = canvas.getContext('2d');
 	ctx.font = fontsize + "px Arial";
@@ -569,8 +569,8 @@ var sprite_controls = new function () {
 	canvas.height = fontsize * 2; // fontsize * 1.5
 
 	// after setting the canvas width/height we have to re-set font to apply!?! looks like ctx reset
-	ctx.font = fontsize + "px Arial";        
-	ctx.fillStyle = this.textcolor;        
+	ctx.font = fontsize + "px Arial";
+	ctx.fillStyle = this.textcolor;
 	ctx.fillText(message, 0, fontsize);
 
 	texture = new THREE.Texture(canvas);
@@ -582,17 +582,17 @@ var sprite_controls = new function () {
 	    color: this.colorize,
 	    transparent: this.transparent,
 	    map : texture});
-	
+
 	spriteMaterial.scaleByViewport = true;
 	spriteMaterial.blending = THREE.AdditiveBlending;
 
         if (!sprite) {
 	    sprite = new THREE.Sprite(spriteMaterial);
 	}
-	
+
 	sprite.scale.set(this.size, this.size, this.size);
 	sprite.position.set(x, y, 0);
-	
+
 	am.sceneOrtho.add(sprite);
 	return sprite;
     };
@@ -601,16 +601,16 @@ var sprite_controls = new function () {
 function render() {
     var deltaTime = am.clock.getDelta();
 
-    sprite_controls.clear();    
+    sprite_controls.clear();
     am.controls.update( deltaTime );
 
     // note this....
-    //    am.renderer.autoClear = true;        
+    //    am.renderer.autoClear = true;
     am.renderer.render( am.scene, am.camera );
     if (OPERATION == "normal") {
 	am.renderer.render( am.grid_scene, am.camera);
     }
-    am.renderer.autoClear = false;        
+    am.renderer.autoClear = false;
     am.renderer.render(am.sceneOrtho, am.cameraOrtho);
 }
 
@@ -644,12 +644,12 @@ function add_equitetrabeam_helix(am,chi,lambda,rho,radius,pvec,len) {
 			    d: d,
 			    pitch: pitch,
 			    lambda: lambda});
-    
+
     var hp = am.helix_params.slice(-1)[0];
     load_NTetHelix(am,am.helices.slice(-1)[0],
 		   am.NUMBER_OF_TETRAHEDRA,
 		   pvec,hp);
-    //    build_central();    
+    //    build_central();
     return hp;
 }
 
@@ -677,10 +677,10 @@ init();
 // 	    			    member.a.mesh.position.y)/Math.PI;
 // 	    var q1 = 180*Math.atan2(member.b.mesh.position.x,
 // 	    			    member.b.mesh.position.y)/Math.PI;
-	    
+
 // 	    //	    console.log("distance:",d,q1-q0);
 // 	}
-	
+
 // 	if (min > d) min = d;
 // 	if (max < d) max = d;
 //     }
@@ -731,23 +731,23 @@ function draw_new(pvec) {
 function draw_many() {
     for(var i = 0; i < 6; i++) {
 	var rho = (i / 5.0) *  RAIL_ANGLE_RHO_d*Math.PI/180;
-	var pvec0 = new THREE.Vector3(((5 - i)/ 2.0)*2 + -3,HELIX_RADIUS*3,-3);	
+	var pvec0 = new THREE.Vector3(((5 - i)/ 2.0)*2 + -3,HELIX_RADIUS*3,-3);
 	add_equitetrabeam_helix(am,CHIRALITY_CCW,null,rho,HELIX_RADIUS,pvec0,TET_DISTANCE);
     }
 }
 
 function build_central() {
     //    var pvec0 = new THREE.Vector3(0,0,0);
-    var pvec0 = new THREE.Vector3(0,HELIX_RADIUS*3,-3);    
+    var pvec0 = new THREE.Vector3(0,HELIX_RADIUS*3,-3);
 
     // I can't figure out if HELIX_RADIUS is wrong, if
     // my formula is wrong, or if the CylinderGeometry is wrong....
     // The formula checks out in the 2-D case.
     var ir1 = tm.inradius_assumption1(Math.PI*RAIL_ANGLE_RHO_d/180,HELIX_RADIUS);
-    var ir2 = tm.inradius_assumption2(Math.PI*RAIL_ANGLE_RHO_d/180,HELIX_RADIUS);    
+    var ir2 = tm.inradius_assumption2(Math.PI*RAIL_ANGLE_RHO_d/180,HELIX_RADIUS);
 
     console.log("inradius1", ir1);
-    console.log("inradius2", ir2);    
+    console.log("inradius2", ir2);
     {
 	var geometry = new THREE.CylinderGeometry( ir1, ir1, 3, 32 );
 	var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
@@ -774,12 +774,12 @@ function draw_helices() {
 		    hp.inradius,
 		    hp.score);
 
-    var factor =  3*tm.BCtheta/tm.BCrho;    
+    var factor =  3*tm.BCtheta/tm.BCrho;
     draw_helix(pvec0,0,hp,factor,"black",1.0,0.003);
-    
+
     draw_helix(pvec0,0,hp,1,"red",1.2,0.005);
     draw_helix(pvec0,1,hp,1,"orange",1.2,0.005);
-    draw_helix(pvec0,2,hp,1,"blue",1.2,0.005);        
+    draw_helix(pvec0,2,hp,1,"blue",1.2,0.005);
 }
 
 function draw_helix(pvec,rail,hparams,factor,color,fudge,lw) {
@@ -793,13 +793,13 @@ function draw_helix(pvec,rail,hparams,factor,color,fudge,lw) {
     // 	linecap: 'round', //ignored by WebGLRenderer
     // 	linejoin:  'round' //ignored by WebGLRenderer
     // } );
-    
-    
+
+
     //  am.scene.add(path);
-    var currentPosition = new THREE.Vector3(0, 0, 0); 
+    var currentPosition = new THREE.Vector3(0, 0, 0);
     var lastPosition = null;
 
-    
+
     var tets = am.NUMBER_OF_TETRAHEDRA;
 
     var len = hparams.len;
@@ -809,7 +809,7 @@ function draw_helix(pvec,rail,hparams,factor,color,fudge,lw) {
     var lambda = hparams.lambda;
 
     var big = (tets+1)*d;
-    
+
     //    var limit = 1000.0;
     var limit = 1000.0;
     for(var i = 0; i < limit; i++) {
@@ -822,10 +822,10 @@ function draw_helix(pvec,rail,hparams,factor,color,fudge,lw) {
 	if (!lastPosition) lastPosition = currentPosition;
 
 	lineGeometry.vertices.push(currentPosition);
-	
+
 	lastPosition = currentPosition;
     }
-    
+
     var line = new MeshLine();
     line.setGeometry(lineGeometry);
 
@@ -835,8 +835,8 @@ function draw_helix(pvec,rail,hparams,factor,color,fudge,lw) {
     }
 				       );
     //    material.color = new THREE.Color("red");
-    
-    var mesh = new THREE.Mesh( line.geometry, material ); 
+
+    var mesh = new THREE.Mesh( line.geometry, material );
     am.scene.add( mesh );
 }
 
@@ -856,7 +856,7 @@ function draw_custom_tetrahelix(results,pvec,helix
 	var pos = new THREE.Vector3();
 	pos.set( v.x, v.y, v.z);
 	var mesh = createSphere(am.JOINT_RADIUS,pos,smats[rail]);
-	mesh.structureKind = "joint";	
+	mesh.structureKind = "joint";
 	mesh.castShadow = true;
 	mesh.receiveShadow = false;
 	var body = {};
@@ -864,12 +864,12 @@ function draw_custom_tetrahelix(results,pvec,helix
 	body.number = i / 3;
 	body.name = alphabetic_name(i);
 //	console.log("name ="+body.name);
-//	console.log("mesh ="+mesh.structureKind);	
+//	console.log("mesh ="+mesh.structureKind);
 	body.mesh = mesh;
 	mesh.name = body.name;
 
 	am.scene.add(mesh);
-	
+
 	helix.helix_joints.push(body);
 	am.push_body_mesh_pair(body,mesh);
 
@@ -887,15 +887,15 @@ function draw_custom_tetrahelix(results,pvec,helix
 	    var b_a = helix.helix_joints[h];
 	    var o_a = b_a.mesh.position;
 	    var o_z = b_z.mesh.position;
-	    
+
 	    var v_z = new THREE.Vector3(o_a.x,o_a.y,o_a.z);
 	    var v_a = new THREE.Vector3(o_z.x,o_z.y,o_z.z);
 	    var dist = v_a.distanceTo(v_z);
-	    
+
 	    var v_avg = new THREE.Vector3(v_z.x,v_z.y,v_z.z);
 	    v_avg.add(v_a);
 	    v_avg.multiplyScalar(0.5);
-	    
+
 	    pos.set( v_avg.x, v_avg.y, v_avg.z);
             quat.set( 0, 0, 0, 1 );
 
@@ -907,7 +907,7 @@ function draw_custom_tetrahelix(results,pvec,helix
 		    // What we really want to do here is to interpolate the
 		    // color of the end nodes!
 		    tcolor = new THREE.Color(0x008800);
-		    cmat  = memo_color_mat(tcolor);	
+		    cmat  = memo_color_mat(tcolor);
 		} else {
 		    if (diff == 2) {
 			tcolor = new THREE.Color(0x9400D3);
@@ -915,7 +915,7 @@ function draw_custom_tetrahelix(results,pvec,helix
 		    }
 		    if (diff== 1) {
 			tcolor = new THREE.Color(0x008000);
-			cmat  = memo_color_mat(tcolor);	
+			cmat  = memo_color_mat(tcolor);
 		    }
 		}
 	    } else {
@@ -943,9 +943,9 @@ function draw_custom_tetrahelix(results,pvec,helix
 		    helix.helix_member.splice(x,1);
 		}
 	    }
-	    var link = { a: b_a, b: b_z, body: memBody};	    
+	    var link = { a: b_a, b: b_z, body: memBody};
 	    helix.helix_members.push(link);
-	    mesh.structureKind = "member";	    
+	    mesh.structureKind = "member";
 	    am.push_body_mesh_pair(memBody,mesh);
 	}
     }
@@ -973,7 +973,7 @@ function onMouseMove(e){
 	mouse3D.unproject( am.camera );
 
         var pos = projectOntoPlane(am,e.clientX,e.clientY,am.gplane,am.camera);
-	
+
         if(pos){
             setClickMarker(am,pos.x,pos.y,pos.z,am.scene);
 //            moveJointToPoint(am,pos.x,pos.y,pos.z);
@@ -985,26 +985,26 @@ function onMouseMove(e){
 // But that is not the intention of the interaction tool, and is very annoying.
 function onMouseDown(e){
     // Find mesh from a ray
-    
+
     var mouse3D = new THREE.Vector3( ( e.clientX / am.renderer.getSize().width ) * 2 - 1,   //x
 				     -( e.clientY / (am.renderer.getSize().height) ) * 2 + 1,  //y
 				     0.5 );                                            //z
     mouse3D.unproject( am.camera );
     mouse3D.sub(am.camera.position);
     mouse3D.project( am.camera );
-    
+
     var entity = findNearestIntersectingObject(am,e.clientX,e.clientY,am.camera,am.meshes);
     var pos = entity.point;
     // This is fragile, we need to be able to change this geometry....
 
     console.log(entity);
-    
-    if (pos && 
+
+    if (pos &&
 	(
 	    (entity.object.structureKind == "obstacle")
-		|| 
+		||
 		(entity.object.structureKind == "joint")
-		|| 
+		||
 		(entity.object.structureKind == "member")
 	)
        ){
@@ -1017,7 +1017,7 @@ function onMouseDown(e){
 	    am.latestLookAt.y = pos.y;
 	    am.latestLookAt.z = pos.z;
 	}
-	
+
 	//            constraintDown = true;
         // Set marker on contact point
         setClickMarker(am,pos.x,pos.y,pos.z,am.scene);
@@ -1038,7 +1038,7 @@ function onMouseDown(e){
 		am.manipulatedObject.original_color = original_color;
 	    }
 //	    addMouseConstraint(am,pos.x,pos.y,pos.z,obj);
-	    am.selectedBody = obj;		    
+	    am.selectedBody = obj;
 	}
 
     }
@@ -1072,10 +1072,10 @@ function establish_controls(gui) {
 /*
 Okay, this is my attempt to quickly model the idea of multiple goal nodes. The basic GUI
 idea is that there are a set of nodes, we will render them in a non RYB color --- say Green.
-A Green node has a target position. By clicking and dragging a non-green node, you turn it 
+A Green node has a target position. By clicking and dragging a non-green node, you turn it
 Green and lock its position. By clicking on a node that is green without moving it (much) you unlock it.
 
-We will provide addtional information in text.  We will render the actual position of each node 
+We will provide addtional information in text.  We will render the actual position of each node
 as returned to use by the optimizer, in addition to the target nodes, and the distances.
 
 The best say to implement all of this is start by just making it work properly with one node!
@@ -1093,14 +1093,14 @@ function render_locked_nodes(locked_nodes,nodes_returned) {
     var html = "";
     html += "<table>";
     html += "<tr>";
-    html += "<th>num</th>";    
+    html += "<th>num</th>";
     html += "<th>x target</th>";
     html += "<th>y target</th>";
-    html += "<th>z target</th>";    
+    html += "<th>z target</th>";
     html += "<th>x actual</th>";
     html += "<th>y actual </th>";
     html += "<th>z acutal</th>";
-    html += "<th>d</th>";        
+    html += "<th>d</th>";
     html += "</tr>";
     for (key in locked_nodes) {
 	var nd = locked_nodes[key];
@@ -1110,13 +1110,13 @@ function render_locked_nodes(locked_nodes,nodes_returned) {
 	html += nd.node_number;
 	html += "</td>";
 	html += "<td>";
-	html += nd.pos.x.toFixed(2); 
+	html += nd.pos.x.toFixed(2);
 	html += "</td>";
 	html += "<td>";
-	html += nd.pos.y.toFixed(2); 
-	html += "</td>";	
+	html += nd.pos.y.toFixed(2);
+	html += "</td>";
 	html += "<td>";
-	html += nd.pos.z.toFixed(2); 
+	html += nd.pos.z.toFixed(2);
 	    html += "</td>";
 	}
 	if (nodes_returned && nd.node_number) {
@@ -1126,16 +1126,16 @@ function render_locked_nodes(locked_nodes,nodes_returned) {
 	    html += "</td>";
 	    html += "<td>";
 	    html += r_loc.y.toFixed(2);
-	    html += "</td>";	
+	    html += "</td>";
 	    html += "<td>";
-	    html += r_loc.z.toFixed(2); 
-	    html += "</td>";	
+	    html += r_loc.z.toFixed(2);
+	    html += "</td>";
 	    html += "<td>";
 	    var target = new THREE.Vector3(nd.pos.x,nd.pos.y,nd.pos.z);
 	    var actual = new THREE.Vector3(r_loc.x,r_loc.y,r_loc.z);
 	    var dist = target.distanceTo(actual);
 	    html += dist.toFixed(2);
-	    html += "</td>";	
+	    html += "</td>";
 	}
 	html += "</tr>";
     };
@@ -1149,7 +1149,7 @@ function set_locked_nodes_green() {
 	var o = locked_nodes[key];
 	var p = o.pos;
 	var mesh = createSphere(am.JOINT_RADIUS,p,new THREE.Color(0x006400));
-	mesh.structureKind = "joint";	
+	mesh.structureKind = "joint";
 	mesh.castShadow = true;
 	mesh.receiveShadow = true;
 	am.scene.add(mesh);
@@ -1178,7 +1178,7 @@ function onMouseUp(e) {
     var mouse3D = new THREE.Vector3( ( event.clientX / am.renderer.getSize().width ) * 2 - 1,   //x
 				     -( event.clientY / (am.renderer.getSize().height) ) * 2 + 1,  //y
 				     0.5 );                                            //z
-    
+
     //  mouse3D.unproject( am.camera );
     mouse3D.unproject( am.camera );
     mouse3D.sub(am.camera.position);
@@ -1188,7 +1188,7 @@ function onMouseUp(e) {
     var pos = projectOntoPlane(am,e.clientX,e.clientY,am.gplane,am.camera);
     if (!pos) {
 	return;
-    } 
+    }
 
     if (am.manipulatedObject && pos) {
 	console.log("Manipulated Object");
@@ -1214,7 +1214,7 @@ function onMouseUp(e) {
     }
     // remove the marker
 
-    
+
     removeClickMarker(am);
 
     // Send the remove mouse joint to server
@@ -1258,7 +1258,7 @@ function onMouseUp(e) {
 	am.controls.dispose();
 	establish_controls(am);
     }
-    
+
     if (am.movedButNotSent) {
 //	console.log("final");
 //	console.log(pos);
@@ -1290,7 +1290,7 @@ function findNearestIntersectingObject(gui,clientX,clientY,camera,objects) {
     var mouse3D = new THREE.Vector3( ( event.clientX / gui.renderer.getSize().width ) * 2 - 1,   //x
                                      -( event.clientY / (gui.renderer.getSize().height) ) * 2 + 1,  //y
                                      0.5 );                                            //z
-    
+
     var mouse = new THREE.Vector2();
     mouse.x = (event.clientX / gui.renderer.getSize().width) * 2 - 1;
     mouse.y = -(event.clientY / (gui.renderer.getSize().height)) * 2 + 1;
@@ -1300,7 +1300,7 @@ function findNearestIntersectingObject(gui,clientX,clientY,camera,objects) {
     var raycaster = new THREE.Raycaster();
     try {
 	raycaster.setFromCamera(mouse, camera);
-	var intersects = raycaster.intersectObjects( objects );        
+	var intersects = raycaster.intersectObjects( objects );
 	var closest = false;
 	if (intersects.length > 0) {
             closest = intersects[0];
@@ -1333,7 +1333,7 @@ function setClickMarker(gui,x,y,z) {
 
 
 function removeClickMarker(gui){
-    if(gui.clickMarker){    
+    if(gui.clickMarker){
 	gui.clickMarker.visible = false;
     }
 }
@@ -1349,9 +1349,9 @@ function setScreenPerpCenter(point, gui) {
 	var plane_material = new THREE.MeshLambertMaterial( { color: 0x110000 } );
 	plane_material.transparent = true;
 	plane_material.opacity = 0.0;
-	
+
 	gui.gplane = new THREE.Mesh(planeGeo,plane_material);
-	
+
         gui.scene.add(gui.gplane);
     }
     gui.gplane.visible = true;
@@ -1383,22 +1383,22 @@ function createGround(am) {
     am.pos.set( 0, -am.GROUND_WIDTH/2, 0 );
     am.quat.set( 0, 0, 0, 1 );
 
-    am.floorTexture.wrapS = am.floorTexture.wrapT = THREE.RepeatWrapping; 
+    am.floorTexture.wrapS = am.floorTexture.wrapT = THREE.RepeatWrapping;
     am.floorTexture.repeat.set( 10, 10 );
-    
+
     var floorMaterial = new THREE.MeshBasicMaterial( { map: am.floorTexture, side: THREE.DoubleSide } );
 
     floorMaterial.transparent = true;
     floorMaterial.opacity = 0.7;
 
-    var ground = createParalellepiped( am.playgroundDimensions.w, am.GROUND_WIDTH, 
+    var ground = createParalellepiped( am.playgroundDimensions.w, am.GROUND_WIDTH,
 				       am.playgroundDimensions.d,
 				       0, am.pos, am.quat, floorMaterial );
 
     am.GROUND_PLANE_MESH = ground;
-    
+
     //    ground["ammo_obj"].setFriction( 0.99 );
-    
+
     ground.castShadow = true;
     ground.receiveShadow = true;
 }
@@ -1410,15 +1410,15 @@ function fetch_coords() {
 	    data: {"locked" : locked_nodes_string },
 	    success: function(result) {
 		am.clear_non_floor_body_mesh_pairs();
-		
+
 		for( var i = am.scene.children.length - 1; i >= 0; i--) {
 		    var obj = am.scene.children[i];
 		    if (obj.type == "Mesh" && obj.name != "GROUND") {
 			am.scene.remove(obj);
 		    }
 		}
-//		addOriginSphere();		
-		
+//		addOriginSphere();
+
 		am.helices = [];
 		am.helix_params = [];
 		am.helices.push(
@@ -1428,12 +1428,12 @@ function fetch_coords() {
 		    });
 		// now basically we want to build the helix from these results...
 		//	       var pvec = new THREE.Vector3(0,HELIX_RADIUS*2.1,-1.0);
-		var pvec = new THREE.Vector3(0,0.0,0.0);	       
+		var pvec = new THREE.Vector3(0,0.0,0.0);
 		var nodes = JSON.parse(result);
 		console.log(nodes);
 		$("#textreport").html(render_locked_nodes(locked_nodes,nodes));
 		draw_custom_tetrahelix(nodes,pvec,am.helices[0]);
-		set_locked_nodes_green();		
+		set_locked_nodes_green();
 	    }
 	   });
 }
@@ -1457,6 +1457,3 @@ function fetch_coords() {
 
 
     </script>
-
-  
-
