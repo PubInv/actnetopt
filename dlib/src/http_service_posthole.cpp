@@ -104,7 +104,7 @@ void get_method_handler_goal( const shared_ptr< Session > session )
                     problem->p = p;
 
                     //                    column_vector angles = problem->solve_problem();
-                    column_vector angles = problem->solve_problem_brute();
+                    column_vector angles = problem->solve_problem();
                     double score = objective_f(angles);
                     if (debug) {
                       print_vec(angles);

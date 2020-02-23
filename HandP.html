@@ -153,6 +153,12 @@ var origin = [0,0];
 var PROBLEM_INDEX = 0;
 
 var MMR = 1.5 // MAX / MIN RATIO
+const HOLE_HALF_ANGLE_DEG = 30;
+
+// A Problem here is defined as a set of posts
+// and a set of holes.
+var PROBLEM;
+
 
 // Detects webgl
 if ( ! Detector.webgl ) {
@@ -1411,9 +1417,6 @@ function createGround(am) {
     ground.receiveShadow = true;
 }
 
-// A Problem here is defined as a set of posts
-// and a set of holes.
-var PROBLEM;
 function create_problem() {
   am.clear_non_floor_body_mesh_pairs();
 
@@ -1432,28 +1435,60 @@ function create_problem() {
       helix_members: []
     });
   // Now try to update the problem!
-  create_problem_helix(3,7,MMR,PROBLEM_INDEX++);
+  create_problem_helix(3,7,MMR,PROBLEM_INDEX);
 }
-function solve_via_service() {
 
+function process_service_result(result,probnum,mmr) {
+  console.log("result",result);
+  // now basically we want to build the helix from these results...
+  //	       var pvec = new THREE.Vector3(0,HELIX_RADIUS*2.1,-1.0);
+  var pvec = new THREE.Vector3(0,0.0,0.0);
+  var solution = JSON.parse(result);
+  console.log(solution);
+  var angles = solution.angles;
+  var score = solution.score;
+  var x = angles[0] * 180 / Math.PI;
+  var y = angles[1] * 180 / Math.PI;
+  var z = angles[2] * 180 / Math.PI;
+  $("#textreport").html("Prob #" + PROBLEM_INDEX + " " + PROBLEM_INDEX.toString(2) + " score: " + score + "  [" + x.toFixed(2) + "," + y.toFixed(2) + "," + z.toFixed(2) + "]");
+  return { problem: probnum,
+                        ratio: mmr,
+                        score: score,
+                        x_deg: x,
+                        y_deg: y,
+           z_deg: z};
+}
+function solve_via_service(probnum,PROBLEM,cnt) {
+    var problem_string = JSON.stringify(PROBLEM);
+    $.ajax({url: "http://127.0.0.1/posthole",
+	    data: {"problem" : problem_string },
+	    success: function(result) {
+              var solution = process_service_result(result,probnum,MMR);
+              console.log(solution);
+	      $("#textreport").html("Prob #" + solution.problem + " "+solution.problem.toFixed(2) + " score: " + solution.score + "  [" + solution.x_deg.toFixed(2) + "," + solution.y_deg.toFixed(2) + "," + solution.z_deg.toFixed(2) + "]");
+              SOLUTION_TABLE.push({ problem: solution.problem,
+                                    ratio: solution.ratio,
+                                    score: solution.score,
+                                    x_deg: solution.x,
+                                    y_deg: solution.y,
+                                    z_deg: solution.z});
+	    }
+	   });
+}
+
+function solve_and_render() {
     var problem_string = JSON.stringify(PROBLEM);
     $.ajax({url: "http://127.0.0.1/posthole",
 	    data: {"problem" : problem_string },
 	    success: function(result) {
               console.log("result",result);
-		// now basically we want to build the helix from these results...
-		//	       var pvec = new THREE.Vector3(0,HELIX_RADIUS*2.1,-1.0);
-	      var pvec = new THREE.Vector3(0,0.0,0.0);
-	      var solution = JSON.parse(result);
-	      console.log(solution);
-              var angles = solution.angles;
-              var score = solution.score;
-              var x = angles[0] * 180 / Math.PI;
-              var y = angles[1] * 180 / Math.PI;
-              var z = angles[2] * 180 / Math.PI;
-	      $("#textreport").html("score: " + score + "  [" + x + "," + y + "," + z + "]");
-              render_of_post_problem(angles);
 
+              var solution = process_service_result(result,PROBLEM_INDEX,MMR);
+	      $("#textreport").html("Prob #" + solution.problem + " "+solution.problem.toFixed(2) + " score: " + solution.score + "  [" + solution.x_deg.toFixed(2) + "," + solution.y_deg.toFixed(2) + "," + solution.z_deg.toFixed(2) + "]");
+              const angles = [solution.x_deg * Math.PI / 180.0,
+                              solution.y_deg * Math.PI / 180.0,
+                              solution.z_deg * Math.PI / 180.0];
+              render_of_post_problem(angles);
 	    }
 	   });
 }
@@ -1851,10 +1886,8 @@ function generate_joint_helix(n,r,k) {
   var lengths = [];
   for(var i = 0; i < member_cnt; i++) {
     var mask = 1 << i;
-    console.log(" digital ",(k & mask) ? max : min);
     lengths[i] = (k & mask) ? max : min;
   }
-  console.log("lengths",lengths);
   var v0 = new THREE.Vector3(0,0,0);
   var v1 = new THREE.Vector3(0,0,lengths[0]);
 
@@ -1935,8 +1968,9 @@ function create_problem_helix(j,n,r,k) {
     vs[i] = vs[i].sub(pvec);
   }
 
+  PROBLEM.vs = vs;
+
   var ps = createUnitPostsAroundJoint(j,vs);
-  console.log("k,ps",k,ps,vs);
   var AP = [];
   var c = ps.length;
   for(var i = 0; i < c; i++) AP.push(0);
@@ -1949,16 +1983,23 @@ function create_problem_helix(j,n,r,k) {
   // 16 degrees = 4 * Math.PI / 45
   // 20 degrees = Math.PI / 9
   // 25 degrees = Math.PI / 9
-  for(var i = 0; i < c; i++) AHa.push( Math.PI / 8);
+
+  for(var i = 0; i < c; i++) AHa.push( HOLE_HALF_ANGLE_DEG * Math.PI / 180);
 
   if (!PROBLEM.holes) {
     PROBLEM.holes = { n: c, C: AH, A: AHa};
   }
+  return PROBLEM;
+}
 
-  console.log("PROBLEM",PROBLEM,k);
-
-  var pvec = new THREE.Vector3(0,0.0,0.0);
-  draw_custom_tetrahelix(vs,pvec,am.helices[0]);
+var SOLUTION_TABLE = [];
+function fill_table(n) {
+  const num = Math.min(n,2**15);
+  for(var i = 0; i < num; i++) {
+    create_problem_helix(3,7,MMR,PROBLEM_INDEX);
+    solve_via_service(PROBLEM_INDEX,PROBLEM);
+    PROBLEM_INDEX++;
+  }
 }
 
 function init_am() {
@@ -1982,8 +2023,13 @@ init_am();
         //     valid);
 
 
-$( "#solve").click( solve_via_service );
-$( "#problem").click( create_problem );
+$( "#solve").click( solve_and_render );
+$( "#problem").click( () => {
+  var p = create_problem();
+  var pvec = new THREE.Vector3(0,0.0,0.0);
+  draw_custom_tetrahelix(p.vs,pvec,am.helices[0]);
+  PROBLEM_INDEX++;
+});
 
 
     initHandlers();
